@@ -10,7 +10,7 @@ public class Lancamento
     public DateTime Data { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
-    private Lancamento() { } // exigido pelo EF Core
+    private Lancamento() { Descricao = null!; } 
 
     public Lancamento(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, DateTime data)
     {

@@ -5,7 +5,7 @@ public class Categoria
     public Guid Id { get; private set; }
     public string Nome { get; private set; }
 
-    private Categoria() { }
+    private Categoria() { Nome = null!; }
 
     public Categoria(string nome)
     {
