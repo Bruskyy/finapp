@@ -11,6 +11,9 @@
   </Folder>
   <Folder Name="/src/Lancamentos/">
     <Project Path="src/Lancamentos/Lancamentos.Api/Lancamentos.Api.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Application/Lancamentos.Application.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Domain/Lancamentos.Domain.csproj" />
+    <Project Path="src/Lancamentos/Lancamentos.Infrastructure/Lancamentos.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Notificacoes/">
     <Project Path="src/Notificacoes/Notificacoes.Api/Notificacoes.Api.csproj" />
