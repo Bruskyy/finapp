@@ -12,6 +12,7 @@ public class LancamentosDbContext : DbContext
     public DbSet<Lancamento> Lancamentos => Set<Lancamento>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
+    public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -40,6 +41,16 @@ public class LancamentosDbContext : DbContext
             e.Property(x => x.ValorLimite).HasColumnType("decimal(18,2)");
             e.HasIndex(x => x.CategoriaId).IsUnique(); // um teto por categoria
             e.HasOne<Categoria>().WithMany().HasForeignKey(x => x.CategoriaId);
+        });
+
+        modelBuilder.Entity<ImportacaoExtrato>(e =>
+        {
+            e.ToTable("Importacoes");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.NomeArquivo).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Erro).HasMaxLength(1000);
+            e.Ignore(x => x.ChaveS3);
+            e.Ignore(x => x.JaFoiProcessada);
         });
 
         modelBuilder.Entity<GastoPorCategoria>(e =>

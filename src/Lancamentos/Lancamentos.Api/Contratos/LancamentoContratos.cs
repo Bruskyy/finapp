@@ -20,3 +20,13 @@ public record OrcamentoStatusResponse(
     decimal ValorLimite,
     decimal GastoNoMes,
     decimal PercentualUsado);
+
+public record ImportacaoStatusResponse(
+    Guid Id,
+    string NomeArquivo,
+    string Status,
+    int LinhasImportadas,
+    int LinhasComErro,
+    string? Erro,
+    DateTime CriadoEm,
+    DateTime? ProcessadoEm);

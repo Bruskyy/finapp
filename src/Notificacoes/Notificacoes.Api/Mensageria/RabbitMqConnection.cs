@@ -19,6 +19,7 @@ public class RabbitMqConnection : IAsyncDisposable
         var conexao = await ObterConexaoAsync(ct);
         var canal = await conexao.CreateChannelAsync(cancellationToken: ct);
         await canal.ExchangeDeclareAsync(_options.ExchangeGamificacao, ExchangeType.Topic, durable: true, cancellationToken: ct);
+        await canal.ExchangeDeclareAsync(_options.ExchangeLancamentos, ExchangeType.Topic, durable: true, cancellationToken: ct);
         return canal;
     }
 

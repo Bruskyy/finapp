@@ -20,6 +20,21 @@ public class LancamentoRepository : ILancamentoRepository
 
     public async Task AdicionarAsync(Lancamento lancamento, CancellationToken ct)
     {
+        AdicionarComEvento(lancamento);
+        await _db.SaveChangesAsync(ct); // Lancamento + OutboxMessage na mesma transacao (mesmo SaveChanges)
+    }
+
+    public async Task AdicionarVariosAsync(IReadOnlyList<Lancamento> lancamentos, CancellationToken ct)
+    {
+        foreach (var lancamento in lancamentos)
+            AdicionarComEvento(lancamento);
+
+        // importacao atomica: todos os lancamentos + eventos num unico SaveChanges
+        await _db.SaveChangesAsync(ct);
+    }
+
+    private void AdicionarComEvento(Lancamento lancamento)
+    {
         _db.Lancamentos.Add(lancamento);
 
         var evento = new LancamentoCriadoEvent(
@@ -32,8 +47,6 @@ public class LancamentoRepository : ILancamentoRepository
             OcorreuEm: DateTime.UtcNow);
 
         _db.OutboxMessages.Add(new OutboxMessage(nameof(LancamentoCriadoEvent), JsonSerializer.Serialize(evento)));
-
-        await _db.SaveChangesAsync(ct); // Lancamento + OutboxMessage na mesma transacao (mesmo SaveChanges)
     }
 
     public async Task<Lancamento?> ObterPorIdAsync(Guid id, CancellationToken ct)
