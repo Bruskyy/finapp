@@ -1,7 +1,13 @@
+using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.SQS;
 using FluentValidation;
 using Lancamentos.Infrastructure.Persistencia;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Lancamentos.Application.Importacao;
 using Lancamentos.Application.Repositorios;
+using Lancamentos.Infrastructure.Aws;
 using Lancamentos.Infrastructure.Repositorios;
 using Lancamentos.Api.Contratos;
 using Lancamentos.Api.Validacao;
@@ -21,6 +27,37 @@ builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddHostedService<OutboxPublisherService>();
+
+// AWS via LocalStack: SDK oficial apontando pro endpoint local (custo zero).
+// Em produção bastaria remover ServiceUrl da config — o SDK resolve os endpoints reais.
+builder.Services.Configure<AwsOptions>(builder.Configuration.GetSection(AwsOptions.SectionName));
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var aws = sp.GetRequiredService<IOptions<AwsOptions>>().Value;
+    return new AmazonS3Client(
+        new BasicAWSCredentials(aws.AccessKey, aws.SecretKey),
+        new AmazonS3Config
+        {
+            ServiceURL = aws.ServiceUrl,
+            AuthenticationRegion = aws.Region,
+            ForcePathStyle = true // LocalStack não resolve bucket como subdomínio
+        });
+});
+builder.Services.AddSingleton<IAmazonSQS>(sp =>
+{
+    var aws = sp.GetRequiredService<IOptions<AwsOptions>>().Value;
+    return new AmazonSQSClient(
+        new BasicAWSCredentials(aws.AccessKey, aws.SecretKey),
+        new AmazonSQSConfig
+        {
+            ServiceURL = aws.ServiceUrl,
+            AuthenticationRegion = aws.Region
+        });
+});
+builder.Services.AddScoped<IArmazenamentoExtrato, ArmazenamentoExtratoS3>();
+builder.Services.AddScoped<IFilaImportacoes, FilaImportacoesSqs>();
+builder.Services.AddScoped<IImportacaoRepository, ImportacaoRepository>();
+builder.Services.AddHostedService<ImportacaoExtratoWorker>();
 
 // Validators são stateless — singleton evita recriar a cada request.
 builder.Services.AddSingleton<IValidator<CriarLancamentoRequest>, CriarLancamentoRequestValidator>();
@@ -143,6 +180,42 @@ app.MapDelete("/orcamentos/{categoriaId:guid}", async (Guid categoriaId, IOrcame
     return Results.NoContent();
 });
 
+// ----- Importação de extrato CSV (assíncrona via S3 + SQS/LocalStack) -----
+
+app.MapPost("/importacoes", async (
+    HttpRequest request,
+    IImportacaoRepository importacoes,
+    IArmazenamentoExtrato armazenamento,
+    IFilaImportacoes fila,
+    CancellationToken ct) =>
+{
+    using var leitor = new StreamReader(request.Body);
+    var conteudo = await leitor.ReadToEndAsync(ct);
+
+    if (string.IsNullOrWhiteSpace(conteudo))
+        return Results.BadRequest(new { erro = "Envie o conteúdo do extrato CSV no corpo da requisição." });
+    if (conteudo.Length > 1_000_000)
+        return Results.BadRequest(new { erro = "Arquivo acima do limite de 1 MB." });
+
+    var nomeArquivo = request.Query.TryGetValue("nomeArquivo", out var nome) && !string.IsNullOrWhiteSpace(nome)
+        ? nome.ToString()
+        : "extrato.csv";
+
+    var importacao = new ImportacaoExtrato(nomeArquivo);
+    await armazenamento.SalvarAsync(importacao.ChaveS3, conteudo, ct); // 1. arquivo no S3
+    await importacoes.AdicionarAsync(importacao, ct);                  // 2. rastreio no banco
+    await fila.EnfileirarAsync(importacao.Id, ct);                     // 3. trabalho na fila
+
+    // 202 Accepted + Location: async request-reply — o cliente acompanha por polling
+    return Results.Accepted($"/importacoes/{importacao.Id}", ParaImportacaoResponse(importacao));
+});
+
+app.MapGet("/importacoes/{id:guid}", async (Guid id, IImportacaoRepository importacoes, CancellationToken ct) =>
+{
+    var importacao = await importacoes.ObterPorIdAsync(id, ct);
+    return importacao is null ? Results.NotFound() : Results.Ok(ParaImportacaoResponse(importacao));
+});
+
 // ----- Relatórios (procedures/views nativas no SQL Server) -----
 
 app.MapGet("/relatorios/gastos-por-categoria", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
@@ -164,3 +237,6 @@ app.Run();
 
 static LancamentoResponse ParaResponse(Lancamento l) =>
     new(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.Data);
+
+static ImportacaoStatusResponse ParaImportacaoResponse(ImportacaoExtrato i) =>
+    new(i.Id, i.NomeArquivo, i.Status.ToString(), i.LinhasImportadas, i.LinhasComErro, i.Erro, i.CriadoEm, i.ProcessadoEm);

@@ -119,3 +119,32 @@ Revisão de funcionalidades no serviço de Lançamentos pra aproximar o app do M
 **Eventos e o CRUD novo (trade-off documentado):** só a criação de lançamento publica evento (e gera moedas). Editar/excluir não publica `LancamentoAtualizado`/`LancamentoExcluido` nem estorna moedas — decisão deliberada pra manter o escopo; o design do outbox comporta os novos eventos quando fizerem sentido.
 
 **Interface do app** revisada no mesmo passo: tema centralizado (`src/tema.ts`), seletor real de categorias vindo da API (o id fixo de categoria foi removido), resumo receitas/despesas no Dashboard, exclusão de lançamento com confirmação e a tela nova de Orçamentos.
+
+### Notificações como segundo consumidor do tópico (Etapa 6)
+
+`LancamentoCriadoConsumerService` binda a fila `notificacoes.lancamentos` ao exchange `finapp.lancamentos` com a routing key coringa `lancamento.*`. O mesmo evento `lancamento.criado` já era consumido pela Gamificação — em **outra fila**.
+
+**Por quê / conceito de entrevista:** é isso que diferencia pub/sub de fila ponto-a-ponto. Cada serviço interessado declara a própria fila e binda no tópico; o RabbitMQ replica a mensagem pra todas as filas casadas. O publicador (Lançamentos) não sabe quantos consumidores existem — adicionar o terceiro, quarto consumidor não muda uma linha no produtor. Se os dois consumidores compartilhassem UMA fila, virariam *competing consumers* (cada mensagem iria pra só um deles).
+
+### Importação de extrato CSV assíncrona com S3 + SQS via LocalStack (Etapa 6)
+
+Fluxo: `POST /importacoes` (corpo = CSV) → sobe o arquivo pro **S3** (bucket `finapp-extratos`) → grava o rastreio na tabela `Importacoes` (status `Pendente`) → enfileira o id no **SQS** (`finapp-importacoes`) → responde **202 Accepted** com `Location`. Um `BackgroundService` (`ImportacaoExtratoWorker`) consome a fila com *long polling*, baixa o CSV do S3, parseia (`ExtratoCsvParser`, lógica pura e testável), cria os lançamentos **num único `SaveChanges`** (importação atômica, com os eventos de outbox na mesma transação — cada linha importada gera moedas) e atualiza o status pra `Concluida`/`Falhou`. O cliente acompanha por `GET /importacoes/{id}`.
+
+**Conceitos de entrevista neste fluxo:**
+- **Async request-reply**: 202 + polling em vez de segurar a conexão — o mesmo padrão da saga de resgate, agora com fila AWS.
+- **Idempotent Consumer no SQS**: SQS entrega *at-least-once*; se a mensagem for re-entregue, o worker encontra a importação fora de `Pendente` e descarta sem reprocessar (a máquina de estados da entidade é a guarda).
+- **Queue-based load leveling**: o upload aceita rajadas; o worker processa no ritmo dele.
+- **Ports & adapters**: a Application define `IArmazenamentoExtrato`/`IFilaImportacoes`; S3 e SQS são adapters na Infrastructure. Troca-se LocalStack por AWS real só via configuração (`ServiceUrl`).
+- Linhas inválidas do CSV **não abortam** a importação: viram contagem de erro (`LinhasComErro`), e categorias são resolvidas por nome com fallback pra "Outros".
+
+**Formato do CSV** (separador `;`, valores em formato brasileiro):
+
+```csv
+Data;Descricao;Valor;Tipo;Categoria
+01/07/2026;Netflix;44,90;Despesa;Lazer
+02/07/2026;Freela site;1.200,00;Receita;Salário
+```
+
+**Trade-off conhecido:** o `POST` faz S3 → banco → SQS em três passos sem transação distribuída; se o SQS falhar depois do insert, a importação fica `Pendente` órfã. A solução canônica seria estender o outbox pra publicação no SQS — documentado como evolução, não implementado pra manter o escopo.
+
+**LocalStack**: imagem fixada em `localstack/localstack:4` (community) — a tag `latest` passou a exigir `LOCALSTACK_AUTH_TOKEN` (licença Pro) e o container morria no boot. S3+SQS na edição community são gratuitos, dentro da restrição de custo zero.

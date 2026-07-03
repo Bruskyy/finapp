@@ -51,8 +51,8 @@ Monorepo com 3 microserviços + gateway:
 - ✅ **Etapa 3** — serviço de Gamificação: ledger Postgres, idempotência de consumo (constraint única), Strategy, Testcontainers (18 testes verdes no total)
 - ✅ **Etapa 4** — resgate de moedas com Saga coreografada (Gamificação ↔ Notificações) + Polly (retry + circuit breaker), 32 testes verdes no total
 - ✅ **Etapa 5** — Gateway YARP + app Expo/React Native/TypeScript (dashboard, lançamento rápido, moedas), validado end-to-end via preview web (CORS configurado no Gateway)
-- 🔄 **Etapa 6 (ATUAL)** — Notificações (consumidor de tópico) + importação de extrato CSV assíncrona + SQS/S3 via LocalStack
-- **Etapa 7** — deploy gratuito (Render/Fly + Neon + CloudAMQP + Expo) + seção do README com arquitetura AWS/Azure. Atenção: free tier do Render/Fly hiberna (cold start) — documentar isso como trade-off conhecido
+- ✅ **Etapa 6** — Notificações consumindo o tópico de lançamentos (`lancamento.*`) + importação de extrato CSV assíncrona (202 + polling, worker SQS idempotente) + S3/SQS via LocalStack com AWS SDK oficial, 69 testes verdes no total
+- 🔄 **Etapa 7 (ATUAL)** — deploy gratuito (Render/Fly + Neon + CloudAMQP + Expo) + seção do README com arquitetura AWS/Azure. Atenção: free tier do Render/Fly hiberna (cold start) — documentar isso como trade-off conhecido
 
 Regra: não avançar de etapa sem testes e documentação da anterior no README.
 
@@ -66,7 +66,7 @@ Regra: não avançar de etapa sem testes e documentação da anterior no README.
 - ✅ LocalStack RESOLVIDO (03/07/2026): a tag `latest` passou a exigir `LOCALSTACK_AUTH_TOKEN` (licença Pro) e o container morria no boot; imagem fixada em `localstack/localstack:4` (community, s3+sqs gratuitos)
 - Connection string de Lançamentos em `appsettings.Development.json` (senha local descartável; documentar no README que produção usaria secrets)
 - Pacote `Microsoft.OpenApi` FIXADO em versão `2.*` — a 3.x quebra o source generator do ASP.NET (já aconteceu). Não atualizar para 3.x
-- Testes: 51 verdes no total (30 Lancamentos, 17 Gamificacao com Testcontainers, 4 Notificacoes)
+- Testes: 69 verdes no total (48 Lancamentos, 17 Gamificacao com Testcontainers, 4 Notificacoes)
 - Portas dos serviços padronizadas nos `launchSettings.json` conforme README: Lancamentos 5272, Gamificacao 5273, Notificacoes 5274, Gateway 5275
 
 ## Convenções do projeto

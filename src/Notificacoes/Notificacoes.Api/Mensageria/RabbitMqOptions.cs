@@ -9,4 +9,5 @@ public class RabbitMqOptions
     public string UserName { get; set; } = "guest";
     public string Password { get; set; } = "guest";
     public string ExchangeGamificacao { get; set; } = "finapp.gamificacao";
+    public string ExchangeLancamentos { get; set; } = "finapp.lancamentos";
 }

@@ -16,4 +16,7 @@ public class NotificacaoProviderSimulado : INotificacaoProvider
 
         return Task.CompletedTask;
     }
+
+    public Task EnviarAlertaLancamentoAsync(Guid lancamentoId, decimal valor, CancellationToken ct)
+        => Task.CompletedTask;
 }
