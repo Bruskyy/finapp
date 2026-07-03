@@ -1,4 +1,4 @@
-namespace Gamificacao.Api.Mensageria;
+namespace Notificacoes.Api.Mensageria;
 
 public class RabbitMqOptions
 {
@@ -8,10 +8,5 @@ public class RabbitMqOptions
     public int Port { get; set; } = 5672;
     public string UserName { get; set; } = "guest";
     public string Password { get; set; } = "guest";
-
-    /// <summary>Exchange do serviço de Lançamentos, consumida para dar moedas por lançamento criado.</summary>
-    public string ExchangeLancamentos { get; set; } = "finapp.lancamentos";
-
-    /// <summary>Exchange própria da Gamificação, usada na saga de resgate (publicada e consumida).</summary>
     public string ExchangeGamificacao { get; set; } = "finapp.gamificacao";
 }
