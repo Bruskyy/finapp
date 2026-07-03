@@ -23,10 +23,14 @@ Backend em C#/.NET (Minimal APIs, EF Core), mensageria RabbitMQ (fila e tópico)
 # 1. Subir a infraestrutura (SQL Server, Postgres, RabbitMQ, LocalStack)
 docker compose up -d
 
-# 2. Rodar a API de Lançamentos
-dotnet run --project src/Lancamentos/Lancamentos.Api
-# -> http://localhost:5272
+# 2. Rodar cada serviço (um terminal por serviço)
+dotnet run --project src/Lancamentos/Lancamentos.Api   # -> http://localhost:5272
+dotnet run --project src/Gamificacao/Gamificacao.Api   # -> http://localhost:5273
+dotnet run --project src/Notificacoes/Notificacoes.Api # -> http://localhost:5274
+dotnet run --project src/Gateway/Gateway.Api            # -> http://localhost:5275
 ```
+
+O app mobile fala só com o Gateway (`http://localhost:5275/api/...`) — ver a seção "Gateway.Api com YARP" abaixo.
 
 Painel de gerenciamento do RabbitMQ: `http://localhost:15672` (guest/guest).
 
@@ -75,3 +79,9 @@ A compensação usa um `EventId` **derivado deterministicamente** do `ResgateId`
 **Por quê:** *saga coreografada* (em vez de orquestrada) significa que nenhum serviço central conhece o fluxo inteiro — cada um só sabe reagir a um evento e publicar o próximo. Isso é mais resiliente a falhas de um único ponto, ao custo de o fluxo completo ficar "espalhado" entre serviços (mais difícil de visualizar/debugar do que uma orquestração centralizada — trade-off clássico de entrevista). O Polly entra exatamente na borda instável do sistema (a chamada ao provedor externo de notificação): retry absorve falhas transitórias, e o circuit breaker evita continuar martelando um provedor que já está claramente fora do ar.
 
 **Limitação conhecida (documentada, não corrigida nesta etapa):** a checagem de saldo em `ResgateService.SolicitarAsync` (ler saldo, comparar, debitar) não é atômica sob alta concorrência — duas solicitações simultâneas poderiam, em teoria, passar da checagem de saldo antes de qualquer uma debitar. Para esse app de uso pessoal single-user o risco é baixo; numa API multi-usuário de produção, valeria usar uma transação `SERIALIZABLE` ou lock otimista.
+
+### Gateway.Api com YARP (Etapa 5)
+
+O app mobile fala só com o Gateway (`http://localhost:5275`), nunca direto com Lançamentos ou Gamificação. O roteamento é 100% declarativo em `appsettings.json` (seção `ReverseProxy`): cada rota casa um prefixo de path (`/api/lancamentos/**`, `/api/relatorios/**`, `/api/gamificacao/**`) com um cluster (conjunto de destinos) e uma transformação (`PathRemovePrefix`) que remove o prefixo do Gateway antes de encaminhar pro serviço real.
+
+**Por quê:** o app cliente não precisa saber que "Lançamentos" e "Gamificação" são processos/bancos diferentes — isso é exatamente o problema que o padrão **API Gateway** resolve (um ponto de entrada único escondendo a topologia de microserviços). Em produção, as URLs dos clusters trocariam de `localhost:porta` para nomes de serviço no Docker/orquestrador (ex: `http://lancamentos-api:8080`), sem o app cliente mudar nada.
