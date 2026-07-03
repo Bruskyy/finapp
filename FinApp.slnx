@@ -21,5 +21,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Gamificacao.Tests/Gamificacao.Tests.csproj" />
     <Project Path="tests/Lancamentos.Tests/Lancamentos.Tests.csproj" />
+    <Project Path="tests/Notificacoes.Tests/Notificacoes.Tests.csproj" />
   </Folder>
 </Solution>

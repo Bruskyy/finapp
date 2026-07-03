@@ -41,9 +41,9 @@ public class LancamentoConsumerService : BackgroundService
         await using var conexao = await factory.CreateConnectionAsync(stoppingToken);
         await using var canal = await conexao.CreateChannelAsync(cancellationToken: stoppingToken);
 
-        await canal.ExchangeDeclareAsync(_options.Exchange, ExchangeType.Topic, durable: true, cancellationToken: stoppingToken);
+        await canal.ExchangeDeclareAsync(_options.ExchangeLancamentos, ExchangeType.Topic, durable: true, cancellationToken: stoppingToken);
         await canal.QueueDeclareAsync(NomeFila, durable: true, exclusive: false, autoDelete: false, cancellationToken: stoppingToken);
-        await canal.QueueBindAsync(NomeFila, _options.Exchange, RoutingKey, cancellationToken: stoppingToken);
+        await canal.QueueBindAsync(NomeFila, _options.ExchangeLancamentos, RoutingKey, cancellationToken: stoppingToken);
         await canal.BasicQosAsync(0, prefetchCount: 10, global: false, cancellationToken: stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(canal);

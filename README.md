@@ -48,6 +48,8 @@ Ao criar um `Lancamento`, em vez de publicar direto no RabbitMQ, o evento `Lanca
 
 A exchange `finapp.lancamentos` é do tipo *topic*, durável, com routing keys como `lancamento.criado`. A configuração de conexão usa o Options pattern (`RabbitMqOptions`), e a conexão/canal é encapsulada em `RabbitMqConnection`, reaproveitada entre publicações.
 
+**Por quê:** *topic exchange* permite que futuros consumidores (Gamificação, Notificações) se inscrevam usando padrões de routing key (`lancamento.*`, `#.criado`, etc.) sem acoplar o publicador a quem vai consumir — diferente de uma fila direta, onde o produtor precisaria saber quem está do outro lado.
+
 ### Ledger de moedas + Idempotent Consumer via constraint única (Etapa 3)
 
 O saldo de moedas da Gamificação não é uma coluna mutável — é derivado de uma tabela `MovimentosMoedas` (créditos e débitos, *append-only*). O `LancamentoConsumerService` (`BackgroundService`) assina a fila `gamificacao.lancamentos`, ligada à exchange `finapp.lancamentos` com a routing key `lancamento.criado`, e cada mensagem recebida vira uma tentativa de `INSERT` com o `EventId` do evento de origem. Uma constraint `UNIQUE` em `EventId` faz o banco rejeitar duplicatas — se a mensagem chegar mais de uma vez (o RabbitMQ garante *at-least-once*, não *exactly-once*), o segundo insert falha com violação de unicidade e é tratado como "já processado", não como erro.
@@ -60,4 +62,16 @@ Cada regra de pontuação (`RegraDespesaRegistrada`, `RegraReceitaRegistrada`) i
 
 **Por quê:** novas regras (ex: bônus por manter uma sequência de dias registrando gastos) entram como uma nova classe, sem tocar nas existentes — Open/Closed Principle. E cada regra é testável isoladamente, sem precisar de banco ou RabbitMQ.
 
-**Por quê:** *topic exchange* permite que futuros consumidores (Gamificação, Notificações) se inscrevam usando padrões de routing key (`lancamento.*`, `#.criado`, etc.) sem acoplar o publicador a quem vai consumir — diferente de uma fila direta, onde o produtor precisaria saber quem está do outro lado.
+### Saga coreografada de resgate + Polly (Etapa 4)
+
+O resgate de moedas (`POST /resgates` na Gamificação) é uma transação que atravessa dois serviços sem coordenador central — cada um reage a eventos e decide sozinho o que fazer:
+
+1. **Gamificação** reserva as moedas (débito imediato) e publica `ResgateSolicitadoEvent` (via outbox, mesmo padrão da Etapa 2, numa exchange própria `finapp.gamificacao`).
+2. **Notificações** consome o evento e tenta "confirmar" via um provedor simulado (`INotificacaoProvider`) — essa chamada é envolvida por um pipeline do **Polly** (retry com backoff exponencial + circuit breaker). Se falhar após as tentativas, publica `ResgateFalhouEvent`; se der certo, publica `ResgateConfirmadoEvent`.
+3. **Gamificação** reage ao resultado: confirma o débito (`Confirmar()`) ou **compensa** (`Compensar()`, credita as moedas de volta).
+
+A compensação usa um `EventId` **derivado deterministicamente** do `ResgateId` (hash do id + sufixo "compensacao") em vez de um novo Guid aleatório — assim, se `ResgateFalhouEvent` for entregue mais de uma vez, a segunda tentativa de compensação esbarra na mesma constraint `UNIQUE` já usada para idempotência (Etapa 3), sem precisar de nenhuma tabela ou lógica nova.
+
+**Por quê:** *saga coreografada* (em vez de orquestrada) significa que nenhum serviço central conhece o fluxo inteiro — cada um só sabe reagir a um evento e publicar o próximo. Isso é mais resiliente a falhas de um único ponto, ao custo de o fluxo completo ficar "espalhado" entre serviços (mais difícil de visualizar/debugar do que uma orquestração centralizada — trade-off clássico de entrevista). O Polly entra exatamente na borda instável do sistema (a chamada ao provedor externo de notificação): retry absorve falhas transitórias, e o circuit breaker evita continuar martelando um provedor que já está claramente fora do ar.
+
+**Limitação conhecida (documentada, não corrigida nesta etapa):** a checagem de saldo em `ResgateService.SolicitarAsync` (ler saldo, comparar, debitar) não é atômica sob alta concorrência — duas solicitações simultâneas poderiam, em teoria, passar da checagem de saldo antes de qualquer uma debitar. Para esse app de uso pessoal single-user o risco é baixo; numa API multi-usuário de produção, valeria usar uma transação `SERIALIZABLE` ou lock otimista.
