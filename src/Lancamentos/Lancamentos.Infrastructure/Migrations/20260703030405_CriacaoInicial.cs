@@ -1,0 +1,59 @@
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace Lancamentos.Infrastructure.Migrations
+{
+    /// <inheritdoc />
+    public partial class CriacaoInicial : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.CreateTable(
+                name: "Categorias",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Categorias", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Lancamentos",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Descricao = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Valor = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Tipo = table.Column<int>(type: "int", nullable: false),
+                    CategoriaId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Data = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CriadoEm = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Lancamentos", x => x.Id);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Lancamentos_Data",
+                table: "Lancamentos",
+                column: "Data");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(
+                name: "Categorias");
+
+            migrationBuilder.DropTable(
+                name: "Lancamentos");
+        }
+    }
+}
