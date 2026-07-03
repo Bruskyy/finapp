@@ -28,7 +28,35 @@ public class LancamentoConsumerService : BackgroundService
         _logger = logger;
     }
 
+    // Exceção não tratada em ExecuteAsync derruba o host inteiro (StopHost) -
+    // um RabbitMQ indisponível no boot NÃO pode matar a API. Este loop tenta
+    // conectar/reconectar para sempre, com intervalo entre tentativas.
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var delayReconexao = TimeSpan.FromSeconds(10);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await ConectarEConsumirAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // encerramento normal do BackgroundService
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "RabbitMQ indisponível para a fila {Fila}; nova tentativa em {Segundos}s.",
+                    NomeFila, delayReconexao.TotalSeconds);
+                try { await Task.Delay(delayReconexao, stoppingToken); }
+                catch (OperationCanceledException) { }
+            }
+        }
+    }
+
+    private async Task ConectarEConsumirAsync(CancellationToken stoppingToken)
     {
         var factory = new ConnectionFactory
         {
@@ -63,14 +91,15 @@ public class LancamentoConsumerService : BackgroundService
 
         await canal.BasicConsumeAsync(NomeFila, autoAck: false, consumer, cancellationToken: stoppingToken);
 
-        try
-        {
-            await Task.Delay(Timeout.Infinite, stoppingToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // encerramento normal do BackgroundService
-        }
+        _logger.LogInformation("Consumindo a fila {Fila}.", NomeFila);
+
+        // monitora a conexão em vez de dormir para sempre: se ela cair,
+        // sai por exceção e o loop externo reconecta
+        while (!stoppingToken.IsCancellationRequested && conexao.IsOpen)
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+
+        if (!stoppingToken.IsCancellationRequested)
+            throw new InvalidOperationException($"Conexão com o RabbitMQ caiu (fila {NomeFila}).");
     }
 
     private async Task ProcessarMensagemAsync(byte[] body, CancellationToken ct)
