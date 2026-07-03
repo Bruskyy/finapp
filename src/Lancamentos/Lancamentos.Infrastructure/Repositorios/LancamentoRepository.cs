@@ -1,5 +1,9 @@
+using System.Text.Json;
+using BuildingBlocks.Contracts.Lancamentos;
+using TipoLancamentoEvento = BuildingBlocks.Contracts.Lancamentos.TipoLancamento;
 using Lancamentos.Application.Repositorios;
 using Lancamentos.Domain.Entidades;
+using Lancamentos.Infrastructure.Outbox;
 using Lancamentos.Infrastructure.Persistencia;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +21,19 @@ public class LancamentoRepository : ILancamentoRepository
     public async Task AdicionarAsync(Lancamento lancamento, CancellationToken ct)
     {
         _db.Lancamentos.Add(lancamento);
-        await _db.SaveChangesAsync(ct);
+
+        var evento = new LancamentoCriadoEvent(
+            EventId: Guid.NewGuid(),
+            LancamentoId: lancamento.Id,
+            Valor: lancamento.Valor,
+            Tipo: (TipoLancamentoEvento)lancamento.Tipo,
+            CategoriaId: lancamento.CategoriaId,
+            Data: lancamento.Data,
+            OcorreuEm: DateTime.UtcNow);
+
+        _db.OutboxMessages.Add(new OutboxMessage(nameof(LancamentoCriadoEvent), JsonSerializer.Serialize(evento)));
+
+        await _db.SaveChangesAsync(ct); // Lancamento + OutboxMessage na mesma transacao (mesmo SaveChanges)
     }
 
     public async Task<Lancamento?> ObterPorIdAsync(Guid id, CancellationToken ct)

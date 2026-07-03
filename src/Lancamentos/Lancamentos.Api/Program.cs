@@ -5,6 +5,7 @@ using Lancamentos.Infrastructure.Repositorios;
 using Lancamentos.Api.Contratos;
 using Lancamentos.Domain.Entidades;
 using Lancamentos.Application.Relatorios;
+using Lancamentos.Infrastructure.Mensageria;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,9 @@ builder.Services.AddDbContext<LancamentosDbContext>(options =>
 
 builder.Services.AddScoped<ILancamentoRepository, LancamentoRepository>();
 builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+builder.Services.AddSingleton<RabbitMqConnection>();
+builder.Services.AddHostedService<OutboxPublisherService>();
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
