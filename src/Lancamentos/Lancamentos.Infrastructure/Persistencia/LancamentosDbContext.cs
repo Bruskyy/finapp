@@ -1,5 +1,6 @@
 using Lancamentos.Application.Relatorios;
 using Lancamentos.Domain.Entidades;
+using Lancamentos.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace Lancamentos.Infrastructure.Persistencia;
@@ -10,6 +11,7 @@ public class LancamentosDbContext : DbContext
 
     public DbSet<Lancamento> Lancamentos => Set<Lancamento>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +36,15 @@ public class LancamentosDbContext : DbContext
             e.HasNoKey();
             e.ToView(null); // resultado de procedure (SqlQuery), não é tabela nem view mapeada diretamente
             e.Property(x => x.TotalGasto).HasColumnType("decimal(18,2)");
+        });
+
+        modelBuilder.Entity<OutboxMessage>(e =>
+        {
+            e.ToTable("OutboxMessages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Tipo).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Payload).IsRequired();
+            e.HasIndex(x => x.ProcessadoEm); // o publicador consulta por pendentes (ProcessadoEm IS NULL)
         });
     }
 }
