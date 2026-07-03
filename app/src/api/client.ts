@@ -1,7 +1,9 @@
 import { Platform } from "react-native";
 import {
+  Categoria,
   CriarLancamentoRequest,
   Lancamento,
+  OrcamentoStatus,
   Resgate,
 } from "../types";
 
@@ -26,6 +28,8 @@ async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
   return resposta.status === 204 ? (undefined as T) : resposta.json();
 }
 
+// ----- Lançamentos -----
+
 export function listarLancamentos(inicio: string, fim: string): Promise<Lancamento[]> {
   return requisitar(`/api/lancamentos?inicio=${inicio}&fim=${fim}`);
 }
@@ -37,9 +41,40 @@ export function criarLancamento(dto: CriarLancamentoRequest): Promise<Lancamento
   });
 }
 
+export function excluirLancamento(id: string): Promise<void> {
+  return requisitar(`/api/lancamentos/${id}`, { method: "DELETE" });
+}
+
+// ----- Categorias -----
+
+export function listarCategorias(): Promise<Categoria[]> {
+  return requisitar("/api/categorias");
+}
+
+// ----- Orçamentos -----
+
+export function listarOrcamentos(): Promise<OrcamentoStatus[]> {
+  return requisitar("/api/orcamentos");
+}
+
+export function definirOrcamento(categoriaId: string, valorLimite: number): Promise<void> {
+  return requisitar("/api/orcamentos", {
+    method: "PUT",
+    body: JSON.stringify({ categoriaId, valorLimite }),
+  });
+}
+
+export function removerOrcamento(categoriaId: string): Promise<void> {
+  return requisitar(`/api/orcamentos/${categoriaId}`, { method: "DELETE" });
+}
+
+// ----- Relatórios -----
+
 export function obterSaldoFinanceiro(inicio: string, fim: string): Promise<{ saldo: number }> {
   return requisitar(`/api/relatorios/saldo?inicio=${inicio}&fim=${fim}`);
 }
+
+// ----- Gamificação -----
 
 export function obterSaldoMoedas(): Promise<{ saldo: number }> {
   return requisitar("/api/gamificacao/saldo");

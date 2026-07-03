@@ -3,18 +3,28 @@ import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { listarLancamentos, obterSaldoFinanceiro } from "../api/client";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  excluirLancamento,
+  listarCategorias,
+  listarLancamentos,
+  obterSaldoFinanceiro,
+} from "../api/client";
 import { fimDoMes, inicioDoMes } from "../constants";
+import { confirmar } from "../confirmar";
+import { cores, formatarData, formatarMoeda, sombraCartao } from "../tema";
 import { Lancamento, TipoLancamento } from "../types";
 
 export default function DashboardScreen() {
   const [saldo, setSaldo] = useState<number | null>(null);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
+  const [nomesCategorias, setNomesCategorias] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -23,12 +33,14 @@ export default function DashboardScreen() {
     try {
       const inicio = inicioDoMes();
       const fim = fimDoMes();
-      const [resSaldo, resLancamentos] = await Promise.all([
+      const [resSaldo, resLancamentos, resCategorias] = await Promise.all([
         obterSaldoFinanceiro(inicio, fim),
         listarLancamentos(inicio, fim),
+        listarCategorias(),
       ]);
       setSaldo(resSaldo.saldo);
       setLancamentos(resLancamentos);
+      setNomesCategorias(Object.fromEntries(resCategorias.map((c) => [c.id, c.nome])));
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar dados.");
     } finally {
@@ -42,20 +54,67 @@ export default function DashboardScreen() {
     }, [carregar])
   );
 
+  async function excluir(item: Lancamento) {
+    const ok = await confirmar(
+      "Excluir lançamento",
+      `"${item.descricao}" (${formatarMoeda(item.valor)}) será removido.`
+    );
+    if (!ok) return;
+
+    try {
+      await excluirLancamento(item.id);
+      carregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro ao excluir.");
+    }
+  }
+
   if (carregando) {
     return (
       <View style={styles.centro}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={cores.primaria} />
       </View>
     );
   }
 
+  const receitas = lancamentos
+    .filter((l) => l.tipo === TipoLancamento.Receita)
+    .reduce((soma, l) => soma + l.valor, 0);
+  const despesas = lancamentos
+    .filter((l) => l.tipo === TipoLancamento.Despesa)
+    .reduce((soma, l) => soma + l.valor, 0);
+
+  const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Saldo do mês</Text>
-      <Text style={[styles.saldo, saldo !== null && saldo < 0 && styles.saldoNegativo]}>
-        {saldo !== null ? formatarMoeda(saldo) : "--"}
-      </Text>
+      <View style={[styles.cartaoSaldo, sombraCartao]}>
+        <Text style={styles.rotuloMes}>{mesAtual}</Text>
+        <Text style={styles.rotuloSaldo}>Saldo do mês</Text>
+        <Text style={[styles.saldo, saldo !== null && saldo < 0 && styles.saldoNegativo]}>
+          {saldo !== null ? formatarMoeda(saldo) : "--"}
+        </Text>
+        <View style={styles.linhaResumo}>
+          <View style={styles.resumoItem}>
+            <Ionicons name="arrow-up-circle" size={20} color={cores.receita} />
+            <View>
+              <Text style={styles.resumoRotulo}>Receitas</Text>
+              <Text style={[styles.resumoValor, { color: cores.receita }]}>
+                {formatarMoeda(receitas)}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.resumoItem}>
+            <Ionicons name="arrow-down-circle" size={20} color={cores.despesa} />
+            <View>
+              <Text style={styles.resumoRotulo}>Despesas</Text>
+              <Text style={[styles.resumoValor, { color: cores.despesa }]}>
+                {formatarMoeda(despesas)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
 
       {erro && <Text style={styles.erro}>{erro}</Text>}
 
@@ -65,47 +124,92 @@ export default function DashboardScreen() {
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={false} onRefresh={carregar} />}
         renderItem={({ item }) => (
-          <View style={styles.item}>
-            <Text style={styles.itemDescricao}>{item.descricao}</Text>
+          <View style={[styles.item, sombraCartao]}>
+            <View
+              style={[
+                styles.iconeTipo,
+                { backgroundColor: item.tipo === TipoLancamento.Despesa ? "#fdecea" : "#e8f5e9" },
+              ]}
+            >
+              <Ionicons
+                name={item.tipo === TipoLancamento.Despesa ? "arrow-down" : "arrow-up"}
+                size={16}
+                color={item.tipo === TipoLancamento.Despesa ? cores.despesa : cores.receita}
+              />
+            </View>
+            <View style={styles.itemCentro}>
+              <Text style={styles.itemDescricao} numberOfLines={1}>
+                {item.descricao}
+              </Text>
+              <Text style={styles.itemDetalhe}>
+                {nomesCategorias[item.categoriaId] ?? "Sem categoria"} · {formatarData(item.data)}
+              </Text>
+            </View>
             <Text
               style={[
                 styles.itemValor,
-                item.tipo === TipoLancamento.Despesa ? styles.itemDespesa : styles.itemReceita,
+                { color: item.tipo === TipoLancamento.Despesa ? cores.despesa : cores.receita },
               ]}
             >
               {item.tipo === TipoLancamento.Despesa ? "-" : "+"}
               {formatarMoeda(item.valor)}
             </Text>
+            <Pressable
+              onPress={() => excluir(item)}
+              hitSlop={8}
+              style={styles.botaoExcluir}
+              accessibilityLabel={`Excluir ${item.descricao}`}
+            >
+              <Ionicons name="trash-outline" size={18} color={cores.textoSuave} />
+            </Pressable>
           </View>
         )}
         ListEmptyComponent={<Text style={styles.vazio}>Nenhum lançamento neste mês ainda.</Text>}
+        contentContainerStyle={{ paddingBottom: 20 }}
       />
     </View>
   );
 }
 
-function formatarMoeda(valor: number): string {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60 },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center" },
-  titulo: { fontSize: 16, color: "#666" },
-  saldo: { fontSize: 36, fontWeight: "bold", marginBottom: 20 },
-  saldoNegativo: { color: "#c0392b" },
-  subtitulo: { fontSize: 16, fontWeight: "600", marginBottom: 8 },
+  container: { flex: 1, padding: 16, paddingTop: 56, backgroundColor: cores.fundo },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cores.fundo },
+  cartaoSaldo: {
+    backgroundColor: cores.cartao,
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 18,
+  },
+  rotuloMes: { fontSize: 13, color: cores.textoSuave, textTransform: "capitalize" },
+  rotuloSaldo: { fontSize: 15, color: cores.textoSuave, marginTop: 6 },
+  saldo: { fontSize: 34, fontWeight: "bold", color: cores.texto, marginBottom: 14 },
+  saldoNegativo: { color: cores.despesa },
+  linhaResumo: { flexDirection: "row", gap: 28 },
+  resumoItem: { flexDirection: "row", alignItems: "center", gap: 8 },
+  resumoRotulo: { fontSize: 12, color: cores.textoSuave },
+  resumoValor: { fontSize: 15, fontWeight: "600" },
+  subtitulo: { fontSize: 16, fontWeight: "600", color: cores.texto, marginBottom: 10 },
   item: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    alignItems: "center",
+    backgroundColor: cores.cartao,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    gap: 10,
   },
-  itemDescricao: { fontSize: 15 },
+  iconeTipo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  itemCentro: { flex: 1 },
+  itemDescricao: { fontSize: 15, color: cores.texto, fontWeight: "500" },
+  itemDetalhe: { fontSize: 12, color: cores.textoSuave, marginTop: 2 },
   itemValor: { fontSize: 15, fontWeight: "600" },
-  itemDespesa: { color: "#c0392b" },
-  itemReceita: { color: "#27ae60" },
-  vazio: { color: "#999", textAlign: "center", marginTop: 20 },
-  erro: { color: "#c0392b", marginBottom: 10 },
+  botaoExcluir: { padding: 4 },
+  vazio: { color: cores.textoSuave, textAlign: "center", marginTop: 20 },
+  erro: { color: cores.despesa, marginBottom: 10 },
 });

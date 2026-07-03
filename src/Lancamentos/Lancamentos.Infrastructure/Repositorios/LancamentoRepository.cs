@@ -45,4 +45,15 @@ public class LancamentoRepository : ILancamentoRepository
             .Where(x => x.Data >= inicio && x.Data <= fim)
             .OrderByDescending(x => x.Data)
             .ToListAsync(ct);
+
+    public async Task AtualizarAsync(Lancamento lancamento, CancellationToken ct)
+    {
+        await _db.SaveChangesAsync(ct); // entidade ja rastreada via ObterPorIdAsync
+    }
+
+    public async Task<bool> RemoverAsync(Guid id, CancellationToken ct)
+    {
+        var removidos = await _db.Lancamentos.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
+        return removidos > 0;
+    }
 }

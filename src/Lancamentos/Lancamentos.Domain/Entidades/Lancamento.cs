@@ -27,6 +27,20 @@ public class Lancamento
         Data = data;
         CriadoEm = DateTime.UtcNow;
     }
+
+    public void Atualizar(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, DateTime data)
+    {
+        if (valor <= 0)
+            throw new ArgumentException("Valor deve ser maior que zero.", nameof(valor));
+        if (string.IsNullOrWhiteSpace(descricao))
+            throw new ArgumentException("Descrição é obrigatória.", nameof(descricao));
+
+        Descricao = descricao.Trim();
+        Valor = valor;
+        Tipo = tipo;
+        CategoriaId = categoriaId;
+        Data = data;
+    }
 }
 
 public enum TipoLancamento
