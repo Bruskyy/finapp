@@ -26,6 +26,11 @@ App **mobile** de controle financeiro pessoal (inspirado no Mobills) com **gamif
 - Microservice patterns: API Gateway (YARP), Pub/Sub, Outbox, Idempotent Consumer, Saga coreografada, Circuit Breaker/Retry (Polly), Health Checks, Database per Service
 - Código testável: xUnit (unitário), Testcontainers (integração), CI no GitHub Actions
 - Alta disponibilidade/performance como tema de discussão documentado
+- Validação de DTOs com Fluent Validation
+
+## Fora do escopo (decisão deliberada)
+
+- **ASP Clássico**: uma das vagas de banco pede esse conhecimento, mas é tecnologia legada — não faz sentido implementar do zero num projeto novo. Fica como revisão teórica separada, fora do código do finapp.
 
 ## Arquitetura
 
@@ -47,7 +52,7 @@ Monorepo com 3 microserviços + gateway:
 - **Etapa 4** — resgate de moedas com Saga coreografada + Polly (circuit breaker)
 - **Etapa 5** — Gateway YARP + app React Native/Expo com TypeScript (dashboard, lançamento rápido, moedas)
 - **Etapa 6** — Notificações (consumidor de tópico) + importação de extrato CSV assíncrona + SQS/S3 via LocalStack
-- **Etapa 7** — deploy gratuito (Render/Fly + Neon + CloudAMQP + Expo) + seção do README com arquitetura AWS/Azure
+- **Etapa 7** — deploy gratuito (Render/Fly + Neon + CloudAMQP + Expo) + seção do README com arquitetura AWS/Azure. Atenção: free tier do Render/Fly hiberna (cold start) — documentar isso como trade-off conhecido
 
 Regra: não avançar de etapa sem testes e documentação da anterior no README.
 
