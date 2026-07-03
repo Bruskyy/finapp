@@ -41,7 +41,7 @@ Monorepo com 3 microserviços + gateway:
 ## Roadmap por etapas
 
 - ✅ **Etapa 0** — monorepo, solution, Docker Compose (SQL Server, Postgres, RabbitMQ, LocalStack), CI GitHub Actions, README
-- 🔄 **Etapa 1 (ATUAL, quase concluída)** — serviço de Lançamentos: entidades, repository, endpoints Minimal API, testes xUnit (11 verdes), views/procedures. **Há uma pendência descrita abaixo.**
+- 🔄 **Etapa 1 (ATUAL, quase concluída)** — serviço de Lançamentos: entidades, repository, endpoints Minimal API, testes xUnit (11 verdes), views/procedures.
 - **Etapa 2** — eventos no RabbitMQ (topic exchange) + outbox pattern no serviço de Lançamentos
 - **Etapa 3** — serviço de Gamificação: ledger Postgres, idempotência de consumo, Strategy, Testcontainers
 - **Etapa 4** — resgate de moedas com Saga coreografada + Polly (circuit breaker)
@@ -50,19 +50,6 @@ Monorepo com 3 microserviços + gateway:
 - **Etapa 7** — deploy gratuito (Render/Fly + Neon + CloudAMQP + Expo) + seção do README com arquitetura AWS/Azure
 
 Regra: não avançar de etapa sem testes e documentação da anterior no README.
-
-## ⚠️ PENDÊNCIA IMEDIATA (primeira tarefa)
-
-A migration `20260703030413_ViewsEProceduresRelatorio` foi criada **vazia** (o SQL não foi colado) e já foi aplicada/registrada no histórico. É preciso:
-
-1. Reverter: `dotnet ef database update CriacaoInicial --project src/Lancamentos/Lancamentos.Infrastructure --startup-project src/Lancamentos/Lancamentos.Api`
-2. Preencher o `Up`/`Down` da migration com: view `vw_ResumoMensal` (resumo por ano/mês/tipo), function `fn_SaldoPeriodo(@Inicio, @Fim)` (receitas − despesas; Tipo 1=Receita, 2=Despesa), procedure `sp_GastosPorCategoria @Inicio, @Fim` (JOIN com Categorias, só despesas, GROUP BY, ORDER BY total DESC)
-3. Aplicar e CONFERIR no log que os CREATEs executaram
-4. No DbContext, mapear `GastoPorCategoria` com `HasNoKey()`, `ToView(null)` e `HasColumnType("decimal(18,2)")` em TotalGasto (warning pendente)
-5. Validar os 4 endpoints (POST /lancamentos, GET /lancamentos por período, GET /relatorios/gastos-por-categoria, GET /relatorios/saldo). Atenção: no PowerShell 5, POST com acentos precisa de body em bytes UTF-8
-6. Commit em Conventional Commits e push (CI deve ficar verde)
-
-Contexto já existente: `RelatorioRepository` usa `SqlQuery` interpolado (parametrizado, seguro contra SQL injection); `IRelatorioRepository` registrado como Scoped; categoria de teste 'Alimentação' com Id `11111111-1111-1111-1111-111111111111` já inserida.
 
 ## Ambiente e detalhes técnicos
 
