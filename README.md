@@ -48,4 +48,16 @@ Ao criar um `Lancamento`, em vez de publicar direto no RabbitMQ, o evento `Lanca
 
 A exchange `finapp.lancamentos` é do tipo *topic*, durável, com routing keys como `lancamento.criado`. A configuração de conexão usa o Options pattern (`RabbitMqOptions`), e a conexão/canal é encapsulada em `RabbitMqConnection`, reaproveitada entre publicações.
 
+### Ledger de moedas + Idempotent Consumer via constraint única (Etapa 3)
+
+O saldo de moedas da Gamificação não é uma coluna mutável — é derivado de uma tabela `MovimentosMoedas` (créditos e débitos, *append-only*). O `LancamentoConsumerService` (`BackgroundService`) assina a fila `gamificacao.lancamentos`, ligada à exchange `finapp.lancamentos` com a routing key `lancamento.criado`, e cada mensagem recebida vira uma tentativa de `INSERT` com o `EventId` do evento de origem. Uma constraint `UNIQUE` em `EventId` faz o banco rejeitar duplicatas — se a mensagem chegar mais de uma vez (o RabbitMQ garante *at-least-once*, não *exactly-once*), o segundo insert falha com violação de unicidade e é tratado como "já processado", não como erro.
+
+**Por quê:** um ledger append-only dá histórico auditável e evita condições de corrida de "ler saldo, somar, salvar saldo" sob concorrência. E resolver a idempotência com uma constraint do próprio banco é mais simples e confiável do que manter uma tabela separada de "eventos processados" com lógica de aplicação para checar duplicatas.
+
+### Strategy Pattern para regras de pontuação (Etapa 3)
+
+Cada regra de pontuação (`RegraDespesaRegistrada`, `RegraReceitaRegistrada`) implementa `IRegraPontuacao` e decide, de forma independente, se se aplica a um evento e quantas moedas gerar. A `CalculadoraDePontuacao` recebe todas as regras via injeção de dependência (`IEnumerable<IRegraPontuacao>`) e escolhe a que se aplica — nenhum `switch` gigante nem `if/else` acoplado. Hoje despesa vale mais (5 moedas) que receita (2 moedas): o objetivo é incentivar o hábito mais custoso de manter (registrar gastos), não só qualquer lançamento.
+
+**Por quê:** novas regras (ex: bônus por manter uma sequência de dias registrando gastos) entram como uma nova classe, sem tocar nas existentes — Open/Closed Principle. E cada regra é testável isoladamente, sem precisar de banco ou RabbitMQ.
+
 **Por quê:** *topic exchange* permite que futuros consumidores (Gamificação, Notificações) se inscrevam usando padrões de routing key (`lancamento.*`, `#.criado`, etc.) sem acoplar o publicador a quem vai consumir — diferente de uma fila direta, onde o produtor precisaria saber quem está do outro lado.
