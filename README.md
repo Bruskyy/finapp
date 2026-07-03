@@ -13,9 +13,11 @@ Monorepo com 3 microserviços + gateway, cada um com seu próprio banco (*databa
 
 `BuildingBlocks.Contracts` contém apenas contratos de eventos (records), sem lógica compartilhada.
 
+Em `app/`: o app mobile (Expo + React Native + TypeScript), que fala só com o Gateway.
+
 ## Stack
 
-Backend em C#/.NET (Minimal APIs, EF Core), mensageria RabbitMQ (fila e tópico), SQL Server + PostgreSQL, AWS via LocalStack, testes com xUnit, CI no GitHub Actions.
+Backend em C#/.NET (Minimal APIs, EF Core), mensageria RabbitMQ (fila e tópico), SQL Server + PostgreSQL, AWS via LocalStack, testes com xUnit, CI no GitHub Actions. Mobile em Expo + React Native + TypeScript.
 
 ## Como rodar localmente
 
@@ -23,9 +25,21 @@ Backend em C#/.NET (Minimal APIs, EF Core), mensageria RabbitMQ (fila e tópico)
 # 1. Subir a infraestrutura (SQL Server, Postgres, RabbitMQ, LocalStack)
 docker compose up -d
 
-# 2. Rodar a API de Lançamentos
-dotnet run --project src/Lancamentos/Lancamentos.Api
-# -> http://localhost:5272
+# 2. Rodar cada serviço (um terminal por serviço)
+dotnet run --project src/Lancamentos/Lancamentos.Api   # -> http://localhost:5272
+dotnet run --project src/Gamificacao/Gamificacao.Api   # -> http://localhost:5273
+dotnet run --project src/Notificacoes/Notificacoes.Api # -> http://localhost:5274
+dotnet run --project src/Gateway/Gateway.Api            # -> http://localhost:5275
+```
+
+O app mobile fala só com o Gateway (`http://localhost:5275/api/...`) — ver a seção "Gateway.Api com YARP" abaixo.
+
+```bash
+# 3. Rodar o app (com os 4 serviços acima já no ar)
+cd app
+npm install
+npm run web    # abre no navegador - mais rapido pra desenvolver
+# ou: npm run android / npm run ios (emulador) / npm start (Expo Go no celular)
 ```
 
 Painel de gerenciamento do RabbitMQ: `http://localhost:15672` (guest/guest).
@@ -75,3 +89,21 @@ A compensação usa um `EventId` **derivado deterministicamente** do `ResgateId`
 **Por quê:** *saga coreografada* (em vez de orquestrada) significa que nenhum serviço central conhece o fluxo inteiro — cada um só sabe reagir a um evento e publicar o próximo. Isso é mais resiliente a falhas de um único ponto, ao custo de o fluxo completo ficar "espalhado" entre serviços (mais difícil de visualizar/debugar do que uma orquestração centralizada — trade-off clássico de entrevista). O Polly entra exatamente na borda instável do sistema (a chamada ao provedor externo de notificação): retry absorve falhas transitórias, e o circuit breaker evita continuar martelando um provedor que já está claramente fora do ar.
 
 **Limitação conhecida (documentada, não corrigida nesta etapa):** a checagem de saldo em `ResgateService.SolicitarAsync` (ler saldo, comparar, debitar) não é atômica sob alta concorrência — duas solicitações simultâneas poderiam, em teoria, passar da checagem de saldo antes de qualquer uma debitar. Para esse app de uso pessoal single-user o risco é baixo; numa API multi-usuário de produção, valeria usar uma transação `SERIALIZABLE` ou lock otimista.
+
+### Gateway.Api com YARP (Etapa 5)
+
+O app mobile fala só com o Gateway (`http://localhost:5275`), nunca direto com Lançamentos ou Gamificação. O roteamento é 100% declarativo em `appsettings.json` (seção `ReverseProxy`): cada rota casa um prefixo de path (`/api/lancamentos/**`, `/api/relatorios/**`, `/api/gamificacao/**`) com um cluster (conjunto de destinos) e uma transformação (`PathRemovePrefix`) que remove o prefixo do Gateway antes de encaminhar pro serviço real.
+
+**Por quê:** o app cliente não precisa saber que "Lançamentos" e "Gamificação" são processos/bancos diferentes — isso é exatamente o problema que o padrão **API Gateway** resolve (um ponto de entrada único escondendo a topologia de microserviços). Em produção, as URLs dos clusters trocariam de `localhost:porta` para nomes de serviço no Docker/orquestrador (ex: `http://lancamentos-api:8080`), sem o app cliente mudar nada.
+
+CORS está habilitado no Gateway só pra origem do Expo web (`localhost:8081`) — o app nativo (iOS/Android) não passa por CORS, que é um mecanismo aplicado pelo navegador, não pelo cliente HTTP nativo.
+
+### App mobile com Expo + React Native + TypeScript (Etapa 5)
+
+Em `app/`: Expo SDK 57, React 19, TypeScript, navegação por abas (`@react-navigation/bottom-tabs`) com 3 telas — **Dashboard** (saldo do mês + lançamentos recentes), **Novo** (lançamento rápido) e **Moedas** (saldo de moedas + resgate). O cliente HTTP (`src/api/client.ts`) fala só com o Gateway, nunca direto com os serviços.
+
+A tela de Moedas ilustra a saga da Etapa 4 do lado do cliente: ao solicitar um resgate, o app recebe o `Resgate` como `Pendente` e fica perguntando o status a cada 2s até virar `Confirmado` ou `Compensado` — o mesmo *eventual consistency* que existe no backend aparece na UI como um estado de carregamento.
+
+**Por quê:** Expo evita a necessidade de Xcode/Android Studio pra desenvolvimento (roda no navegador, ou no celular via app Expo Go), o que casa com a restrição de custo zero e ambiente Windows. TypeScript no cliente replica os mesmos contratos de dados do backend (`Lancamento`, `Resgate`, `TipoLancamento`) — não é código compartilhado de verdade (linguagens diferentes), mas a forma dos dados fica consistente dos dois lados.
+
+**Limitação conhecida:** não existe endpoint de categorias ainda, então o app usa um id fixo (a categoria de teste 'Alimentação' seedada no banco). Revisitar quando o CRUD de categorias existir.
