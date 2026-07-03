@@ -48,4 +48,42 @@ public class LancamentoTests
 
         Assert.Equal("Mercado", lancamento.Descricao);
     }
+
+    [Fact]
+    public void Atualizar_ComDadosValidos_DeveSubstituirPropriedades()
+    {
+        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today);
+        var novaCategoria = Guid.NewGuid();
+        var novaData = new DateTime(2026, 7, 1);
+
+        lancamento.Atualizar("  Jantar  ", 60m, TipoLancamento.Despesa, novaCategoria, novaData);
+
+        Assert.Equal("Jantar", lancamento.Descricao);
+        Assert.Equal(60m, lancamento.Valor);
+        Assert.Equal(novaCategoria, lancamento.CategoriaId);
+        Assert.Equal(novaData, lancamento.Data);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-5)]
+    public void Atualizar_ComValorInvalido_DeveLancarExcecaoSemAlterarEstado(decimal valorInvalido)
+    {
+        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today);
+
+        Assert.Throws<ArgumentException>(() =>
+            lancamento.Atualizar("Jantar", valorInvalido, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today));
+
+        Assert.Equal("Almoço", lancamento.Descricao);
+        Assert.Equal(35.50m, lancamento.Valor);
+    }
+
+    [Fact]
+    public void Atualizar_ComDescricaoVazia_DeveLancarExcecao()
+    {
+        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today);
+
+        Assert.Throws<ArgumentException>(() =>
+            lancamento.Atualizar("   ", 10m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today));
+    }
 }

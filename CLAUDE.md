@@ -63,10 +63,11 @@ Regra: não avançar de etapa sem testes e documentação da anterior no README.
 - Projeto em `C:\Projetos\finapp` (fora do OneDrive, de propósito)
 - GitHub: `https://github.com/Bruskyy/finapp` — CI em `.github/workflows/ci.yml` (build + test em PRs e push na main)
 - Docker Compose: sqlserver (1433, sa / FinApp@Dev123), postgres (5432, finapp/finapp, db gamificacao), rabbitmq (5672 + painel 15672 guest/guest), localstack (4566, s3+sqs)
-- ⚠️ LocalStack está caindo ao iniciar (não aparece no `docker compose ps`) — diagnosticar quando chegar a etapa 6, não bloqueia agora
+- ✅ LocalStack RESOLVIDO (03/07/2026): a tag `latest` passou a exigir `LOCALSTACK_AUTH_TOKEN` (licença Pro) e o container morria no boot; imagem fixada em `localstack/localstack:4` (community, s3+sqs gratuitos)
 - Connection string de Lançamentos em `appsettings.Development.json` (senha local descartável; documentar no README que produção usaria secrets)
 - Pacote `Microsoft.OpenApi` FIXADO em versão `2.*` — a 3.x quebra o source generator do ASP.NET (já aconteceu). Não atualizar para 3.x
-- Testes: 11 unitários verdes em `tests/Lancamentos.Tests`
+- Testes: 51 verdes no total (30 Lancamentos, 17 Gamificacao com Testcontainers, 4 Notificacoes)
+- Portas dos serviços padronizadas nos `launchSettings.json` conforme README: Lancamentos 5272, Gamificacao 5273, Notificacoes 5274, Gateway 5275
 
 ## Convenções do projeto
 

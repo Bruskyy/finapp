@@ -4,4 +4,19 @@ namespace Lancamentos.Api.Contratos;
 
 public record CriarLancamentoRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, DateTime Data);
 
+public record AtualizarLancamentoRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, DateTime Data);
+
 public record LancamentoResponse(Guid Id, string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, DateTime Data);
+
+public record CriarCategoriaRequest(string Nome);
+
+public record CategoriaResponse(Guid Id, string Nome);
+
+public record DefinirOrcamentoRequest(Guid CategoriaId, decimal ValorLimite);
+
+public record OrcamentoStatusResponse(
+    Guid CategoriaId,
+    string Categoria,
+    decimal ValorLimite,
+    decimal GastoNoMes,
+    decimal PercentualUsado);

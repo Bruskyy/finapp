@@ -11,6 +11,7 @@ public class LancamentosDbContext : DbContext
 
     public DbSet<Lancamento> Lancamentos => Set<Lancamento>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
+    public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -29,6 +30,16 @@ public class LancamentosDbContext : DbContext
             e.ToTable("Categorias");
             e.HasKey(x => x.Id);
             e.Property(x => x.Nome).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => x.Nome).IsUnique(); // sem categorias duplicadas
+        });
+
+        modelBuilder.Entity<Orcamento>(e =>
+        {
+            e.ToTable("Orcamentos");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ValorLimite).HasColumnType("decimal(18,2)");
+            e.HasIndex(x => x.CategoriaId).IsUnique(); // um teto por categoria
+            e.HasOne<Categoria>().WithMany().HasForeignKey(x => x.CategoriaId);
         });
 
         modelBuilder.Entity<GastoPorCategoria>(e =>

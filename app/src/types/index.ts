@@ -20,6 +20,19 @@ export interface CriarLancamentoRequest {
   data: string;
 }
 
+export interface Categoria {
+  id: string;
+  nome: string;
+}
+
+export interface OrcamentoStatus {
+  categoriaId: string;
+  categoria: string;
+  valorLimite: number;
+  gastoNoMes: number;
+  percentualUsado: number;
+}
+
 export type StatusResgate = "Pendente" | "Confirmado" | "Compensado";
 
 export interface Resgate {

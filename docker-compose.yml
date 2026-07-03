@@ -27,7 +27,9 @@ services:
       - "15672:15672"
 
   localstack:
-    image: localstack/localstack:latest
+    # Fixado na serie 4.x (community): a tag "latest" passou a exigir
+    # LOCALSTACK_AUTH_TOKEN (licenca Pro) e o container morria no boot.
+    image: localstack/localstack:4
     environment:
       SERVICES: s3,sqs
     ports:
