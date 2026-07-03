@@ -4,6 +4,7 @@ using Lancamentos.Application.Repositorios;
 using Lancamentos.Infrastructure.Repositorios;
 using Lancamentos.Api.Contratos;
 using Lancamentos.Domain.Entidades;
+using Lancamentos.Application.Relatorios;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +12,7 @@ builder.Services.AddDbContext<LancamentosDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LancamentosDb")));
 
 builder.Services.AddScoped<ILancamentoRepository, LancamentoRepository>();
-
+builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -39,6 +40,12 @@ app.MapGet("/lancamentos", async (DateTime inicio, DateTime fim, ILancamentoRepo
     var lista = await repo.ListarPorPeriodoAsync(inicio, fim, ct);
     return Results.Ok(lista.Select(l => new LancamentoResponse(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.Data)));
 });
+
+app.MapGet("/relatorios/gastos-por-categoria", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
+    Results.Ok(await repo.GastosPorCategoriaAsync(inicio, fim, ct)));
+
+app.MapGet("/relatorios/saldo", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
+    Results.Ok(new { Saldo = await repo.SaldoPeriodoAsync(inicio, fim, ct) }));
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
