@@ -46,10 +46,10 @@ Monorepo com 3 microserviços + gateway:
 ## Roadmap por etapas
 
 - ✅ **Etapa 0** — monorepo, solution, Docker Compose (SQL Server, Postgres, RabbitMQ, LocalStack), CI GitHub Actions, README
-- 🔄 **Etapa 1 (ATUAL, quase concluída)** — serviço de Lançamentos: entidades, repository, endpoints Minimal API, testes xUnit (11 verdes), views/procedures.
-- **Etapa 2** — eventos no RabbitMQ (topic exchange) + outbox pattern no serviço de Lançamentos
-- **Etapa 3** — serviço de Gamificação: ledger Postgres, idempotência de consumo, Strategy, Testcontainers
-- **Etapa 4** — resgate de moedas com Saga coreografada + Polly (circuit breaker)
+- ✅ **Etapa 1** — serviço de Lançamentos: entidades, repository, endpoints Minimal API, testes xUnit (11 verdes), views/procedures/functions
+- ✅ **Etapa 2** — eventos no RabbitMQ (topic exchange) + outbox pattern no serviço de Lançamentos
+- ✅ **Etapa 3** — serviço de Gamificação: ledger Postgres, idempotência de consumo (constraint única), Strategy, Testcontainers (18 testes verdes no total)
+- 🔄 **Etapa 4 (ATUAL)** — resgate de moedas com Saga coreografada + Polly (circuit breaker)
 - **Etapa 5** — Gateway YARP + app React Native/Expo com TypeScript (dashboard, lançamento rápido, moedas)
 - **Etapa 6** — Notificações (consumidor de tópico) + importação de extrato CSV assíncrona + SQS/S3 via LocalStack
 - **Etapa 7** — deploy gratuito (Render/Fly + Neon + CloudAMQP + Expo) + seção do README com arquitetura AWS/Azure. Atenção: free tier do Render/Fly hiberna (cold start) — documentar isso como trade-off conhecido
