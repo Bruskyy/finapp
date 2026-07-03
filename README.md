@@ -148,3 +148,15 @@ Data;Descricao;Valor;Tipo;Categoria
 **Trade-off conhecido:** o `POST` faz S3 → banco → SQS em três passos sem transação distribuída; se o SQS falhar depois do insert, a importação fica `Pendente` órfã. A solução canônica seria estender o outbox pra publicação no SQS — documentado como evolução, não implementado pra manter o escopo.
 
 **LocalStack**: imagem fixada em `localstack/localstack:4` (community) — a tag `latest` passou a exigir `LOCALSTACK_AUTH_TOKEN` (licença Pro) e o container morria no boot. S3+SQS na edição community são gratuitos, dentro da restrição de custo zero.
+
+### Resiliência dos consumers RabbitMQ + Health Checks (Item 0 do backlog)
+
+**O bug:** a aba Moedas do app devolvia 502 via Gateway porque a Gamificacao.Api **não estava de pé** — e a causa raiz era estrutural: os consumers RabbitMQ (`BackgroundService`) conectavam **uma única vez no boot, sem retry**. No .NET, exceção não tratada em `ExecuteAsync` **para o host inteiro** (`BackgroundServiceExceptionBehavior.StopHost`): se o broker não estivesse pronto no momento do boot (cenário típico: máquina reiniciada, containers subindo em paralelo com as APIs), a API inteira morria — inclusive os endpoints HTTP que nem dependem de RabbitMQ. Havia um segundo defeito latente: se a conexão caísse com o serviço já rodando, o consumer ficava morto pra sempre (preso num `Task.Delay` infinito), sem reconectar.
+
+**A correção:** os 4 consumers (2 na Gamificação, 2 nas Notificações) ganharam o mesmo padrão em duas camadas: (1) um loop externo de reconexão que captura qualquer exceção de conexão/consumo, loga e tenta de novo a cada 10s — indefinidamente; (2) no lugar do sleep infinito, um monitor que observa `IsOpen` da conexão e força reconexão quando ela cai. Validado com teste de caos manual: `docker compose restart rabbitmq` com tudo rodando — os 4 serviços permanecem vivos, reconectam sozinhos e o fluxo de moedas volta a funcionar.
+
+Todos os serviços agora expõem `GET /health` (padrão **Health Checks** do ASP.NET): Lançamentos e Gamificação incluem check do banco (`AddDbContextCheck`); num orquestrador (Kubernetes/Render), é esse endpoint que decide restart e roteamento de tráfego.
+
+**Teste de regressão:** `ApiResilienciaTests` sobe a API da Gamificação inteira (`WebApplicationFactory`) com o RabbitMQ apontando pra uma porta fechada e verifica que `/health` e `/saldo` continuam respondendo 200 — exatamente o cenário que derrubava o serviço antes.
+
+**Conceitos de entrevista:** comportamento de exceções em `BackgroundService` (StopHost vs. Ignore), diferença entre resiliência de *startup* (dependência ainda não disponível) e de *runtime* (dependência caiu), liveness/readiness probes, e por que um serviço não deve morrer por causa de dependência indisponível que só afeta parte das suas funções.

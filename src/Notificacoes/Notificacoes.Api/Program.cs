@@ -9,6 +9,8 @@ builder.Services.AddSingleton<INotificacaoProvider, NotificacaoProviderSimulado>
 builder.Services.AddHostedService<ResgateSolicitadoConsumerService>();
 builder.Services.AddHostedService<LancamentoCriadoConsumerService>();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -19,5 +21,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.MapHealthChecks("/health");
 
 app.Run();

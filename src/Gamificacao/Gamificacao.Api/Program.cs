@@ -24,6 +24,9 @@ builder.Services.AddHostedService<LancamentoConsumerService>();
 builder.Services.AddHostedService<OutboxPublisherService>();
 builder.Services.AddHostedService<ResgateResultadoConsumerService>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<GamificacaoDbContext>("postgres");
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -60,4 +63,8 @@ app.MapGet("/resgates/{id:guid}", async (Guid id, IResgateRepository repo, Cance
         : Results.Ok(new ResgateResponse(resgate.Id, resgate.Quantidade, resgate.Status.ToString()));
 });
 
+app.MapHealthChecks("/health");
+
 app.Run();
+
+public partial class Program { } // visivel para os testes de integracao (WebApplicationFactory)

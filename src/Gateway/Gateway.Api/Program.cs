@@ -14,6 +14,8 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod());
 });
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -25,6 +27,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AppMobileWeb");
+
+app.MapHealthChecks("/health");
 
 app.MapReverseProxy();
 

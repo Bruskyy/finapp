@@ -26,7 +26,34 @@ public class ResgateResultadoConsumerService : BackgroundService
         _logger = logger;
     }
 
+    // Mesmo padrão de resiliência do LancamentoConsumerService: RabbitMQ fora
+    // do ar (no boot ou no meio da vida) não pode derrubar o host.
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var delayReconexao = TimeSpan.FromSeconds(10);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await ConectarEConsumirAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // encerramento normal do BackgroundService
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "RabbitMQ indisponível para a fila {Fila}; nova tentativa em {Segundos}s.",
+                    NomeFila, delayReconexao.TotalSeconds);
+                try { await Task.Delay(delayReconexao, stoppingToken); }
+                catch (OperationCanceledException) { }
+            }
+        }
+    }
+
+    private async Task ConectarEConsumirAsync(CancellationToken stoppingToken)
     {
         var factory = new ConnectionFactory
         {
@@ -62,14 +89,13 @@ public class ResgateResultadoConsumerService : BackgroundService
 
         await canal.BasicConsumeAsync(NomeFila, autoAck: false, consumer, cancellationToken: stoppingToken);
 
-        try
-        {
-            await Task.Delay(Timeout.Infinite, stoppingToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // encerramento normal do BackgroundService
-        }
+        _logger.LogInformation("Consumindo a fila {Fila}.", NomeFila);
+
+        while (!stoppingToken.IsCancellationRequested && conexao.IsOpen)
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+
+        if (!stoppingToken.IsCancellationRequested)
+            throw new InvalidOperationException($"Conexão com o RabbitMQ caiu (fila {NomeFila}).");
     }
 
     private async Task ProcessarAsync(string routingKey, byte[] body, CancellationToken ct)

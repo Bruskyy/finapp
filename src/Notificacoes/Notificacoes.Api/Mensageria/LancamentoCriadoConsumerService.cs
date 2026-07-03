@@ -36,7 +36,34 @@ public class LancamentoCriadoConsumerService : BackgroundService
         _logger = logger;
     }
 
+    // RabbitMQ indisponível (no boot ou por queda) não pode derrubar o host:
+    // loop de reconexão infinito com intervalo entre tentativas.
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var delayReconexao = TimeSpan.FromSeconds(10);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await ConectarEConsumirAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // encerramento normal do BackgroundService
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "RabbitMQ indisponível para a fila {Fila}; nova tentativa em {Segundos}s.",
+                    NomeFila, delayReconexao.TotalSeconds);
+                try { await Task.Delay(delayReconexao, stoppingToken); }
+                catch (OperationCanceledException) { }
+            }
+        }
+    }
+
+    private async Task ConectarEConsumirAsync(CancellationToken stoppingToken)
     {
         await using var canal = await _rabbitMq.CriarCanalAsync(stoppingToken);
         await canal.QueueDeclareAsync(NomeFila, durable: true, exclusive: false, autoDelete: false, cancellationToken: stoppingToken);
@@ -60,14 +87,13 @@ public class LancamentoCriadoConsumerService : BackgroundService
 
         await canal.BasicConsumeAsync(NomeFila, autoAck: false, consumer, cancellationToken: stoppingToken);
 
-        try
-        {
-            await Task.Delay(Timeout.Infinite, stoppingToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // encerramento normal do BackgroundService
-        }
+        _logger.LogInformation("Consumindo a fila {Fila}.", NomeFila);
+
+        while (!stoppingToken.IsCancellationRequested && canal.IsOpen)
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+
+        if (!stoppingToken.IsCancellationRequested)
+            throw new InvalidOperationException($"Canal com o RabbitMQ caiu (fila {NomeFila}).");
     }
 
     private async Task ProcessarAsync(string routingKey, byte[] body, CancellationToken ct)
