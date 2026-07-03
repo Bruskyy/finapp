@@ -61,7 +61,7 @@ Regra: não avançar de etapa sem testes e documentação da anterior no README.
 - ⚠️ LocalStack está caindo ao iniciar (não aparece no `docker compose ps`) — diagnosticar quando chegar a etapa 6, não bloqueia agora
 - Connection string de Lançamentos em `appsettings.Development.json` (senha local descartável; documentar no README que produção usaria secrets)
 - Pacote `Microsoft.OpenApi` FIXADO em versão `2.*` — a 3.x quebra o source generator do ASP.NET (já aconteceu). Não atualizar para 3.x
-- Testes: 11 unitários verdes em `tests/Lancamentos.Tests` (renomear `LancementosTests.cs` → `LancamentosTests.cs` quando conveniente)
+- Testes: 11 unitários verdes em `tests/Lancamentos.Tests`
 
 ## Convenções do projeto
 
