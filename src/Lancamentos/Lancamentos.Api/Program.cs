@@ -361,6 +361,12 @@ app.MapGet("/relatorios/gastos-por-categoria", async (DateTime inicio, DateTime 
 app.MapGet("/relatorios/saldo", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
     Results.Ok(new { Saldo = await repo.SaldoPeriodoAsync(inicio, fim, ct) }));
 
+app.MapGet("/relatorios/evolucao-mensal", async (int? meses, IRelatorioRepository repo, CancellationToken ct) =>
+{
+    var quantidade = Math.Clamp(meses ?? 6, 1, 24);
+    return Results.Ok(await repo.EvolucaoMensalAsync(quantidade, ct));
+});
+
 app.MapHealthChecks("/health");
 
 if (app.Environment.IsDevelopment())

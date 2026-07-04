@@ -101,6 +101,13 @@ public class LancamentosDbContext : DbContext
             e.Property(x => x.TotalGasto).HasColumnType("decimal(18,2)");
         });
 
+        modelBuilder.Entity<ResumoMensal>(e =>
+        {
+            e.HasNoKey();
+            e.ToView(null); // lido via SqlQuery sobre vw_ResumoMensal
+            e.Property(x => x.ValorTotal).HasColumnType("decimal(18,2)");
+        });
+
         modelBuilder.Entity<SaldoPorConta>(e =>
         {
             e.HasNoKey();

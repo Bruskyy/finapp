@@ -196,3 +196,11 @@ Validado end-to-end: recorrência vencida materializada no boot do worker (data 
 No app: aba "Metas" com barra de progresso, valor sugerido por mês e aporte inline.
 
 Validado end-to-end: objetivo de R$ 300 em 3 meses (simulador: R$ 100/mês), aporte de R$ 200 recalculando para R$ 33,33/mês, aporte final concluindo a meta e moedas saltando 33 → 88 (+5 do lançamento de aporte, +50 do bônus via RabbitMQ), e 409 ao tentar aportar em meta concluída.
+
+### Gráficos no dashboard agregados no banco (Item 5 do backlog)
+
+O dashboard ganhou dois gráficos alimentados por objetos SQL nativos que já existiam: **gastos por categoria do mês** (a `sp_GastosPorCategoria` da Etapa 1, que o app nunca tinha consumido) e **evolução receitas × despesas dos últimos meses** via o novo `GET /relatorios/evolucao-mensal` — que lê a view `vw_ResumoMensal`, corta os últimos N meses no próprio SQL (`Ano*12+Mes >= corte`, parâmetros via `SqlQuery` interpolado) e pivota Tipo → colunas em memória (poucas linhas por definição da view).
+
+**Por quê agregar no banco e não no cliente:** o app precisaria puxar todos os lançamentos de 6 meses para calcular os mesmos números que a view entrega em meia dúzia de linhas — agregação é trabalho de banco; o contrato da API (`EvolucaoMensalPonto` já pivotado) é desenhado pro consumo direto da UI, sem o cliente reprocessar.
+
+**Renderização sem biblioteca de gráfico:** barras proporcionais com `View`s puras (distribuição percentual por categoria no lugar da pizza; pares receitas/despesas por mês) — mesma informação, zero dependência nova, comportamento idêntico em web e nativo. Transferências entre contas ficam fora do gráfico de gastos (não são gasto real). O gráfico de evolução só renderiza com 2+ meses de dados.
