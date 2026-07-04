@@ -214,3 +214,13 @@ Duplicatas são evitadas em duas camadas: normalização no domínio (`Tag.Norma
 O filtro `GET /lancamentos?tags=viagem,natal` monta a query compondo um `Where` por tag sobre o mesmo `IQueryable` (semântica AND) — nada executa até o `ToListAsync`: *deferred execution*, pergunta clássica de LINQ. E o relatório `GET /relatorios/gastos-por-tag` segue o padrão de procedure nativa (`sp_GastosPorTag`, JOIN triplo com a tabela de junção).
 
 No app: campo de tags no formulário (separadas por vírgula), tags visíveis nos itens e chips de filtro na listagem do dashboard.
+
+### Filtros avançados e paginação na listagem (Item 6 do backlog)
+
+`GET /lancamentos` aceita filtros combináveis — período (obrigatório), `categoriaId`, `contaId`, `tipo`, `texto` (busca na descrição), `tags` — além de `skip`/`take`. A construção é **query dinâmica com `IQueryable` composto**: cada filtro presente adiciona um `Where` à mesma query (`AplicarFiltros`, método estático puro), e nada executa até o `CountAsync`/`ToListAsync` — *deferred execution*, a pergunta clássica de LINQ. Por ser composição pura sem I/O, os testes rodam com LINQ-to-Objects (`lista.AsQueryable()`), sem banco.
+
+**Paginação: offset (`skip/take`) em vez de cursor** — decisão documentada: offset é simples, suficiente para o volume de um app pessoal e permite "pular direto pra página N"; cursor (keyset) seria a escolha em feeds grandes/concorrentes, onde offset degrada (`OFFSET 10000` varre tudo antes) e itens inseridos no meio bagunçam as páginas. `Take` limitado a 100 no servidor (cliente não dita o custo da query), ordenação com desempate estável (`Data` + `CriadoEm`) pra páginas consistentes, e a resposta virou `{ total, itens }` — o total vem de um `CountAsync` sobre a mesma query composta, antes da paginação.
+
+**Sensibilidade do `Contains`:** em memória é case-sensitive; no SQL Server quem decide é o *collation* do banco (o padrão é case-insensitive) — mesma expressão LINQ, semânticas diferentes por provider (anotado no teste).
+
+No app: campo de busca por texto na listagem, combinável com o filtro de tag.

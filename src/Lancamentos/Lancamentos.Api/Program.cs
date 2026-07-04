@@ -104,12 +104,27 @@ app.MapGet("/lancamentos/{id:guid}", async (Guid id, ILancamentoRepository repo,
     return l is null ? Results.NotFound() : Results.Ok(ParaResponse(l));
 });
 
-app.MapGet("/lancamentos", async (DateTime inicio, DateTime fim, string? tags, ILancamentoRepository repo, CancellationToken ct) =>
+app.MapGet("/lancamentos", async (
+    DateTime inicio,
+    DateTime fim,
+    Guid? categoriaId,
+    Guid? contaId,
+    TipoLancamento? tipo,
+    string? texto,
+    string? tags,
+    int? skip,
+    int? take,
+    ILancamentoRepository repo,
+    CancellationToken ct) =>
 {
-    // ?tags=viagem,natal -> filtro AND (todas as tags)
-    var filtroTags = tags?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    var lista = await repo.ListarPorPeriodoAsync(inicio, fim, filtroTags, ct);
-    return Results.Ok(lista.Select(ParaResponse));
+    var filtro = new FiltroLancamentos(
+        inicio, fim, categoriaId, contaId, tipo, texto,
+        Tags: tags?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+        Skip: skip ?? 0,
+        Take: take ?? 50);
+
+    var pagina = await repo.ListarAsync(filtro, ct);
+    return Results.Ok(new PaginaLancamentosResponse(pagina.Total, pagina.Itens.Select(ParaResponse).ToList()));
 });
 
 app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>

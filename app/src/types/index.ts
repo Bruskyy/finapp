@@ -98,3 +98,8 @@ export interface EvolucaoMensalPonto {
   despesas: number;
   saldo: number;
 }
+
+export interface PaginaLancamentos {
+  total: number;
+  itens: Lancamento[];
+}

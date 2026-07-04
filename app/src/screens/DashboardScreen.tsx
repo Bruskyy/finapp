@@ -7,6 +7,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -42,19 +43,23 @@ export default function DashboardScreen() {
   const [evolucao, setEvolucao] = useState<EvolucaoMensalPonto[]>([]);
   const [tagsDisponiveis, setTagsDisponiveis] = useState<string[]>([]);
   const [tagFiltro, setTagFiltro] = useState<string | null>(null);
+  const [textoBusca, setTextoBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(async (tag?: string | null) => {
+  const carregar = useCallback(async (tag?: string | null, texto?: string) => {
     setErro(null);
     try {
       const inicio = inicioDoMes();
       const fim = fimDoMes();
-      const filtroTags = tag ? [tag] : undefined;
+      const filtros = {
+        tags: tag ? [tag] : undefined,
+        texto: texto && texto.trim().length > 0 ? texto.trim() : undefined,
+      };
       const [resSaldo, resLancamentos, resCategorias, resSaldosContas, resGastos, resEvolucao, resTags] =
         await Promise.all([
           obterSaldoFinanceiro(inicio, fim),
-          listarLancamentos(inicio, fim, filtroTags),
+          listarLancamentos(inicio, fim, filtros),
           listarCategorias(),
           listarSaldosPorConta(),
           obterGastosPorCategoria(inicio, fim),
@@ -62,7 +67,7 @@ export default function DashboardScreen() {
           listarTags(),
         ]);
       setSaldo(resSaldo.saldo);
-      setLancamentos(resLancamentos);
+      setLancamentos(resLancamentos.itens);
       setNomesCategorias(Object.fromEntries(resCategorias.map((c) => [c.id, c.nome])));
       setSaldosContas(resSaldosContas);
       // transferências entre contas não são gasto real — fora do gráfico
@@ -79,12 +84,17 @@ export default function DashboardScreen() {
   function alternarFiltroTag(tag: string) {
     const nova = tagFiltro === tag ? null : tag;
     setTagFiltro(nova);
-    carregar(nova);
+    carregar(nova, textoBusca);
+  }
+
+  function buscarPorTexto(texto: string) {
+    setTextoBusca(texto);
+    carregar(tagFiltro, texto);
   }
 
   useFocusEffect(
     useCallback(() => {
-      carregar(tagFiltro);
+      carregar(tagFiltro, textoBusca);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [carregar])
   );
@@ -98,7 +108,7 @@ export default function DashboardScreen() {
 
     try {
       await excluirLancamento(item.id);
-      carregar(tagFiltro);
+      carregar(tagFiltro, textoBusca);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao excluir.");
     }
@@ -156,7 +166,7 @@ export default function DashboardScreen() {
       <FlatList
         data={lancamentos}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={() => carregar(tagFiltro)} />}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={() => carregar(tagFiltro, textoBusca)} />}
         ListHeaderComponent={
           <View>
             {saldosContas.length > 1 && (
@@ -191,6 +201,13 @@ export default function DashboardScreen() {
             )}
 
             <Text style={styles.subtitulo}>Lançamentos recentes</Text>
+            <TextInput
+              style={styles.inputBusca}
+              placeholder="Buscar na descrição..."
+              placeholderTextColor={cores.textoSuave}
+              value={textoBusca}
+              onChangeText={buscarPorTexto}
+            />
             {tagsDisponiveis.length > 0 && (
               <View style={styles.filtroTags}>
                 {tagsDisponiveis.map((tag) => (
@@ -318,6 +335,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   textoBadge: { fontSize: 10, color: cores.primaria, fontWeight: "600" },
+  inputBusca: {
+    borderWidth: 1,
+    borderColor: cores.borda,
+    backgroundColor: cores.cartao,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: cores.texto,
+    marginBottom: 10,
+  },
   filtroTags: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
   chipTag: {
     paddingHorizontal: 10,
