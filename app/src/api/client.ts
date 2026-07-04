@@ -3,6 +3,8 @@ import {
   Categoria,
   Conta,
   CriarLancamentoRequest,
+  EvolucaoMensalPonto,
+  GastoPorCategoria,
   Lancamento,
   Objetivo,
   OrcamentoStatus,
@@ -139,6 +141,14 @@ export function aportarObjetivo(id: string, valor: number, contaId: string): Pro
 
 export function obterSaldoFinanceiro(inicio: string, fim: string): Promise<{ saldo: number }> {
   return requisitar(`/api/relatorios/saldo?inicio=${inicio}&fim=${fim}`);
+}
+
+export function obterGastosPorCategoria(inicio: string, fim: string): Promise<GastoPorCategoria[]> {
+  return requisitar(`/api/relatorios/gastos-por-categoria?inicio=${inicio}&fim=${fim}`);
+}
+
+export function obterEvolucaoMensal(meses = 6): Promise<EvolucaoMensalPonto[]> {
+  return requisitar(`/api/relatorios/evolucao-mensal?meses=${meses}`);
 }
 
 // ----- Gamificação -----

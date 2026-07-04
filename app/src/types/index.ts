@@ -76,3 +76,18 @@ export interface Objetivo {
   valorMensalNecessario: number;
   concluido: boolean;
 }
+
+export interface GastoPorCategoria {
+  categoriaId: string;
+  categoria: string;
+  totalGasto: number;
+  quantidade: number;
+}
+
+export interface EvolucaoMensalPonto {
+  ano: number;
+  mes: number;
+  receitas: number;
+  despesas: number;
+  saldo: number;
+}
