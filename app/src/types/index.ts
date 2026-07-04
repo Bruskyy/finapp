@@ -9,6 +9,7 @@ export interface Lancamento {
   valor: number;
   tipo: TipoLancamento;
   categoriaId: string;
+  contaId: string;
   data: string;
 }
 
@@ -17,7 +18,19 @@ export interface CriarLancamentoRequest {
   valor: number;
   tipo: TipoLancamento;
   categoriaId: string;
+  contaId: string;
   data: string;
+}
+
+export interface Conta {
+  id: string;
+  nome: string;
+}
+
+export interface SaldoPorConta {
+  contaId: string;
+  conta: string;
+  saldo: number;
 }
 
 export interface Categoria {

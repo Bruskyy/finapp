@@ -66,7 +66,7 @@ Regra: não avançar de etapa sem testes e documentação da anterior no README.
 - ✅ LocalStack RESOLVIDO (03/07/2026): a tag `latest` passou a exigir `LOCALSTACK_AUTH_TOKEN` (licença Pro) e o container morria no boot; imagem fixada em `localstack/localstack:4` (community, s3+sqs gratuitos)
 - Connection string de Lançamentos em `appsettings.Development.json` (senha local descartável; documentar no README que produção usaria secrets)
 - Pacote `Microsoft.OpenApi` FIXADO em versão `2.*` — a 3.x quebra o source generator do ASP.NET (já aconteceu). Não atualizar para 3.x
-- Testes: 70 verdes no total (48 Lancamentos, 18 Gamificacao com Testcontainers, 4 Notificacoes)
+- Testes: 80 verdes no total (58 Lancamentos, 18 Gamificacao com Testcontainers, 4 Notificacoes)
 - Portas dos serviços padronizadas nos `launchSettings.json` conforme README: Lancamentos 5272, Gamificacao 5273, Notificacoes 5274, Gateway 5275
 
 ## Convenções do projeto

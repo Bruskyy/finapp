@@ -10,6 +10,7 @@ public class LancamentosDbContext : DbContext
     public LancamentosDbContext(DbContextOptions<LancamentosDbContext> options) : base(options) { }
 
     public DbSet<Lancamento> Lancamentos => Set<Lancamento>();
+    public DbSet<Conta> Contas => Set<Conta>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
     public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
@@ -24,6 +25,16 @@ public class LancamentosDbContext : DbContext
             e.Property(x => x.Descricao).HasMaxLength(200).IsRequired();
             e.Property(x => x.Valor).HasColumnType("decimal(18,2)");
             e.HasIndex(x => x.Data); // consultas por período são o acesso mais comum
+            e.HasIndex(x => x.ContaId); // saldo por conta agrupa por ContaId
+            e.HasOne<Conta>().WithMany().HasForeignKey(x => x.ContaId);
+        });
+
+        modelBuilder.Entity<Conta>(e =>
+        {
+            e.ToTable("Contas");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Nome).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => x.Nome).IsUnique(); // sem contas duplicadas
         });
 
         modelBuilder.Entity<Categoria>(e =>
@@ -58,6 +69,13 @@ public class LancamentosDbContext : DbContext
             e.HasNoKey();
             e.ToView(null); // resultado de procedure (SqlQuery), não é tabela nem view mapeada diretamente
             e.Property(x => x.TotalGasto).HasColumnType("decimal(18,2)");
+        });
+
+        modelBuilder.Entity<SaldoPorConta>(e =>
+        {
+            e.HasNoKey();
+            e.ToView(null); // lido via SqlQuery sobre vw_SaldoPorConta
+            e.Property(x => x.Saldo).HasColumnType("decimal(18,2)");
         });
 
         modelBuilder.Entity<OutboxMessage>(e =>

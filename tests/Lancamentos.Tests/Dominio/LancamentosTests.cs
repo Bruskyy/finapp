@@ -4,19 +4,22 @@ namespace Lancamentos.Tests.Dominio;
 
 public class LancamentoTests
 {
+    private static readonly Guid ContaId = Guid.NewGuid();
+
     [Fact]
     public void Criar_ComDadosValidos_DevePreencherPropriedades()
     {
         var categoriaId = Guid.NewGuid();
         var data = new DateTime(2026, 7, 2);
 
-        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, categoriaId, data);
+        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, categoriaId, ContaId, data);
 
         Assert.NotEqual(Guid.Empty, lancamento.Id);
         Assert.Equal("Almoço", lancamento.Descricao);
         Assert.Equal(35.50m, lancamento.Valor);
         Assert.Equal(TipoLancamento.Despesa, lancamento.Tipo);
         Assert.Equal(categoriaId, lancamento.CategoriaId);
+        Assert.Equal(ContaId, lancamento.ContaId);
         Assert.Equal(data, lancamento.Data);
     }
 
@@ -26,7 +29,7 @@ public class LancamentoTests
     public void Criar_ComValorInvalido_DeveLancarExcecao(decimal valorInvalido)
     {
         var ex = Assert.Throws<ArgumentException>(() =>
-            new Lancamento("Almoço", valorInvalido, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today));
+            new Lancamento("Almoço", valorInvalido, TipoLancamento.Despesa, Guid.NewGuid(), ContaId, DateTime.Today));
 
         Assert.Equal("valor", ex.ParamName);
     }
@@ -38,13 +41,22 @@ public class LancamentoTests
     public void Criar_ComDescricaoInvalida_DeveLancarExcecao(string? descricaoInvalida)
     {
         Assert.Throws<ArgumentException>(() =>
-            new Lancamento(descricaoInvalida!, 10m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today));
+            new Lancamento(descricaoInvalida!, 10m, TipoLancamento.Despesa, Guid.NewGuid(), ContaId, DateTime.Today));
+    }
+
+    [Fact]
+    public void Criar_SemConta_DeveLancarExcecao()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            new Lancamento("Almoço", 10m, TipoLancamento.Despesa, Guid.NewGuid(), Guid.Empty, DateTime.Today));
+
+        Assert.Equal("contaId", ex.ParamName);
     }
 
     [Fact]
     public void Criar_DeveRemoverEspacosDaDescricao()
     {
-        var lancamento = new Lancamento("  Mercado  ", 100m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today);
+        var lancamento = new Lancamento("  Mercado  ", 100m, TipoLancamento.Despesa, Guid.NewGuid(), ContaId, DateTime.Today);
 
         Assert.Equal("Mercado", lancamento.Descricao);
     }
@@ -52,15 +64,17 @@ public class LancamentoTests
     [Fact]
     public void Atualizar_ComDadosValidos_DeveSubstituirPropriedades()
     {
-        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today);
+        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), ContaId, DateTime.Today);
         var novaCategoria = Guid.NewGuid();
+        var novaConta = Guid.NewGuid();
         var novaData = new DateTime(2026, 7, 1);
 
-        lancamento.Atualizar("  Jantar  ", 60m, TipoLancamento.Despesa, novaCategoria, novaData);
+        lancamento.Atualizar("  Jantar  ", 60m, TipoLancamento.Despesa, novaCategoria, novaConta, novaData);
 
         Assert.Equal("Jantar", lancamento.Descricao);
         Assert.Equal(60m, lancamento.Valor);
         Assert.Equal(novaCategoria, lancamento.CategoriaId);
+        Assert.Equal(novaConta, lancamento.ContaId);
         Assert.Equal(novaData, lancamento.Data);
     }
 
@@ -69,10 +83,10 @@ public class LancamentoTests
     [InlineData(-5)]
     public void Atualizar_ComValorInvalido_DeveLancarExcecaoSemAlterarEstado(decimal valorInvalido)
     {
-        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today);
+        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), ContaId, DateTime.Today);
 
         Assert.Throws<ArgumentException>(() =>
-            lancamento.Atualizar("Jantar", valorInvalido, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today));
+            lancamento.Atualizar("Jantar", valorInvalido, TipoLancamento.Despesa, Guid.NewGuid(), ContaId, DateTime.Today));
 
         Assert.Equal("Almoço", lancamento.Descricao);
         Assert.Equal(35.50m, lancamento.Valor);
@@ -81,9 +95,9 @@ public class LancamentoTests
     [Fact]
     public void Atualizar_ComDescricaoVazia_DeveLancarExcecao()
     {
-        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today);
+        var lancamento = new Lancamento("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), ContaId, DateTime.Today);
 
         Assert.Throws<ArgumentException>(() =>
-            lancamento.Atualizar("   ", 10m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today));
+            lancamento.Atualizar("   ", 10m, TipoLancamento.Despesa, Guid.NewGuid(), ContaId, DateTime.Today));
     }
 }

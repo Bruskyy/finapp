@@ -10,9 +10,9 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { criarLancamento, listarCategorias } from "../api/client";
+import { criarLancamento, listarCategorias, listarContas } from "../api/client";
 import { cores, sombraCartao } from "../tema";
-import { Categoria, TipoLancamento } from "../types";
+import { Categoria, Conta, TipoLancamento } from "../types";
 
 export default function NovoLancamentoScreen() {
   const [descricao, setDescricao] = useState("");
@@ -20,22 +20,36 @@ export default function NovoLancamentoScreen() {
   const [tipo, setTipo] = useState<TipoLancamento>(TipoLancamento.Despesa);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
+  const [contas, setContas] = useState<Conta[]>([]);
+  const [contaId, setContaId] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<{ texto: string; erro: boolean } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       listarCategorias()
-        .then(setCategorias)
+        // "Transferência" é categoria técnica (usada só pelos lançamentos
+        // gerados por transferência entre contas) — não é escolhível aqui
+        .then((lista) => setCategorias(lista.filter((c) => c.nome !== "Transferência")))
         .catch(() => setMensagem({ texto: "Não foi possível carregar as categorias.", erro: true }));
+      listarContas()
+        .then((lista) => {
+          setContas(lista);
+          // pré-seleciona quando só existe uma conta (caso comum: Carteira)
+          if (lista.length === 1) setContaId(lista[0].id);
+        })
+        .catch(() => setMensagem({ texto: "Não foi possível carregar as contas.", erro: true }));
     }, [])
   );
 
   const valido =
-    descricao.trim().length > 0 && Number(valor.replace(",", ".")) > 0 && categoriaId !== null;
+    descricao.trim().length > 0 &&
+    Number(valor.replace(",", ".")) > 0 &&
+    categoriaId !== null &&
+    contaId !== null;
 
   async function salvar() {
-    if (!valido || categoriaId === null) return;
+    if (!valido || categoriaId === null || contaId === null) return;
 
     setSalvando(true);
     setMensagem(null);
@@ -45,6 +59,7 @@ export default function NovoLancamentoScreen() {
         valor: Number(valor.replace(",", ".")),
         tipo,
         categoriaId,
+        contaId,
         data: new Date().toISOString(),
       });
       setDescricao("");
@@ -108,6 +123,22 @@ export default function NovoLancamentoScreen() {
         onChangeText={setValor}
         keyboardType="decimal-pad"
       />
+
+      <Text style={styles.rotuloCategorias}>Conta</Text>
+      <View style={styles.listaCategorias}>
+        {contas.length === 0 && <ActivityIndicator color={cores.primaria} />}
+        {contas.map((c) => (
+          <Pressable
+            key={c.id}
+            style={[styles.chip, contaId === c.id && styles.chipAtivo]}
+            onPress={() => setContaId(c.id)}
+          >
+            <Text style={contaId === c.id ? styles.textoChipAtivo : styles.textoChip}>
+              {c.nome}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
 
       <Text style={styles.rotuloCategorias}>Categoria</Text>
       <View style={styles.listaCategorias}>

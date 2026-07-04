@@ -10,7 +10,7 @@ public class CriarLancamentoRequestValidatorTests
     private readonly CriarLancamentoRequestValidator _validator = new();
 
     private static CriarLancamentoRequest RequestValido() =>
-        new("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), DateTime.Today);
+        new("Almoço", 35.50m, TipoLancamento.Despesa, Guid.NewGuid(), Guid.NewGuid(), DateTime.Today);
 
     [Fact]
     public void RequestValido_NaoDeveTerErros()
@@ -50,6 +50,46 @@ public class CriarLancamentoRequestValidatorTests
         var req = RequestValido() with { CategoriaId = Guid.Empty };
 
         _validator.TestValidate(req).ShouldHaveValidationErrorFor(x => x.CategoriaId);
+    }
+
+    [Fact]
+    public void ContaVazia_DeveFalhar()
+    {
+        var req = RequestValido() with { ContaId = Guid.Empty };
+
+        _validator.TestValidate(req).ShouldHaveValidationErrorFor(x => x.ContaId);
+    }
+}
+
+public class TransferenciaRequestValidatorTests
+{
+    private readonly TransferenciaRequestValidator _validator = new();
+
+    [Fact]
+    public void RequestValido_NaoDeveTerErros()
+    {
+        var resultado = _validator.TestValidate(new TransferenciaRequest(Guid.NewGuid(), Guid.NewGuid(), 50m));
+
+        resultado.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void MesmaContaOrigemEDestino_DeveFalhar()
+    {
+        var conta = Guid.NewGuid();
+        var resultado = _validator.TestValidate(new TransferenciaRequest(conta, conta, 50m));
+
+        resultado.ShouldHaveValidationErrorFor(x => x.ContaDestinoId);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10)]
+    public void ValorInvalido_DeveFalhar(decimal valor)
+    {
+        var resultado = _validator.TestValidate(new TransferenciaRequest(Guid.NewGuid(), Guid.NewGuid(), valor));
+
+        resultado.ShouldHaveValidationErrorFor(x => x.Valor);
     }
 }
 

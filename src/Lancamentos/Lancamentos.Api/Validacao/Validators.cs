@@ -11,6 +11,7 @@ public class CriarLancamentoRequestValidator : AbstractValidator<CriarLancamento
         RuleFor(x => x.Valor).GreaterThan(0);
         RuleFor(x => x.Tipo).IsInEnum();
         RuleFor(x => x.CategoriaId).NotEmpty();
+        RuleFor(x => x.ContaId).NotEmpty();
         RuleFor(x => x.Data).NotEmpty();
     }
 }
@@ -23,7 +24,28 @@ public class AtualizarLancamentoRequestValidator : AbstractValidator<AtualizarLa
         RuleFor(x => x.Valor).GreaterThan(0);
         RuleFor(x => x.Tipo).IsInEnum();
         RuleFor(x => x.CategoriaId).NotEmpty();
+        RuleFor(x => x.ContaId).NotEmpty();
         RuleFor(x => x.Data).NotEmpty();
+    }
+}
+
+public class CriarContaRequestValidator : AbstractValidator<CriarContaRequest>
+{
+    public CriarContaRequestValidator()
+    {
+        RuleFor(x => x.Nome).NotEmpty().MaximumLength(100);
+    }
+}
+
+public class TransferenciaRequestValidator : AbstractValidator<TransferenciaRequest>
+{
+    public TransferenciaRequestValidator()
+    {
+        RuleFor(x => x.ContaOrigemId).NotEmpty();
+        RuleFor(x => x.ContaDestinoId)
+            .NotEmpty()
+            .NotEqual(x => x.ContaOrigemId).WithMessage("Conta de destino deve ser diferente da conta de origem.");
+        RuleFor(x => x.Valor).GreaterThan(0);
     }
 }
 
