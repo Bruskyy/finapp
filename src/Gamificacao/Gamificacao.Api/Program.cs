@@ -14,6 +14,7 @@ builder.Services.AddScoped<IMovimentoMoedasRepository, MovimentoMoedasRepository
 builder.Services.AddScoped<IRegraPontuacao, RegraDespesaRegistrada>();
 builder.Services.AddScoped<IRegraPontuacao, RegraReceitaRegistrada>();
 builder.Services.AddScoped<CalculadoraDePontuacao>();
+builder.Services.AddScoped<RegraObjetivoConcluido>();
 
 builder.Services.AddScoped<IResgateRepository, ResgateRepository>();
 builder.Services.AddScoped<ResgateService>();

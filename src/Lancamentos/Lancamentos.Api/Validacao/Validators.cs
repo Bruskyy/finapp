@@ -78,3 +78,23 @@ public class DefinirOrcamentoRequestValidator : AbstractValidator<DefinirOrcamen
         RuleFor(x => x.ValorLimite).GreaterThan(0);
     }
 }
+
+public class CriarObjetivoRequestValidator : AbstractValidator<CriarObjetivoRequest>
+{
+    public CriarObjetivoRequestValidator()
+    {
+        RuleFor(x => x.Nome).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.ValorAlvo).GreaterThan(0);
+        RuleFor(x => x.DataAlvo).GreaterThan(_ => DateTime.Today)
+            .WithMessage("Data alvo deve ser no futuro.");
+    }
+}
+
+public class AporteRequestValidator : AbstractValidator<AporteRequest>
+{
+    public AporteRequestValidator()
+    {
+        RuleFor(x => x.Valor).GreaterThan(0);
+        RuleFor(x => x.ContaId).NotEmpty();
+    }
+}

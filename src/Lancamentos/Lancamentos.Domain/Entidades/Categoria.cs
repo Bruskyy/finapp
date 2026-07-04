@@ -8,6 +8,9 @@ public class Categoria
     /// </summary>
     public static readonly Guid TransferenciaId = Guid.Parse("99999999-9999-9999-9999-999999999999");
 
+    /// <summary>Categoria fixa dos lançamentos de aporte em objetivos (seedada por migration).</summary>
+    public static readonly Guid ObjetivosId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
     public Guid Id { get; private set; }
     public string Nome { get; private set; }
 

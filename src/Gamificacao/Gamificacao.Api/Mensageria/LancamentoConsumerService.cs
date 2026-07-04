@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using BuildingBlocks.Contracts.Lancamentos;
+using Gamificacao.Api.Dominio;
 using Gamificacao.Api.Persistencia;
 using Gamificacao.Api.Regras;
 using Microsoft.Extensions.Options;
@@ -11,7 +12,6 @@ namespace Gamificacao.Api.Mensageria;
 
 public class LancamentoConsumerService : BackgroundService
 {
-    private const string RoutingKey = "lancamento.criado";
     private const string NomeFila = "gamificacao.lancamentos";
 
     private readonly IServiceScopeFactory _scopeFactory;
@@ -71,7 +71,8 @@ public class LancamentoConsumerService : BackgroundService
 
         await canal.ExchangeDeclareAsync(_options.ExchangeLancamentos, ExchangeType.Topic, durable: true, cancellationToken: stoppingToken);
         await canal.QueueDeclareAsync(NomeFila, durable: true, exclusive: false, autoDelete: false, cancellationToken: stoppingToken);
-        await canal.QueueBindAsync(NomeFila, _options.ExchangeLancamentos, RoutingKey, cancellationToken: stoppingToken);
+        await canal.QueueBindAsync(NomeFila, _options.ExchangeLancamentos, "lancamento.criado", cancellationToken: stoppingToken);
+        await canal.QueueBindAsync(NomeFila, _options.ExchangeLancamentos, "objetivo.concluido", cancellationToken: stoppingToken);
         await canal.BasicQosAsync(0, prefetchCount: 10, global: false, cancellationToken: stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(canal);
@@ -79,7 +80,7 @@ public class LancamentoConsumerService : BackgroundService
         {
             try
             {
-                await ProcessarMensagemAsync(ea.Body.ToArray(), stoppingToken);
+                await ProcessarMensagemAsync(ea.RoutingKey, ea.Body.ToArray(), stoppingToken);
                 await canal.BasicAckAsync(ea.DeliveryTag, multiple: false, cancellationToken: stoppingToken);
             }
             catch (Exception ex)
@@ -102,19 +103,40 @@ public class LancamentoConsumerService : BackgroundService
             throw new InvalidOperationException($"Conexão com o RabbitMQ caiu (fila {NomeFila}).");
     }
 
-    private async Task ProcessarMensagemAsync(byte[] body, CancellationToken ct)
+    private async Task ProcessarMensagemAsync(string routingKey, byte[] body, CancellationToken ct)
     {
-        var evento = JsonSerializer.Deserialize<LancamentoCriadoEvent>(Encoding.UTF8.GetString(body))
-            ?? throw new InvalidOperationException("Payload de LancamentoCriadoEvent inválido.");
-
+        var json = Encoding.UTF8.GetString(body);
         using var scope = _scopeFactory.CreateScope();
-        var calculadora = scope.ServiceProvider.GetRequiredService<CalculadoraDePontuacao>();
         var repositorio = scope.ServiceProvider.GetRequiredService<IMovimentoMoedasRepository>();
 
-        var movimento = calculadora.Calcular(evento);
-        var processado = await repositorio.RegistrarAsync(movimento, ct);
+        MovimentoMoedas movimento;
+        Guid eventId;
 
+        switch (routingKey)
+        {
+            case "lancamento.criado":
+                var criado = JsonSerializer.Deserialize<LancamentoCriadoEvent>(json)
+                    ?? throw new InvalidOperationException("Payload de LancamentoCriadoEvent inválido.");
+                var calculadora = scope.ServiceProvider.GetRequiredService<CalculadoraDePontuacao>();
+                movimento = calculadora.Calcular(criado);
+                eventId = criado.EventId;
+                break;
+
+            case "objetivo.concluido":
+                var concluido = JsonSerializer.Deserialize<ObjetivoConcluidoEvent>(json)
+                    ?? throw new InvalidOperationException("Payload de ObjetivoConcluidoEvent inválido.");
+                var regraBonus = scope.ServiceProvider.GetRequiredService<RegraObjetivoConcluido>();
+                movimento = regraBonus.Calcular(concluido);
+                eventId = concluido.EventId;
+                break;
+
+            default:
+                _logger.LogWarning("Routing key {RoutingKey} sem handler — mensagem descartada.", routingKey);
+                return;
+        }
+
+        var processado = await repositorio.RegistrarAsync(movimento, ct);
         if (!processado)
-            _logger.LogInformation("Evento {EventId} já tinha sido processado - ignorado (idempotência).", evento.EventId);
+            _logger.LogInformation("Evento {EventId} já tinha sido processado - ignorado (idempotência).", eventId);
     }
 }

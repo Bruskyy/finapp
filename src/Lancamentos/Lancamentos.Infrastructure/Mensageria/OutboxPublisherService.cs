@@ -84,6 +84,7 @@ public class OutboxPublisherService : BackgroundService
     {
         nameof(LancamentoCriadoEvent) => "lancamento.criado",
         nameof(LancamentoRecorrenteCriadoEvent) => "lancamento.recorrente.criado",
+        nameof(ObjetivoConcluidoEvent) => "objetivo.concluido",
         _ => "lancamento.desconhecido"
     };
 }

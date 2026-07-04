@@ -13,6 +13,7 @@ public class LancamentosDbContext : DbContext
     public DbSet<Conta> Contas => Set<Conta>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<LancamentoRecorrente> Recorrencias => Set<LancamentoRecorrente>();
+    public DbSet<Objetivo> Objetivos => Set<Objetivo>();
     public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
     public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
@@ -46,6 +47,15 @@ public class LancamentosDbContext : DbContext
             e.Property(x => x.Valor).HasColumnType("decimal(18,2)");
             e.HasOne<Categoria>().WithMany().HasForeignKey(x => x.CategoriaId);
             e.HasOne<Conta>().WithMany().HasForeignKey(x => x.ContaId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<Objetivo>(e =>
+        {
+            e.ToTable("Objetivos");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Nome).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ValorAlvo).HasColumnType("decimal(18,2)");
+            e.Property(x => x.ValorAcumulado).HasColumnType("decimal(18,2)");
         });
 
         modelBuilder.Entity<RecorrenciaExecucao>(e =>
