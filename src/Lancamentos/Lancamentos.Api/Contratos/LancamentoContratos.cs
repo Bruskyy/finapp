@@ -10,6 +10,8 @@ public record LancamentoResponse(Guid Id, string Descricao, decimal Valor, TipoL
 
 public record TagResponse(Guid Id, string Nome);
 
+public record PaginaLancamentosResponse(int Total, IReadOnlyList<LancamentoResponse> Itens);
+
 public record CriarRecorrenciaRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, int DiaDoMes);
 
 public record RecorrenciaResponse(Guid Id, string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, int DiaDoMes, bool Ativa);

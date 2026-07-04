@@ -52,22 +52,54 @@ public class LancamentoRepository : ILancamentoRepository
     public async Task<Lancamento?> ObterPorIdAsync(Guid id, CancellationToken ct)
         => await _db.Lancamentos.Include(x => x.Tags).FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<IReadOnlyList<Lancamento>> ListarPorPeriodoAsync(DateTime inicio, DateTime fim, IReadOnlyList<string>? tags, CancellationToken ct)
+    public async Task<PaginaLancamentos> ListarAsync(FiltroLancamentos filtro, CancellationToken ct)
     {
-        var query = _db.Lancamentos
-            .AsNoTracking()
-            .Include(x => x.Tags)
-            .Where(x => x.Data >= inicio && x.Data <= fim);
+        var query = AplicarFiltros(
+            _db.Lancamentos.AsNoTracking().Include(x => x.Tags),
+            filtro);
 
-        // cada tag adiciona um Where (AND) — IQueryable composto: nada executa
-        // ate o ToListAsync (deferred execution)
-        if (tags is { Count: > 0 })
-            foreach (var tag in tags.Select(Tag.Normalizar).Where(t => t.Length > 0))
+        // total ANTES da paginacao (a UI precisa saber quantas paginas ha);
+        // sao duas idas ao banco sobre a MESMA query composta
+        var total = await query.CountAsync(ct);
+
+        var (skip, take) = filtro.Paginacao;
+        var itens = await query
+            .OrderByDescending(x => x.Data)
+            .ThenByDescending(x => x.CriadoEm) // desempate estavel p/ paginacao consistente
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct);
+
+        return new PaginaLancamentos(total, itens);
+    }
+
+    /// <summary>
+    /// Composicao dinamica: cada filtro presente adiciona um Where ao mesmo
+    /// IQueryable — nada executa ate CountAsync/ToListAsync (deferred
+    /// execution). Estatico e sem I/O de proposito: testavel com
+    /// LINQ-to-Objects (lista em memoria .AsQueryable()).
+    /// </summary>
+    public static IQueryable<Lancamento> AplicarFiltros(IQueryable<Lancamento> query, FiltroLancamentos filtro)
+    {
+        query = query.Where(x => x.Data >= filtro.Inicio && x.Data <= filtro.Fim);
+
+        if (filtro.CategoriaId is { } categoriaId)
+            query = query.Where(x => x.CategoriaId == categoriaId);
+
+        if (filtro.ContaId is { } contaId)
+            query = query.Where(x => x.ContaId == contaId);
+
+        if (filtro.Tipo is { } tipo)
+            query = query.Where(x => x.Tipo == tipo);
+
+        if (!string.IsNullOrWhiteSpace(filtro.Texto))
+            query = query.Where(x => x.Descricao.Contains(filtro.Texto.Trim()));
+
+        if (filtro.Tags is { Count: > 0 })
+            foreach (var tag in filtro.Tags.Select(Tag.Normalizar).Where(t => t.Length > 0))
                 query = query.Where(x => x.Tags.Any(t => t.Nome == tag));
 
-        return await query
-            .OrderByDescending(x => x.Data)
-            .ToListAsync(ct);
+        return query;
     }
 
     public async Task AtualizarAsync(Lancamento lancamento, CancellationToken ct)

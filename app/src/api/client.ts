@@ -7,6 +7,7 @@ import {
   GastoPorCategoria,
   Lancamento,
   Objetivo,
+  PaginaLancamentos,
   Tag,
   OrcamentoStatus,
   Recorrencia,
@@ -38,9 +39,28 @@ async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
 
 // ----- Lançamentos -----
 
-export function listarLancamentos(inicio: string, fim: string, tags?: string[]): Promise<Lancamento[]> {
-  const filtro = tags && tags.length > 0 ? `&tags=${encodeURIComponent(tags.join(","))}` : "";
-  return requisitar(`/api/lancamentos?inicio=${inicio}&fim=${fim}${filtro}`);
+export interface FiltrosLancamentos {
+  tags?: string[];
+  texto?: string;
+  categoriaId?: string;
+  contaId?: string;
+  skip?: number;
+  take?: number;
+}
+
+export function listarLancamentos(
+  inicio: string,
+  fim: string,
+  filtros: FiltrosLancamentos = {}
+): Promise<PaginaLancamentos> {
+  const params = new URLSearchParams({ inicio, fim });
+  if (filtros.tags?.length) params.set("tags", filtros.tags.join(","));
+  if (filtros.texto) params.set("texto", filtros.texto);
+  if (filtros.categoriaId) params.set("categoriaId", filtros.categoriaId);
+  if (filtros.contaId) params.set("contaId", filtros.contaId);
+  if (filtros.skip !== undefined) params.set("skip", String(filtros.skip));
+  if (filtros.take !== undefined) params.set("take", String(filtros.take));
+  return requisitar(`/api/lancamentos?${params.toString()}`);
 }
 
 export function listarTags(): Promise<Tag[]> {
