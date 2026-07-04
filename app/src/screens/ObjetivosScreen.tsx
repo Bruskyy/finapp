@@ -1,17 +1,15 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { aportarObjetivo, criarObjetivo, listarContas, listarObjetivos } from "../api/client";
-import { cores, formatarMoeda, sombraCartao } from "../tema";
+import BarraDeProgresso from "../componentes/BarraDeProgresso";
+import Botao from "../componentes/Botao";
+import Card from "../componentes/Card";
+import Chip from "../componentes/Chip";
+import EstadoVazio from "../componentes/EstadoVazio";
+import Input from "../componentes/Input";
+import { cor, espaco, fonte, formatarMoeda } from "../tema";
 import { Conta, Objetivo } from "../types";
 
 export default function ObjetivosScreen() {
@@ -31,6 +29,7 @@ export default function ObjetivosScreen() {
   const [aporteEm, setAporteEm] = useState<string | null>(null);
   const [valorAporte, setValorAporte] = useState("");
   const [contaAporte, setContaAporte] = useState<string | null>(null);
+  const [aportando, setAportando] = useState(false);
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -76,6 +75,7 @@ export default function ObjetivosScreen() {
   async function aportar(objetivo: Objetivo) {
     const valor = Number(valorAporte.replace(",", "."));
     if (!valor || valor <= 0 || contaAporte === null) return;
+    setAportando(true);
     setErro(null);
     try {
       const atualizado = await aportarObjetivo(objetivo.id, valor, contaAporte);
@@ -84,101 +84,86 @@ export default function ObjetivosScreen() {
       setAporteEm(null);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao aportar.");
+    } finally {
+      setAportando(false);
     }
   }
 
   if (carregando) {
     return (
-      <View style={styles.centro}>
-        <ActivityIndicator size="large" color={cores.primaria} />
+      <View style={estilos.centro}>
+        <ActivityIndicator size="large" color={cor.primaria} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.cabecalho}>
-        <Text style={styles.titulo}>Metas</Text>
-        <Pressable style={styles.botaoNova} onPress={() => setMostrarFormulario(!mostrarFormulario)}>
-          <Ionicons name={mostrarFormulario ? "close" : "add"} size={18} color="#fff" />
-          <Text style={styles.textoBotaoNova}>{mostrarFormulario ? "Cancelar" : "Nova"}</Text>
+    <View style={estilos.container}>
+      <View style={estilos.cabecalho}>
+        <View>
+          <Text style={estilos.titulo}>Metas</Text>
+          <Text style={estilos.subtitulo}>Guarde todo mês o valor sugerido e chegue lá no prazo.</Text>
+        </View>
+        <Pressable
+          onPress={() => setMostrarFormulario(!mostrarFormulario)}
+          hitSlop={8}
+          accessibilityLabel={mostrarFormulario ? "Cancelar nova meta" : "Nova meta"}
+        >
+          <Ionicons
+            name={mostrarFormulario ? "close-circle" : "add-circle"}
+            size={32}
+            color={cor.primaria}
+          />
         </Pressable>
       </View>
-      <Text style={styles.subtituloPagina}>
-        Guarde todo mês o valor sugerido e chegue lá no prazo.
-      </Text>
 
-      {erro && <Text style={styles.erro}>{erro}</Text>}
+      {erro && <Text style={estilos.erro}>{erro}</Text>}
 
       {mostrarFormulario && (
-        <View style={[styles.formulario, sombraCartao]}>
-          <TextInput
-            style={styles.input}
-            placeholder="Nome (ex: Reserva de emergência)"
-            placeholderTextColor={cores.textoSuave}
-            value={nome}
-            onChangeText={setNome}
-          />
-          <View style={styles.linhaDupla}>
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
+        <Card estiloExtra={estilos.formulario}>
+          <Input placeholder="Nome (ex: Reserva de emergência)" value={nome} onChangeText={setNome} />
+          <View style={estilos.linhaDupla}>
+            <Input
               placeholder="Valor alvo"
-              placeholderTextColor={cores.textoSuave}
               value={valorAlvo}
               onChangeText={setValorAlvo}
               keyboardType="decimal-pad"
+              style={estilos.metadeLinha}
             />
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
+            <Input
               placeholder="Até (AAAA-MM-DD)"
-              placeholderTextColor={cores.textoSuave}
               value={dataAlvo}
               onChangeText={setDataAlvo}
+              style={estilos.metadeLinha}
             />
           </View>
-          <Pressable
-            style={[styles.botaoSalvar, !validoNovo && { opacity: 0.5 }]}
-            onPress={salvarNovo}
-            disabled={!validoNovo || salvando}
-          >
-            {salvando ? <ActivityIndicator color="#fff" /> : <Text style={styles.textoBotaoSalvar}>Salvar</Text>}
-          </Pressable>
-        </View>
+          <Botao texto="Salvar" onPress={salvarNovo} disabled={!validoNovo} carregando={salvando} />
+        </Card>
       )}
 
       <FlatList
         data={objetivos}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={[styles.cartao, sombraCartao]}>
-            <View style={styles.linhaTitulo}>
-              <Text style={styles.nomeObjetivo}>
+          <Card estiloExtra={estilos.cartaoObjetivo}>
+            <View style={estilos.linhaTitulo}>
+              <Text style={estilos.nomeObjetivo}>
                 {item.concluido ? "🏆 " : ""}
                 {item.nome}
               </Text>
-              <Text style={styles.valores}>
+              <Text style={estilos.valores}>
                 {formatarMoeda(item.valorAcumulado)} / {formatarMoeda(item.valorAlvo)}
               </Text>
             </View>
 
-            <View style={styles.trilhaBarra}>
-              <View
-                style={[
-                  styles.barra,
-                  {
-                    width: `${item.percentualConcluido}%`,
-                    backgroundColor: item.concluido ? cores.receita : cores.primaria,
-                  },
-                ]}
-              />
-            </View>
+            <BarraDeProgresso percentual={item.percentualConcluido} />
 
             {item.concluido ? (
-              <Text style={[styles.dica, { color: cores.receita }]}>
+              <Text style={[estilos.dica, { color: cor.verde }]}>
                 Meta concluída! +50 moedas de bônus 🪙
               </Text>
             ) : (
-              <Text style={styles.dica}>
+              <Text style={estilos.dica}>
                 Guarde {formatarMoeda(item.valorMensalNecessario)}/mês até{" "}
                 {new Date(item.dataAlvo).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
               </Text>
@@ -186,86 +171,83 @@ export default function ObjetivosScreen() {
 
             {!item.concluido &&
               (aporteEm === item.id ? (
-                <View style={styles.linhaAporte}>
-                  <TextInput
-                    style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                <View style={estilos.blocoAporte}>
+                  {contas.length > 1 && (
+                    <View style={estilos.linhaChipsConta}>
+                      {contas.map((c) => (
+                        <Chip
+                          key={c.id}
+                          texto={c.nome}
+                          selecionado={contaAporte === c.id}
+                          onPress={() => setContaAporte(c.id)}
+                        />
+                      ))}
+                    </View>
+                  )}
+                  <Input
                     placeholder="Valor do aporte"
-                    placeholderTextColor={cores.textoSuave}
                     value={valorAporte}
                     onChangeText={setValorAporte}
                     keyboardType="decimal-pad"
                     autoFocus
                   />
-                  <Pressable style={styles.botaoAportar} onPress={() => aportar(item)}>
-                    <Text style={styles.textoBotaoSalvar}>OK</Text>
-                  </Pressable>
-                  <Pressable style={styles.botaoCancelarAporte} onPress={() => setAporteEm(null)}>
-                    <Ionicons name="close" size={18} color={cores.textoSuave} />
-                  </Pressable>
+                  <View style={estilos.linhaBotoesAporte}>
+                    <Botao
+                      texto="Confirmar aporte"
+                      onPress={() => aportar(item)}
+                      disabled={!(Number(valorAporte.replace(",", ".")) > 0) || contaAporte === null}
+                      carregando={aportando}
+                      estiloExtra={estilos.botaoConfirmarAporte}
+                    />
+                    <Botao
+                      texto="Cancelar"
+                      variante="texto"
+                      onPress={() => setAporteEm(null)}
+                      disabled={aportando}
+                    />
+                  </View>
                 </View>
               ) : (
-                <Pressable style={styles.botaoNovoAporte} onPress={() => setAporteEm(item.id)}>
-                  <Ionicons name="add-circle-outline" size={16} color={cores.primaria} />
-                  <Text style={styles.textoNovoAporte}>Aportar</Text>
-                </Pressable>
+                <Botao
+                  texto="Aportar"
+                  variante="texto"
+                  onPress={() => setAporteEm(item.id)}
+                  estiloExtra={estilos.botaoAportar}
+                />
               ))}
-          </View>
+          </Card>
         )}
         ListEmptyComponent={
-          <Text style={styles.vazio}>Nenhuma meta ainda. Crie a primeira em "Nova".</Text>
+          <EstadoVazio icone="flag-outline" mensagem='Nenhuma meta ainda. Crie a primeira em "Nova".' />
         }
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={estilos.listaConteudo}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 56, backgroundColor: cores.fundo },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cores.fundo },
-  cabecalho: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  titulo: { fontSize: 20, fontWeight: "bold", color: cores.texto },
-  subtituloPagina: { fontSize: 13, color: cores.textoSuave, marginTop: 4, marginBottom: 14 },
-  botaoNova: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: cores.primaria,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  textoBotaoNova: { color: "#fff", fontWeight: "600" },
-  formulario: { backgroundColor: cores.cartao, borderRadius: 14, padding: 14, marginBottom: 16 },
-  linhaDupla: { flexDirection: "row", gap: 10 },
-  input: {
-    borderWidth: 1,
-    borderColor: cores.borda,
-    borderRadius: 10,
-    padding: 11,
-    marginBottom: 10,
-    fontSize: 15,
-    color: cores.texto,
-  },
-  botaoSalvar: { backgroundColor: cores.primaria, padding: 12, borderRadius: 10, alignItems: "center" },
-  textoBotaoSalvar: { color: "#fff", fontWeight: "600", fontSize: 15 },
-  cartao: { backgroundColor: cores.cartao, borderRadius: 14, padding: 14, marginBottom: 10 },
-  linhaTitulo: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
-  nomeObjetivo: { fontSize: 15, fontWeight: "600", color: cores.texto, flex: 1 },
-  valores: { fontSize: 13, color: cores.textoSuave },
-  trilhaBarra: { height: 8, borderRadius: 4, backgroundColor: cores.fundo, overflow: "hidden" },
-  barra: { height: 8, borderRadius: 4 },
-  dica: { fontSize: 12, color: cores.textoSuave, marginTop: 8 },
-  linhaAporte: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
-  botaoAportar: {
-    backgroundColor: cores.primaria,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    borderRadius: 10,
-  },
-  botaoCancelarAporte: { padding: 6 },
-  botaoNovoAporte: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 10 },
-  textoNovoAporte: { color: cores.primaria, fontWeight: "600", fontSize: 13 },
-  vazio: { color: cores.textoSuave, textAlign: "center", marginTop: 24 },
-  erro: { color: cores.despesa, marginBottom: 10 },
+const estilos = StyleSheet.create({
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.xxxl + espaco.sm, backgroundColor: cor.cinza100 },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
+  cabecalho: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
+  subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, maxWidth: 260 },
+  erro: { color: cor.vermelho, marginTop: espaco.sm, marginBottom: espaco.sm },
+
+  formulario: { marginTop: espaco.lg, marginBottom: espaco.md },
+  linhaDupla: { flexDirection: "row", gap: espaco.sm },
+  metadeLinha: { flex: 1 },
+
+  listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xl },
+  cartaoObjetivo: { marginBottom: espaco.md },
+  linhaTitulo: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.sm, gap: espaco.sm },
+  nomeObjetivo: { ...fonte.tituloCard, color: cor.cinza900, flex: 1 },
+  valores: { fontSize: 13, color: cor.cinza500 },
+  dica: { fontSize: 12, color: cor.cinza500, marginTop: espaco.sm },
+
+  blocoAporte: { marginTop: espaco.md },
+  linhaChipsConta: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
+  linhaBotoesAporte: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
+  botaoConfirmarAporte: { flex: 1 },
+  botaoAportar: { alignSelf: "flex-start", paddingHorizontal: 0, marginTop: espaco.sm },
 });
