@@ -14,6 +14,7 @@ public class LancamentosDbContext : DbContext
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<LancamentoRecorrente> Recorrencias => Set<LancamentoRecorrente>();
     public DbSet<Objetivo> Objetivos => Set<Objetivo>();
+    public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
     public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
@@ -29,6 +30,19 @@ public class LancamentosDbContext : DbContext
             e.HasIndex(x => x.Data); // consultas por período são o acesso mais comum
             e.HasIndex(x => x.ContaId); // saldo por conta agrupa por ContaId
             e.HasOne<Conta>().WithMany().HasForeignKey(x => x.ContaId);
+
+            // N:N com tabela de juncao implicita (LancamentoTags) — skip navigation
+            e.HasMany(x => x.Tags)
+                .WithMany()
+                .UsingEntity("LancamentoTags");
+        });
+
+        modelBuilder.Entity<Tag>(e =>
+        {
+            e.ToTable("Tags");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Nome).HasMaxLength(60).IsRequired();
+            e.HasIndex(x => x.Nome).IsUnique(); // normalizacao + unicidade evitam duplicatas
         });
 
         modelBuilder.Entity<Conta>(e =>

@@ -2,11 +2,13 @@ using Lancamentos.Domain.Entidades;
 
 namespace Lancamentos.Api.Contratos;
 
-public record CriarLancamentoRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data);
+public record CriarLancamentoRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data, IReadOnlyList<string>? Tags = null);
 
-public record AtualizarLancamentoRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data);
+public record AtualizarLancamentoRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data, IReadOnlyList<string>? Tags = null);
 
-public record LancamentoResponse(Guid Id, string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data, Guid? RecorrenciaId);
+public record LancamentoResponse(Guid Id, string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data, Guid? RecorrenciaId, IReadOnlyList<string> Tags);
+
+public record TagResponse(Guid Id, string Nome);
 
 public record CriarRecorrenciaRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, int DiaDoMes);
 

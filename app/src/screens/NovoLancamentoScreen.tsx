@@ -22,6 +22,7 @@ export default function NovoLancamentoScreen() {
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [contas, setContas] = useState<Conta[]>([]);
   const [contaId, setContaId] = useState<string | null>(null);
+  const [tags, setTags] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<{ texto: string; erro: boolean } | null>(null);
 
@@ -54,6 +55,11 @@ export default function NovoLancamentoScreen() {
     setSalvando(true);
     setMensagem(null);
     try {
+      const listaTags = tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+
       await criarLancamento({
         descricao: descricao.trim(),
         valor: Number(valor.replace(",", ".")),
@@ -61,9 +67,11 @@ export default function NovoLancamentoScreen() {
         categoriaId,
         contaId,
         data: new Date().toISOString(),
+        tags: listaTags.length > 0 ? listaTags : undefined,
       });
       setDescricao("");
       setValor("");
+      setTags("");
       setMensagem({ texto: "Lançamento registrado! Suas moedas estão a caminho.", erro: false });
     } catch (e) {
       setMensagem({
@@ -155,6 +163,15 @@ export default function NovoLancamentoScreen() {
           </Pressable>
         ))}
       </View>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Tags (opcional, separadas por vírgula: viagem, natal)"
+        placeholderTextColor={cores.textoSuave}
+        value={tags}
+        onChangeText={setTags}
+        autoCapitalize="none"
+      />
 
       <Pressable
         style={[styles.botaoSalvar, !valido && styles.botaoDesabilitado]}
