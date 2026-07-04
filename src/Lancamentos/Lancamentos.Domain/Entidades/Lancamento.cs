@@ -11,6 +11,9 @@ public class Lancamento
     public DateTime Data { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
+    /// <summary>Preenchido quando o lançamento foi materializado por uma conta fixa (badge "recorrente" no app).</summary>
+    public Guid? RecorrenciaId { get; private set; }
+
     private Lancamento() { Descricao = null!; }
 
     public Lancamento(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, DateTime data)
@@ -25,6 +28,15 @@ public class Lancamento
         ContaId = contaId;
         Data = data;
         CriadoEm = DateTime.UtcNow;
+    }
+
+    /// <summary>Factory para lançamentos materializados por uma conta fixa.</summary>
+    public static Lancamento CriarDeRecorrencia(
+        string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, DateTime data, Guid recorrenciaId)
+    {
+        var lancamento = new Lancamento(descricao, valor, tipo, categoriaId, contaId, data);
+        lancamento.RecorrenciaId = recorrenciaId;
+        return lancamento;
     }
 
     public void Atualizar(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, DateTime data)

@@ -83,6 +83,7 @@ public class OutboxPublisherService : BackgroundService
     private static string RoutingKeyPara(string tipoEvento) => tipoEvento switch
     {
         nameof(LancamentoCriadoEvent) => "lancamento.criado",
+        nameof(LancamentoRecorrenteCriadoEvent) => "lancamento.recorrente.criado",
         _ => "lancamento.desconhecido"
     };
 }

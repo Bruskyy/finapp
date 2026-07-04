@@ -12,6 +12,7 @@ public class LancamentosDbContext : DbContext
     public DbSet<Lancamento> Lancamentos => Set<Lancamento>();
     public DbSet<Conta> Contas => Set<Conta>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
+    public DbSet<LancamentoRecorrente> Recorrencias => Set<LancamentoRecorrente>();
     public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
     public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
@@ -35,6 +36,25 @@ public class LancamentosDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Nome).HasMaxLength(100).IsRequired();
             e.HasIndex(x => x.Nome).IsUnique(); // sem contas duplicadas
+        });
+
+        modelBuilder.Entity<LancamentoRecorrente>(e =>
+        {
+            e.ToTable("Recorrencias");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Descricao).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Valor).HasColumnType("decimal(18,2)");
+            e.HasOne<Categoria>().WithMany().HasForeignKey(x => x.CategoriaId);
+            e.HasOne<Conta>().WithMany().HasForeignKey(x => x.ContaId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<RecorrenciaExecucao>(e =>
+        {
+            e.ToTable("RecorrenciaExecucoes");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Competencia).HasMaxLength(7).IsRequired(); // "2026-07"
+            // idempotencia do worker: uma materializacao por recorrencia por mes
+            e.HasIndex(x => new { x.RecorrenciaId, x.Competencia }).IsUnique();
         });
 
         modelBuilder.Entity<Categoria>(e =>

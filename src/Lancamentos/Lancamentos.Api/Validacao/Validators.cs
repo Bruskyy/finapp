@@ -37,6 +37,19 @@ public class CriarContaRequestValidator : AbstractValidator<CriarContaRequest>
     }
 }
 
+public class CriarRecorrenciaRequestValidator : AbstractValidator<CriarRecorrenciaRequest>
+{
+    public CriarRecorrenciaRequestValidator()
+    {
+        RuleFor(x => x.Descricao).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Valor).GreaterThan(0);
+        RuleFor(x => x.Tipo).IsInEnum();
+        RuleFor(x => x.CategoriaId).NotEmpty();
+        RuleFor(x => x.ContaId).NotEmpty();
+        RuleFor(x => x.DiaDoMes).InclusiveBetween(1, 31);
+    }
+}
+
 public class TransferenciaRequestValidator : AbstractValidator<TransferenciaRequest>
 {
     public TransferenciaRequestValidator()

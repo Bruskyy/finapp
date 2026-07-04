@@ -5,8 +5,10 @@ import {
   CriarLancamentoRequest,
   Lancamento,
   OrcamentoStatus,
+  Recorrencia,
   Resgate,
   SaldoPorConta,
+  TipoLancamento,
 } from "../types";
 
 // Em desenvolvimento, "localhost" aponta pro proprio dispositivo/emulador,
@@ -68,6 +70,31 @@ export function transferir(contaOrigemId: string, contaDestinoId: string, valor:
     method: "POST",
     body: JSON.stringify({ contaOrigemId, contaDestinoId, valor }),
   });
+}
+
+// ----- Recorrências (contas fixas) -----
+
+export function listarRecorrencias(): Promise<Recorrencia[]> {
+  return requisitar("/api/recorrencias");
+}
+
+export function criarRecorrencia(dto: {
+  descricao: string;
+  valor: number;
+  tipo: TipoLancamento;
+  categoriaId: string;
+  contaId: string;
+  diaDoMes: number;
+}): Promise<Recorrencia> {
+  return requisitar("/api/recorrencias", { method: "POST", body: JSON.stringify(dto) });
+}
+
+export function pausarRecorrencia(id: string): Promise<Recorrencia> {
+  return requisitar(`/api/recorrencias/${id}/pausar`, { method: "POST" });
+}
+
+export function reativarRecorrencia(id: string): Promise<Recorrencia> {
+  return requisitar(`/api/recorrencias/${id}/reativar`, { method: "POST" });
 }
 
 // ----- Orçamentos -----

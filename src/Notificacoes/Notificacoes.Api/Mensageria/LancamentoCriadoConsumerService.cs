@@ -17,7 +17,9 @@ namespace Notificacoes.Api.Mensageria;
 public class LancamentoCriadoConsumerService : BackgroundService
 {
     private const string NomeFila = "notificacoes.lancamentos";
-    private const string RoutingKeyEntrada = "lancamento.*";
+    // "#" casa zero ou mais segmentos ("*" casa exatamente um): pega tanto
+    // lancamento.criado quanto lancamento.recorrente.criado
+    private const string RoutingKeyEntrada = "lancamento.#";
 
     private readonly RabbitMqOptions _options;
     private readonly RabbitMqConnection _rabbitMq;
@@ -98,18 +100,30 @@ public class LancamentoCriadoConsumerService : BackgroundService
 
     private async Task ProcessarAsync(string routingKey, byte[] body, CancellationToken ct)
     {
-        if (routingKey != "lancamento.criado")
+        var json = Encoding.UTF8.GetString(body);
+
+        switch (routingKey)
         {
-            _logger.LogWarning("Routing key {RoutingKey} sem handler — mensagem descartada.", routingKey);
-            return;
+            case "lancamento.criado":
+                var criado = JsonSerializer.Deserialize<LancamentoCriadoEvent>(json)
+                    ?? throw new InvalidOperationException("Payload de LancamentoCriadoEvent inválido.");
+                await _provider.EnviarAlertaLancamentoAsync(criado.LancamentoId, criado.Valor, ct);
+                _logger.LogInformation(
+                    "Notificação enviada: lançamento {LancamentoId} de {Valor:C} registrado.",
+                    criado.LancamentoId, criado.Valor);
+                break;
+
+            case "lancamento.recorrente.criado":
+                var recorrente = JsonSerializer.Deserialize<LancamentoRecorrenteCriadoEvent>(json)
+                    ?? throw new InvalidOperationException("Payload de LancamentoRecorrenteCriadoEvent inválido.");
+                _logger.LogInformation(
+                    "Sua conta fixa '{Descricao}' de {Valor:C} foi lançada (competência {Competencia}).",
+                    recorrente.Descricao, recorrente.Valor, recorrente.Competencia);
+                break;
+
+            default:
+                _logger.LogWarning("Routing key {RoutingKey} sem handler — mensagem descartada.", routingKey);
+                break;
         }
-
-        var evento = JsonSerializer.Deserialize<LancamentoCriadoEvent>(Encoding.UTF8.GetString(body))
-            ?? throw new InvalidOperationException("Payload de LancamentoCriadoEvent inválido.");
-
-        await _provider.EnviarAlertaLancamentoAsync(evento.LancamentoId, evento.Valor, ct);
-        _logger.LogInformation(
-            "Notificação enviada: lançamento {LancamentoId} de {Valor:C} registrado.",
-            evento.LancamentoId, evento.Valor);
     }
 }

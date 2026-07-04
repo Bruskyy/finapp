@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import NovoLancamentoScreen from "./src/screens/NovoLancamentoScreen";
 import OrcamentosScreen from "./src/screens/OrcamentosScreen";
+import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
 import { cores } from "./src/tema";
 
@@ -15,6 +16,7 @@ const icones: Record<string, keyof typeof Ionicons.glyphMap> = {
   Dashboard: "home",
   Novo: "add-circle",
   Orçamentos: "pie-chart",
+  Fixas: "repeat",
   Moedas: "medal",
 };
 
@@ -35,6 +37,7 @@ export default function App() {
         <Tab.Screen name="Dashboard" component={DashboardScreen} />
         <Tab.Screen name="Novo" component={NovoLancamentoScreen} />
         <Tab.Screen name="Orçamentos" component={OrcamentosScreen} />
+        <Tab.Screen name="Fixas" component={RecorrenciasScreen} />
         <Tab.Screen name="Moedas" component={MoedasScreen} />
       </Tab.Navigator>
     </NavigationContainer>

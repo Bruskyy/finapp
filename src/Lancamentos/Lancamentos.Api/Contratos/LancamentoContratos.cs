@@ -6,7 +6,11 @@ public record CriarLancamentoRequest(string Descricao, decimal Valor, TipoLancam
 
 public record AtualizarLancamentoRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data);
 
-public record LancamentoResponse(Guid Id, string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data);
+public record LancamentoResponse(Guid Id, string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, DateTime Data, Guid? RecorrenciaId);
+
+public record CriarRecorrenciaRequest(string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, int DiaDoMes);
+
+public record RecorrenciaResponse(Guid Id, string Descricao, decimal Valor, TipoLancamento Tipo, Guid CategoriaId, Guid ContaId, int DiaDoMes, bool Ativa);
 
 public record CriarContaRequest(string Nome);
 

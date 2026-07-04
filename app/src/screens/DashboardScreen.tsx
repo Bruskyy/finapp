@@ -162,9 +162,17 @@ export default function DashboardScreen() {
               <Text style={styles.itemDescricao} numberOfLines={1}>
                 {item.descricao}
               </Text>
-              <Text style={styles.itemDetalhe}>
-                {nomesCategorias[item.categoriaId] ?? "Sem categoria"} · {formatarData(item.data)}
-              </Text>
+              <View style={styles.linhaDetalhe}>
+                <Text style={styles.itemDetalhe}>
+                  {nomesCategorias[item.categoriaId] ?? "Sem categoria"} · {formatarData(item.data)}
+                </Text>
+                {item.recorrenciaId && (
+                  <View style={styles.badgeRecorrente}>
+                    <Ionicons name="repeat" size={10} color={cores.primaria} />
+                    <Text style={styles.textoBadge}>fixa</Text>
+                  </View>
+                )}
+              </View>
             </View>
             <Text
               style={[
@@ -229,6 +237,18 @@ const styles = StyleSheet.create({
   itemCentro: { flex: 1 },
   itemDescricao: { fontSize: 15, color: cores.texto, fontWeight: "500" },
   itemDetalhe: { fontSize: 12, color: cores.textoSuave, marginTop: 2 },
+  linhaDetalhe: { flexDirection: "row", alignItems: "center", gap: 6 },
+  badgeRecorrente: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "#e3f2fd",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginTop: 2,
+  },
+  textoBadge: { fontSize: 10, color: cores.primaria, fontWeight: "600" },
   itemValor: { fontSize: 15, fontWeight: "600" },
   botaoExcluir: { padding: 4 },
   cartaoContas: {
