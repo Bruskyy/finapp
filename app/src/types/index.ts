@@ -11,6 +11,18 @@ export interface Lancamento {
   categoriaId: string;
   contaId: string;
   data: string;
+  recorrenciaId: string | null;
+}
+
+export interface Recorrencia {
+  id: string;
+  descricao: string;
+  valor: number;
+  tipo: TipoLancamento;
+  categoriaId: string;
+  contaId: string;
+  diaDoMes: number;
+  ativa: boolean;
 }
 
 export interface CriarLancamentoRequest {

@@ -14,6 +14,7 @@ using Lancamentos.Api.Validacao;
 using Lancamentos.Domain.Entidades;
 using Lancamentos.Application.Relatorios;
 using Lancamentos.Infrastructure.Mensageria;
+using Lancamentos.Infrastructure.Recorrencias;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,8 @@ builder.Services.AddScoped<ILancamentoRepository, LancamentoRepository>();
 builder.Services.AddScoped<IContaRepository, ContaRepository>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
+builder.Services.AddScoped<IRecorrenciaRepository, RecorrenciaRepository>();
+builder.Services.AddHostedService<RecorrenciaWorker>();
 builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<RabbitMqConnection>();
@@ -66,6 +69,7 @@ builder.Services.AddSingleton<IValidator<AtualizarLancamentoRequest>, AtualizarL
 builder.Services.AddSingleton<IValidator<CriarCategoriaRequest>, CriarCategoriaRequestValidator>();
 builder.Services.AddSingleton<IValidator<DefinirOrcamentoRequest>, DefinirOrcamentoRequestValidator>();
 builder.Services.AddSingleton<IValidator<CriarContaRequest>, CriarContaRequestValidator>();
+builder.Services.AddSingleton<IValidator<CriarRecorrenciaRequest>, CriarRecorrenciaRequestValidator>();
 builder.Services.AddSingleton<IValidator<TransferenciaRequest>, TransferenciaRequestValidator>();
 
 builder.Services.AddHealthChecks()
@@ -162,6 +166,44 @@ app.MapPost("/transferencias", async (TransferenciaRequest req, ILancamentoRepos
 
     return Results.Created("/transferencias", new TransferenciaResponse(saida.Id, entrada.Id));
 }).AddEndpointFilter<ValidationFilter<TransferenciaRequest>>();
+
+// ----- Recorrências (contas fixas, estilo Mobills) -----
+
+app.MapGet("/recorrencias", async (IRecorrenciaRepository repo, CancellationToken ct) =>
+{
+    var lista = await repo.ListarAsync(ct);
+    return Results.Ok(lista.Select(ParaRecorrenciaResponse));
+});
+
+app.MapPost("/recorrencias", async (CriarRecorrenciaRequest req, IRecorrenciaRepository repo, IContaRepository contas, CancellationToken ct) =>
+{
+    if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
+        return Results.BadRequest(new { erro = "Conta não encontrada." });
+
+    var recorrencia = new LancamentoRecorrente(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.DiaDoMes);
+    await repo.AdicionarAsync(recorrencia, ct);
+    return Results.Created($"/recorrencias/{recorrencia.Id}", ParaRecorrenciaResponse(recorrencia));
+}).AddEndpointFilter<ValidationFilter<CriarRecorrenciaRequest>>();
+
+app.MapPost("/recorrencias/{id:guid}/pausar", async (Guid id, IRecorrenciaRepository repo, CancellationToken ct) =>
+{
+    var recorrencia = await repo.ObterPorIdAsync(id, ct);
+    if (recorrencia is null) return Results.NotFound();
+
+    recorrencia.Pausar();
+    await repo.AtualizarAsync(recorrencia, ct);
+    return Results.Ok(ParaRecorrenciaResponse(recorrencia));
+});
+
+app.MapPost("/recorrencias/{id:guid}/reativar", async (Guid id, IRecorrenciaRepository repo, CancellationToken ct) =>
+{
+    var recorrencia = await repo.ObterPorIdAsync(id, ct);
+    if (recorrencia is null) return Results.NotFound();
+
+    recorrencia.Reativar();
+    await repo.AtualizarAsync(recorrencia, ct);
+    return Results.Ok(ParaRecorrenciaResponse(recorrencia));
+});
 
 // ----- Categorias -----
 
@@ -292,7 +334,10 @@ app.UseHttpsRedirection();
 app.Run();
 
 static LancamentoResponse ParaResponse(Lancamento l) =>
-    new(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.ContaId, l.Data);
+    new(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.ContaId, l.Data, l.RecorrenciaId);
+
+static RecorrenciaResponse ParaRecorrenciaResponse(LancamentoRecorrente r) =>
+    new(r.Id, r.Descricao, r.Valor, r.Tipo, r.CategoriaId, r.ContaId, r.DiaDoMes, r.Ativa);
 
 static ImportacaoStatusResponse ParaImportacaoResponse(ImportacaoExtrato i) =>
     new(i.Id, i.NomeArquivo, i.Status.ToString(), i.LinhasImportadas, i.LinhasComErro, i.Erro, i.CriadoEm, i.ProcessadoEm);

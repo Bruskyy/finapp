@@ -172,3 +172,15 @@ Todo lançamento agora pertence a uma **Conta** (Carteira, Banco X...), estilo M
 **Saldo por conta via view nativa:** `GET /contas/saldos` lê a view `vw_SaldoPorConta` (LEFT JOIN + SUM com CASE), mapeada como keyless entity — mesmo padrão SQL-nativo dos relatórios da Etapa 1.
 
 No app: seletor de conta no formulário de novo lançamento (com pré-seleção quando só existe uma) e bloco "Contas" no dashboard, exibido quando há mais de uma conta.
+
+### Contas fixas (recorrências) com worker idempotente (Item 2 do backlog)
+
+`LancamentoRecorrente` (descrição, valor, tipo, categoria, conta, dia do mês, ativa) modela contas que repetem todo mês — aluguel, assinaturas, salário. O `RecorrenciaWorker` (`BackgroundService`, roda no boot e a cada 30min) materializa o lançamento do mês quando o vencimento chega: a regra "está vencida?" é **lógica pura de domínio testável** (`VencidaEm`, `DiaEfetivoEm` — dia 31 vira 28/29 em fevereiro), e rodar atrasado também funciona (`Day >= DiaDoMes`: se o serviço estava desligado no dia, a próxima execução lança mesmo assim).
+
+**Idempotência via constraint, não verificação em memória:** cada materialização grava uma linha em `RecorrenciaExecucoes` com `UNIQUE (RecorrenciaId, Competencia)` — no mesmo `SaveChanges` do lançamento e dos eventos de outbox. Worker rodando duas vezes (ou duas instâncias concorrentes) → o segundo insert viola a constraint e é descartado, sem duplicar nada. É o mesmo padrão Idempotent Consumer da Gamificação (Etapa 3), agora aplicado a um *job* — checar "já existe?" antes de inserir teria janela de corrida entre a leitura e a escrita; a constraint não tem.
+
+**Dois eventos por materialização:** o `LancamentoCriadoEvent` normal (recorrência gera moedas como qualquer lançamento) e o `LancamentoRecorrenteCriadoEvent` novo (routing key `lancamento.recorrente.criado`), que o Notificações usa para avisar "sua conta fixa X foi lançada". Detalhe de RabbitMQ que cai em entrevista: o binding do Notificações mudou de `lancamento.*` para `lancamento.#` — `*` casa exatamente **um** segmento (não casaria a routing key de 3 segmentos), `#` casa zero ou mais.
+
+No app: aba "Fixas" (criar, pausar/reativar via switch) e badge "fixa" nos lançamentos materializados (o `Lancamento` ganhou `RecorrenciaId` nullable).
+
+Validado end-to-end: recorrência vencida materializada no boot do worker (data = dia do vencimento), moedas +5 na Gamificação, log "Sua conta fixa 'Internet fibra' foi lançada" no Notificações, e reinício do serviço sem duplicação.
