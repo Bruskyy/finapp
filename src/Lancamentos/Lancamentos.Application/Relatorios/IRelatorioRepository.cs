@@ -6,4 +6,5 @@ public interface IRelatorioRepository
     Task<decimal> SaldoPeriodoAsync(DateTime inicio, DateTime fim, CancellationToken ct);
     Task<IReadOnlyList<SaldoPorConta>> SaldosPorContaAsync(CancellationToken ct);
     Task<IReadOnlyList<EvolucaoMensalPonto>> EvolucaoMensalAsync(int meses, CancellationToken ct);
+    Task<IReadOnlyList<GastoPorTag>> GastosPorTagAsync(DateTime inicio, DateTime fim, CancellationToken ct);
 }

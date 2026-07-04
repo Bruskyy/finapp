@@ -50,14 +50,25 @@ public class LancamentoRepository : ILancamentoRepository
     }
 
     public async Task<Lancamento?> ObterPorIdAsync(Guid id, CancellationToken ct)
-        => await _db.Lancamentos.FirstOrDefaultAsync(x => x.Id == id, ct);
+        => await _db.Lancamentos.Include(x => x.Tags).FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<IReadOnlyList<Lancamento>> ListarPorPeriodoAsync(DateTime inicio, DateTime fim, CancellationToken ct)
-        => await _db.Lancamentos
+    public async Task<IReadOnlyList<Lancamento>> ListarPorPeriodoAsync(DateTime inicio, DateTime fim, IReadOnlyList<string>? tags, CancellationToken ct)
+    {
+        var query = _db.Lancamentos
             .AsNoTracking()
-            .Where(x => x.Data >= inicio && x.Data <= fim)
+            .Include(x => x.Tags)
+            .Where(x => x.Data >= inicio && x.Data <= fim);
+
+        // cada tag adiciona um Where (AND) — IQueryable composto: nada executa
+        // ate o ToListAsync (deferred execution)
+        if (tags is { Count: > 0 })
+            foreach (var tag in tags.Select(Tag.Normalizar).Where(t => t.Length > 0))
+                query = query.Where(x => x.Tags.Any(t => t.Nome == tag));
+
+        return await query
             .OrderByDescending(x => x.Data)
             .ToListAsync(ct);
+    }
 
     public async Task AtualizarAsync(Lancamento lancamento, CancellationToken ct)
     {

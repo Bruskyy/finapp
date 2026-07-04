@@ -204,3 +204,13 @@ O dashboard ganhou dois gráficos alimentados por objetos SQL nativos que já ex
 **Por quê agregar no banco e não no cliente:** o app precisaria puxar todos os lançamentos de 6 meses para calcular os mesmos números que a view entrega em meia dúzia de linhas — agregação é trabalho de banco; o contrato da API (`EvolucaoMensalPonto` já pivotado) é desenhado pro consumo direto da UI, sem o cliente reprocessar.
 
 **Renderização sem biblioteca de gráfico:** barras proporcionais com `View`s puras (distribuição percentual por categoria no lugar da pizza; pares receitas/despesas por mês) — mesma informação, zero dependência nova, comportamento idêntico em web e nativo. Transferências entre contas ficam fora do gráfico de gastos (não são gasto real). O gráfico de evolução só renderiza com 2+ meses de dados.
+
+### Tags livres nos lançamentos — N:N (Item 3 do backlog)
+
+`Tag` completa o repertório de modelagem relacional do projeto: até aqui só havia 1:N; agora `Lancamento ↔ Tag` é **N:N via skip navigation** do EF Core (`HasMany...WithMany...UsingEntity("LancamentoTags")` — a tabela de junção existe no banco, mas nenhuma entidade C# a representa). A diferença conceitual que cai em entrevista: **categoria é taxonomia** (conjunto fixo e curado, um por lançamento), **tag é folksonomia** (o usuário cria à vontade, várias por lançamento).
+
+Duplicatas são evitadas em duas camadas: normalização no domínio (`Tag.Normalizar`: trim, minúsculas, sem `#` — "  #Viagem " e "viagem" são a mesma tag) + índice `UNIQUE` no nome. `ObterOuCriarAsync` resolve nomes em entidades reusando as existentes e criando as novas **na mesma transação do lançamento**.
+
+O filtro `GET /lancamentos?tags=viagem,natal` monta a query compondo um `Where` por tag sobre o mesmo `IQueryable` (semântica AND) — nada executa até o `ToListAsync`: *deferred execution*, pergunta clássica de LINQ. E o relatório `GET /relatorios/gastos-por-tag` segue o padrão de procedure nativa (`sp_GastosPorTag`, JOIN triplo com a tabela de junção).
+
+No app: campo de tags no formulário (separadas por vírgula), tags visíveis nos itens e chips de filtro na listagem do dashboard.

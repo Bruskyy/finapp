@@ -12,6 +12,7 @@ export interface Lancamento {
   contaId: string;
   data: string;
   recorrenciaId: string | null;
+  tags: string[];
 }
 
 export interface Recorrencia {
@@ -32,6 +33,12 @@ export interface CriarLancamentoRequest {
   categoriaId: string;
   contaId: string;
   data: string;
+  tags?: string[];
+}
+
+export interface Tag {
+  id: string;
+  nome: string;
 }
 
 export interface Conta {

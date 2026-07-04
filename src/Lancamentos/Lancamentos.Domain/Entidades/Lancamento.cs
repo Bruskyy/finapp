@@ -14,6 +14,11 @@ public class Lancamento
     /// <summary>Preenchido quando o lançamento foi materializado por uma conta fixa (badge "recorrente" no app).</summary>
     public Guid? RecorrenciaId { get; private set; }
 
+    private readonly List<Tag> _tags = new();
+
+    /// <summary>Etiquetas livres (N:N via skip navigation do EF Core).</summary>
+    public IReadOnlyCollection<Tag> Tags => _tags.AsReadOnly();
+
     private Lancamento() { Descricao = null!; }
 
     public Lancamento(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, DateTime data)
@@ -49,6 +54,14 @@ public class Lancamento
         CategoriaId = categoriaId;
         ContaId = contaId;
         Data = data;
+    }
+
+    /// <summary>Substitui o conjunto de tags do lançamento.</summary>
+    public void DefinirTags(IEnumerable<Tag> tags)
+    {
+        _tags.Clear();
+        foreach (var tag in tags.DistinctBy(t => t.Nome))
+            _tags.Add(tag);
     }
 
     private static void Validar(string descricao, decimal valor, Guid contaId)

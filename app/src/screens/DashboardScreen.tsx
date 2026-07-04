@@ -15,6 +15,7 @@ import {
   listarCategorias,
   listarLancamentos,
   listarSaldosPorConta,
+  listarTags,
   obterEvolucaoMensal,
   obterGastosPorCategoria,
   obterSaldoFinanceiro,
@@ -39,22 +40,26 @@ export default function DashboardScreen() {
   const [saldosContas, setSaldosContas] = useState<SaldoPorConta[]>([]);
   const [gastosCategoria, setGastosCategoria] = useState<GastoPorCategoria[]>([]);
   const [evolucao, setEvolucao] = useState<EvolucaoMensalPonto[]>([]);
+  const [tagsDisponiveis, setTagsDisponiveis] = useState<string[]>([]);
+  const [tagFiltro, setTagFiltro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (tag?: string | null) => {
     setErro(null);
     try {
       const inicio = inicioDoMes();
       const fim = fimDoMes();
-      const [resSaldo, resLancamentos, resCategorias, resSaldosContas, resGastos, resEvolucao] =
+      const filtroTags = tag ? [tag] : undefined;
+      const [resSaldo, resLancamentos, resCategorias, resSaldosContas, resGastos, resEvolucao, resTags] =
         await Promise.all([
           obterSaldoFinanceiro(inicio, fim),
-          listarLancamentos(inicio, fim),
+          listarLancamentos(inicio, fim, filtroTags),
           listarCategorias(),
           listarSaldosPorConta(),
           obterGastosPorCategoria(inicio, fim),
           obterEvolucaoMensal(6),
+          listarTags(),
         ]);
       setSaldo(resSaldo.saldo);
       setLancamentos(resLancamentos);
@@ -63,6 +68,7 @@ export default function DashboardScreen() {
       // transferências entre contas não são gasto real — fora do gráfico
       setGastosCategoria(resGastos.filter((g) => g.categoria !== "Transferência"));
       setEvolucao(resEvolucao);
+      setTagsDisponiveis(resTags.map((t) => t.nome));
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar dados.");
     } finally {
@@ -70,9 +76,16 @@ export default function DashboardScreen() {
     }
   }, []);
 
+  function alternarFiltroTag(tag: string) {
+    const nova = tagFiltro === tag ? null : tag;
+    setTagFiltro(nova);
+    carregar(nova);
+  }
+
   useFocusEffect(
     useCallback(() => {
-      carregar();
+      carregar(tagFiltro);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [carregar])
   );
 
@@ -85,7 +98,7 @@ export default function DashboardScreen() {
 
     try {
       await excluirLancamento(item.id);
-      carregar();
+      carregar(tagFiltro);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao excluir.");
     }
@@ -143,7 +156,7 @@ export default function DashboardScreen() {
       <FlatList
         data={lancamentos}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={carregar} />}
+        refreshControl={<RefreshControl refreshing={false} onRefresh={() => carregar(tagFiltro)} />}
         ListHeaderComponent={
           <View>
             {saldosContas.length > 1 && (
@@ -178,6 +191,21 @@ export default function DashboardScreen() {
             )}
 
             <Text style={styles.subtitulo}>Lançamentos recentes</Text>
+            {tagsDisponiveis.length > 0 && (
+              <View style={styles.filtroTags}>
+                {tagsDisponiveis.map((tag) => (
+                  <Pressable
+                    key={tag}
+                    style={[styles.chipTag, tagFiltro === tag && styles.chipTagAtivo]}
+                    onPress={() => alternarFiltroTag(tag)}
+                  >
+                    <Text style={tagFiltro === tag ? styles.textoChipTagAtivo : styles.textoChipTag}>
+                      #{tag}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </View>
         }
         renderItem={({ item }) => (
@@ -208,6 +236,11 @@ export default function DashboardScreen() {
                     <Text style={styles.textoBadge}>fixa</Text>
                   </View>
                 )}
+                {item.tags.map((tag) => (
+                  <Text key={tag} style={styles.tagItem}>
+                    #{tag}
+                  </Text>
+                ))}
               </View>
             </View>
             <Text
@@ -285,6 +318,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   textoBadge: { fontSize: 10, color: cores.primaria, fontWeight: "600" },
+  filtroTags: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
+  chipTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    backgroundColor: cores.cartao,
+  },
+  chipTagAtivo: { backgroundColor: cores.primaria, borderColor: cores.primaria },
+  textoChipTag: { fontSize: 12, color: cores.textoSuave },
+  textoChipTagAtivo: { fontSize: 12, color: "#fff", fontWeight: "600" },
+  tagItem: { fontSize: 11, color: cores.primaria, marginTop: 2 },
   itemValor: { fontSize: 15, fontWeight: "600" },
   botaoExcluir: { padding: 4 },
   cartaoContas: {

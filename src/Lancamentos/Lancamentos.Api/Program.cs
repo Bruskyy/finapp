@@ -27,6 +27,7 @@ builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
 builder.Services.AddScoped<IRecorrenciaRepository, RecorrenciaRepository>();
 builder.Services.AddScoped<IObjetivoRepository, ObjetivoRepository>();
+builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddHostedService<RecorrenciaWorker>();
 builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
@@ -84,12 +85,15 @@ var app = builder.Build();
 
 // ----- Lançamentos -----
 
-app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, CancellationToken ct) =>
+app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>
 {
     if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
         return Results.BadRequest(new { erro = "Conta não encontrada." });
 
     var lancamento = new Lancamento(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data);
+    if (req.Tags is { Count: > 0 })
+        lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, ct));
+
     await repo.AdicionarAsync(lancamento, ct);
     return Results.Created($"/lancamentos/{lancamento.Id}", ParaResponse(lancamento));
 }).AddEndpointFilter<ValidationFilter<CriarLancamentoRequest>>();
@@ -100,13 +104,15 @@ app.MapGet("/lancamentos/{id:guid}", async (Guid id, ILancamentoRepository repo,
     return l is null ? Results.NotFound() : Results.Ok(ParaResponse(l));
 });
 
-app.MapGet("/lancamentos", async (DateTime inicio, DateTime fim, ILancamentoRepository repo, CancellationToken ct) =>
+app.MapGet("/lancamentos", async (DateTime inicio, DateTime fim, string? tags, ILancamentoRepository repo, CancellationToken ct) =>
 {
-    var lista = await repo.ListarPorPeriodoAsync(inicio, fim, ct);
+    // ?tags=viagem,natal -> filtro AND (todas as tags)
+    var filtroTags = tags?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    var lista = await repo.ListarPorPeriodoAsync(inicio, fim, filtroTags, ct);
     return Results.Ok(lista.Select(ParaResponse));
 });
 
-app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, CancellationToken ct) =>
+app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>
 {
     var lancamento = await repo.ObterPorIdAsync(id, ct);
     if (lancamento is null)
@@ -116,12 +122,23 @@ app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest 
         return Results.BadRequest(new { erro = "Conta não encontrada." });
 
     lancamento.Atualizar(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data);
+    if (req.Tags is not null)
+        lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, ct));
+
     await repo.AtualizarAsync(lancamento, ct);
     return Results.Ok(ParaResponse(lancamento));
 }).AddEndpointFilter<ValidationFilter<AtualizarLancamentoRequest>>();
 
 app.MapDelete("/lancamentos/{id:guid}", async (Guid id, ILancamentoRepository repo, CancellationToken ct) =>
     await repo.RemoverAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+
+// ----- Tags (etiquetas livres) -----
+
+app.MapGet("/tags", async (ITagRepository repo, CancellationToken ct) =>
+{
+    var lista = await repo.ListarAsync(ct);
+    return Results.Ok(lista.Select(t => new TagResponse(t.Id, t.Nome)));
+});
 
 // ----- Contas (caixas de dinheiro, estilo Mobills) -----
 
@@ -361,6 +378,9 @@ app.MapGet("/relatorios/gastos-por-categoria", async (DateTime inicio, DateTime 
 app.MapGet("/relatorios/saldo", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
     Results.Ok(new { Saldo = await repo.SaldoPeriodoAsync(inicio, fim, ct) }));
 
+app.MapGet("/relatorios/gastos-por-tag", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
+    Results.Ok(await repo.GastosPorTagAsync(inicio, fim, ct)));
+
 app.MapGet("/relatorios/evolucao-mensal", async (int? meses, IRelatorioRepository repo, CancellationToken ct) =>
 {
     var quantidade = Math.Clamp(meses ?? 6, 1, 24);
@@ -379,7 +399,8 @@ app.UseHttpsRedirection();
 app.Run();
 
 static LancamentoResponse ParaResponse(Lancamento l) =>
-    new(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.ContaId, l.Data, l.RecorrenciaId);
+    new(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.ContaId, l.Data, l.RecorrenciaId,
+        l.Tags.Select(t => t.Nome).OrderBy(n => n).ToList());
 
 static RecorrenciaResponse ParaRecorrenciaResponse(LancamentoRecorrente r) =>
     new(r.Id, r.Descricao, r.Valor, r.Tipo, r.CategoriaId, r.ContaId, r.DiaDoMes, r.Ativa);

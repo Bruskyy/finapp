@@ -28,6 +28,11 @@ public class RelatorioRepository : IRelatorioRepository
             .SqlQuery<SaldoPorConta>($"SELECT ContaId, Conta, Saldo FROM vw_SaldoPorConta")
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<GastoPorTag>> GastosPorTagAsync(DateTime inicio, DateTime fim, CancellationToken ct)
+        => await _db.Database
+            .SqlQuery<GastoPorTag>($"EXEC sp_GastosPorTag @Inicio={inicio}, @Fim={fim}")
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<EvolucaoMensalPonto>> EvolucaoMensalAsync(int meses, CancellationToken ct)
     {
         // corte no proprio SQL: só os últimos N meses da view (Ano*12+Mes é

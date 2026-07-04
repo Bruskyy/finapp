@@ -7,6 +7,7 @@ import {
   GastoPorCategoria,
   Lancamento,
   Objetivo,
+  Tag,
   OrcamentoStatus,
   Recorrencia,
   Resgate,
@@ -37,8 +38,13 @@ async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
 
 // ----- Lançamentos -----
 
-export function listarLancamentos(inicio: string, fim: string): Promise<Lancamento[]> {
-  return requisitar(`/api/lancamentos?inicio=${inicio}&fim=${fim}`);
+export function listarLancamentos(inicio: string, fim: string, tags?: string[]): Promise<Lancamento[]> {
+  const filtro = tags && tags.length > 0 ? `&tags=${encodeURIComponent(tags.join(","))}` : "";
+  return requisitar(`/api/lancamentos?inicio=${inicio}&fim=${fim}${filtro}`);
+}
+
+export function listarTags(): Promise<Tag[]> {
+  return requisitar("/api/tags");
 }
 
 export function criarLancamento(dto: CriarLancamentoRequest): Promise<Lancamento> {
