@@ -184,3 +184,15 @@ No app: seletor de conta no formulário de novo lançamento (com pré-seleção 
 No app: aba "Fixas" (criar, pausar/reativar via switch) e badge "fixa" nos lançamentos materializados (o `Lancamento` ganhou `RecorrenciaId` nullable).
 
 Validado end-to-end: recorrência vencida materializada no boot do worker (data = dia do vencimento), moedas +5 na Gamificação, log "Sua conta fixa 'Internet fibra' foi lançada" no Notificações, e reinício do serviço sem duplicação.
+
+### Objetivos financeiros com bônus de gamificação (Item 4 do backlog)
+
+`Objetivo` (nome, valor alvo, data alvo, valor acumulado) modela metas de poupança tipo "Viagem R$ 5.000 até dezembro". O simulador do Mobills — "quanto guardar por mês pra chegar lá" — é **lógica pura de domínio** (`ValorMensalNecessario(hoje)`): sem I/O, o relógio entra por parâmetro, testável com data fixa (12 testes cobrem alvo atingido, atraso, aportes parciais).
+
+**Aporte = transação local:** `POST /objetivos/{id}/aportes` atualiza o objetivo E cria um lançamento de despesa "Aporte: {nome}" (categoria técnica "Objetivos", na conta escolhida) num único `SaveChanges` — o dinheiro "sai" da conta para a reserva, então o saldo por conta reflete a poupança. O lançamento de aporte gera moedas normais como qualquer outro.
+
+**Open/Closed na prática:** quando um aporte fecha a meta, o mesmo `SaveChanges` grava um `ObjetivoConcluidoEvent` na outbox (routing key `objetivo.concluido`). Na Gamificação, a fila existente ganhou um binding a mais e uma regra nova — `RegraObjetivoConcluido` (bônus de 50 moedas) — **sem tocar em nenhuma regra existente**: é o argumento de extensibilidade do Strategy pattern demonstrado com um evento de integração real. A idempotência do bônus reusa a constraint única de `EventId` (Etapa 3), de graça.
+
+No app: aba "Metas" com barra de progresso, valor sugerido por mês e aporte inline.
+
+Validado end-to-end: objetivo de R$ 300 em 3 meses (simulador: R$ 100/mês), aporte de R$ 200 recalculando para R$ 33,33/mês, aporte final concluindo a meta e moedas saltando 33 → 88 (+5 do lançamento de aporte, +50 do bônus via RabbitMQ), e 409 ao tentar aportar em meta concluída.

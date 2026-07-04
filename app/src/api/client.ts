@@ -4,6 +4,7 @@ import {
   Conta,
   CriarLancamentoRequest,
   Lancamento,
+  Objetivo,
   OrcamentoStatus,
   Recorrencia,
   Resgate,
@@ -112,6 +113,26 @@ export function definirOrcamento(categoriaId: string, valorLimite: number): Prom
 
 export function removerOrcamento(categoriaId: string): Promise<void> {
   return requisitar(`/api/orcamentos/${categoriaId}`, { method: "DELETE" });
+}
+
+// ----- Objetivos (metas de poupanca) -----
+
+export function listarObjetivos(): Promise<Objetivo[]> {
+  return requisitar("/api/objetivos");
+}
+
+export function criarObjetivo(nome: string, valorAlvo: number, dataAlvo: string): Promise<Objetivo> {
+  return requisitar("/api/objetivos", {
+    method: "POST",
+    body: JSON.stringify({ nome, valorAlvo, dataAlvo }),
+  });
+}
+
+export function aportarObjetivo(id: string, valor: number, contaId: string): Promise<Objetivo> {
+  return requisitar(`/api/objetivos/${id}/aportes`, {
+    method: "POST",
+    body: JSON.stringify({ valor, contaId }),
+  });
 }
 
 // ----- Relatórios -----

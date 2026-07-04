@@ -65,3 +65,14 @@ export interface Resgate {
   quantidade: number;
   status: StatusResgate;
 }
+
+export interface Objetivo {
+  id: string;
+  nome: string;
+  valorAlvo: number;
+  dataAlvo: string;
+  valorAcumulado: number;
+  percentualConcluido: number;
+  valorMensalNecessario: number;
+  concluido: boolean;
+}

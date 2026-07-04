@@ -7,6 +7,7 @@ import DashboardScreen from "./src/screens/DashboardScreen";
 import NovoLancamentoScreen from "./src/screens/NovoLancamentoScreen";
 import OrcamentosScreen from "./src/screens/OrcamentosScreen";
 import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
+import ObjetivosScreen from "./src/screens/ObjetivosScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
 import { cores } from "./src/tema";
 
@@ -17,6 +18,7 @@ const icones: Record<string, keyof typeof Ionicons.glyphMap> = {
   Novo: "add-circle",
   Orçamentos: "pie-chart",
   Fixas: "repeat",
+  Metas: "flag",
   Moedas: "medal",
 };
 
@@ -38,6 +40,7 @@ export default function App() {
         <Tab.Screen name="Novo" component={NovoLancamentoScreen} />
         <Tab.Screen name="Orçamentos" component={OrcamentosScreen} />
         <Tab.Screen name="Fixas" component={RecorrenciasScreen} />
+        <Tab.Screen name="Metas" component={ObjetivosScreen} />
         <Tab.Screen name="Moedas" component={MoedasScreen} />
       </Tab.Navigator>
     </NavigationContainer>

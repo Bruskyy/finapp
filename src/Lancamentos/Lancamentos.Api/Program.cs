@@ -26,6 +26,7 @@ builder.Services.AddScoped<IContaRepository, ContaRepository>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
 builder.Services.AddScoped<IRecorrenciaRepository, RecorrenciaRepository>();
+builder.Services.AddScoped<IObjetivoRepository, ObjetivoRepository>();
 builder.Services.AddHostedService<RecorrenciaWorker>();
 builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
@@ -70,6 +71,8 @@ builder.Services.AddSingleton<IValidator<CriarCategoriaRequest>, CriarCategoriaR
 builder.Services.AddSingleton<IValidator<DefinirOrcamentoRequest>, DefinirOrcamentoRequestValidator>();
 builder.Services.AddSingleton<IValidator<CriarContaRequest>, CriarContaRequestValidator>();
 builder.Services.AddSingleton<IValidator<CriarRecorrenciaRequest>, CriarRecorrenciaRequestValidator>();
+builder.Services.AddSingleton<IValidator<CriarObjetivoRequest>, CriarObjetivoRequestValidator>();
+builder.Services.AddSingleton<IValidator<AporteRequest>, AporteRequestValidator>();
 builder.Services.AddSingleton<IValidator<TransferenciaRequest>, TransferenciaRequestValidator>();
 
 builder.Services.AddHealthChecks()
@@ -205,6 +208,42 @@ app.MapPost("/recorrencias/{id:guid}/reativar", async (Guid id, IRecorrenciaRepo
     return Results.Ok(ParaRecorrenciaResponse(recorrencia));
 });
 
+// ----- Objetivos (metas de poupanca, estilo Mobills) -----
+
+app.MapGet("/objetivos", async (IObjetivoRepository repo, CancellationToken ct) =>
+{
+    var lista = await repo.ListarAsync(ct);
+    return Results.Ok(lista.Select(ParaObjetivoResponse));
+});
+
+app.MapPost("/objetivos", async (CriarObjetivoRequest req, IObjetivoRepository repo, CancellationToken ct) =>
+{
+    var objetivo = new Objetivo(req.Nome, req.ValorAlvo, req.DataAlvo);
+    await repo.AdicionarAsync(objetivo, ct);
+    return Results.Created($"/objetivos/{objetivo.Id}", ParaObjetivoResponse(objetivo));
+}).AddEndpointFilter<ValidationFilter<CriarObjetivoRequest>>();
+
+app.MapPost("/objetivos/{id:guid}/aportes", async (Guid id, AporteRequest req, IObjetivoRepository repo, IContaRepository contas, CancellationToken ct) =>
+{
+    var objetivo = await repo.ObterPorIdAsync(id, ct);
+    if (objetivo is null)
+        return Results.NotFound();
+    if (objetivo.Concluido)
+        return Results.Conflict(new { erro = $"Objetivo '{objetivo.Nome}' ja foi concluido." });
+    if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
+        return Results.BadRequest(new { erro = "Conta nao encontrada." });
+
+    var concluiu = objetivo.Aportar(req.Valor);
+
+    // o aporte vira uma despesa real na conta escolhida (o dinheiro "sai" para a reserva)
+    var lancamento = new Lancamento(
+        $"Aporte: {objetivo.Nome}", req.Valor, TipoLancamento.Despesa,
+        Categoria.ObjetivosId, req.ContaId, DateTime.UtcNow);
+
+    await repo.RegistrarAporteAsync(objetivo, lancamento, concluiu, ct);
+    return Results.Ok(ParaObjetivoResponse(objetivo));
+}).AddEndpointFilter<ValidationFilter<AporteRequest>>();
+
 // ----- Categorias -----
 
 app.MapGet("/categorias", async (ICategoriaRepository repo, CancellationToken ct) =>
@@ -338,6 +377,10 @@ static LancamentoResponse ParaResponse(Lancamento l) =>
 
 static RecorrenciaResponse ParaRecorrenciaResponse(LancamentoRecorrente r) =>
     new(r.Id, r.Descricao, r.Valor, r.Tipo, r.CategoriaId, r.ContaId, r.DiaDoMes, r.Ativa);
+
+static ObjetivoResponse ParaObjetivoResponse(Objetivo o) =>
+    new(o.Id, o.Nome, o.ValorAlvo, o.DataAlvo, o.ValorAcumulado,
+        o.PercentualConcluido, o.ValorMensalNecessario(DateTime.Today), o.Concluido);
 
 static ImportacaoStatusResponse ParaImportacaoResponse(ImportacaoExtrato i) =>
     new(i.Id, i.NomeArquivo, i.Status.ToString(), i.LinhasImportadas, i.LinhasComErro, i.Erro, i.CriadoEm, i.ProcessadoEm);

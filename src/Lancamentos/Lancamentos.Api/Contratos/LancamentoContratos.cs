@@ -44,3 +44,16 @@ public record ImportacaoStatusResponse(
     string? Erro,
     DateTime CriadoEm,
     DateTime? ProcessadoEm);
+public record CriarObjetivoRequest(string Nome, decimal ValorAlvo, DateTime DataAlvo);
+
+public record AporteRequest(decimal Valor, Guid ContaId);
+
+public record ObjetivoResponse(
+    Guid Id,
+    string Nome,
+    decimal ValorAlvo,
+    DateTime DataAlvo,
+    decimal ValorAcumulado,
+    decimal PercentualConcluido,
+    decimal ValorMensalNecessario,
+    bool Concluido);
