@@ -14,17 +14,19 @@ import {
   excluirLancamento,
   listarCategorias,
   listarLancamentos,
+  listarSaldosPorConta,
   obterSaldoFinanceiro,
 } from "../api/client";
 import { fimDoMes, inicioDoMes } from "../constants";
 import { confirmar } from "../confirmar";
 import { cores, formatarData, formatarMoeda, sombraCartao } from "../tema";
-import { Lancamento, TipoLancamento } from "../types";
+import { Lancamento, SaldoPorConta, TipoLancamento } from "../types";
 
 export default function DashboardScreen() {
   const [saldo, setSaldo] = useState<number | null>(null);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [nomesCategorias, setNomesCategorias] = useState<Record<string, string>>({});
+  const [saldosContas, setSaldosContas] = useState<SaldoPorConta[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -33,14 +35,16 @@ export default function DashboardScreen() {
     try {
       const inicio = inicioDoMes();
       const fim = fimDoMes();
-      const [resSaldo, resLancamentos, resCategorias] = await Promise.all([
+      const [resSaldo, resLancamentos, resCategorias, resSaldosContas] = await Promise.all([
         obterSaldoFinanceiro(inicio, fim),
         listarLancamentos(inicio, fim),
         listarCategorias(),
+        listarSaldosPorConta(),
       ]);
       setSaldo(resSaldo.saldo);
       setLancamentos(resLancamentos);
       setNomesCategorias(Object.fromEntries(resCategorias.map((c) => [c.id, c.nome])));
+      setSaldosContas(resSaldosContas);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar dados.");
     } finally {
@@ -117,6 +121,23 @@ export default function DashboardScreen() {
       </View>
 
       {erro && <Text style={styles.erro}>{erro}</Text>}
+
+      {saldosContas.length > 1 && (
+        <View style={[styles.cartaoContas, sombraCartao]}>
+          <Text style={styles.subtitulo}>Contas</Text>
+          {saldosContas.map((c) => (
+            <View key={c.contaId} style={styles.linhaConta}>
+              <View style={styles.nomeConta}>
+                <Ionicons name="wallet-outline" size={16} color={cores.textoSuave} />
+                <Text style={styles.textoConta}>{c.conta}</Text>
+              </View>
+              <Text style={[styles.saldoConta, c.saldo < 0 && { color: cores.despesa }]}>
+                {formatarMoeda(c.saldo)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       <Text style={styles.subtitulo}>Lançamentos recentes</Text>
       <FlatList
@@ -210,6 +231,21 @@ const styles = StyleSheet.create({
   itemDetalhe: { fontSize: 12, color: cores.textoSuave, marginTop: 2 },
   itemValor: { fontSize: 15, fontWeight: "600" },
   botaoExcluir: { padding: 4 },
+  cartaoContas: {
+    backgroundColor: cores.cartao,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 18,
+  },
+  linhaConta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  nomeConta: { flexDirection: "row", alignItems: "center", gap: 8 },
+  textoConta: { fontSize: 14, color: cores.texto },
+  saldoConta: { fontSize: 14, fontWeight: "600", color: cores.texto },
   vazio: { color: cores.textoSuave, textAlign: "center", marginTop: 20 },
   erro: { color: cores.despesa, marginBottom: 10 },
 });

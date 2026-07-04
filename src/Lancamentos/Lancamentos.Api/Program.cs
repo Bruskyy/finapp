@@ -21,6 +21,7 @@ builder.Services.AddDbContext<LancamentosDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LancamentosDb")));
 
 builder.Services.AddScoped<ILancamentoRepository, LancamentoRepository>();
+builder.Services.AddScoped<IContaRepository, ContaRepository>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
 builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
@@ -64,6 +65,8 @@ builder.Services.AddSingleton<IValidator<CriarLancamentoRequest>, CriarLancament
 builder.Services.AddSingleton<IValidator<AtualizarLancamentoRequest>, AtualizarLancamentoRequestValidator>();
 builder.Services.AddSingleton<IValidator<CriarCategoriaRequest>, CriarCategoriaRequestValidator>();
 builder.Services.AddSingleton<IValidator<DefinirOrcamentoRequest>, DefinirOrcamentoRequestValidator>();
+builder.Services.AddSingleton<IValidator<CriarContaRequest>, CriarContaRequestValidator>();
+builder.Services.AddSingleton<IValidator<TransferenciaRequest>, TransferenciaRequestValidator>();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<LancamentosDbContext>();
@@ -74,9 +77,12 @@ var app = builder.Build();
 
 // ----- Lançamentos -----
 
-app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ILancamentoRepository repo, CancellationToken ct) =>
+app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, CancellationToken ct) =>
 {
-    var lancamento = new Lancamento(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.Data);
+    if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
+        return Results.BadRequest(new { erro = "Conta não encontrada." });
+
+    var lancamento = new Lancamento(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data);
     await repo.AdicionarAsync(lancamento, ct);
     return Results.Created($"/lancamentos/{lancamento.Id}", ParaResponse(lancamento));
 }).AddEndpointFilter<ValidationFilter<CriarLancamentoRequest>>();
@@ -93,19 +99,69 @@ app.MapGet("/lancamentos", async (DateTime inicio, DateTime fim, ILancamentoRepo
     return Results.Ok(lista.Select(ParaResponse));
 });
 
-app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest req, ILancamentoRepository repo, CancellationToken ct) =>
+app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, CancellationToken ct) =>
 {
     var lancamento = await repo.ObterPorIdAsync(id, ct);
     if (lancamento is null)
         return Results.NotFound();
 
-    lancamento.Atualizar(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.Data);
+    if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
+        return Results.BadRequest(new { erro = "Conta não encontrada." });
+
+    lancamento.Atualizar(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data);
     await repo.AtualizarAsync(lancamento, ct);
     return Results.Ok(ParaResponse(lancamento));
 }).AddEndpointFilter<ValidationFilter<AtualizarLancamentoRequest>>();
 
 app.MapDelete("/lancamentos/{id:guid}", async (Guid id, ILancamentoRepository repo, CancellationToken ct) =>
     await repo.RemoverAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+
+// ----- Contas (caixas de dinheiro, estilo Mobills) -----
+
+app.MapGet("/contas", async (IContaRepository repo, CancellationToken ct) =>
+{
+    var contas = await repo.ListarAsync(ct);
+    return Results.Ok(contas.Select(c => new ContaResponse(c.Id, c.Nome)));
+});
+
+app.MapPost("/contas", async (CriarContaRequest req, IContaRepository repo, CancellationToken ct) =>
+{
+    if (await repo.ExisteComNomeAsync(req.Nome, ct))
+        return Results.Conflict(new { erro = $"Conta '{req.Nome.Trim()}' já existe." });
+
+    var conta = new Conta(req.Nome);
+    await repo.AdicionarAsync(conta, ct);
+    return Results.Created($"/contas/{conta.Id}", new ContaResponse(conta.Id, conta.Nome));
+}).AddEndpointFilter<ValidationFilter<CriarContaRequest>>();
+
+// saldo por conta via view SQL nativa (vw_SaldoPorConta) — requisito de SQL da vaga
+app.MapGet("/contas/saldos", async (IRelatorioRepository relatorios, CancellationToken ct) =>
+{
+    var saldos = await relatorios.SaldosPorContaAsync(ct);
+    return Results.Ok(saldos.Select(s => new SaldoPorContaResponse(s.ContaId, s.Conta, s.Saldo)));
+});
+
+// ----- Transferências entre contas -----
+
+app.MapPost("/transferencias", async (TransferenciaRequest req, ILancamentoRepository lancamentos, IContaRepository contas, CancellationToken ct) =>
+{
+    var origem = await contas.ObterPorIdAsync(req.ContaOrigemId, ct);
+    var destino = await contas.ObterPorIdAsync(req.ContaDestinoId, ct);
+    if (origem is null || destino is null)
+        return Results.BadRequest(new { erro = "Conta de origem ou destino não encontrada." });
+
+    var saida = new Lancamento($"Transferência para {destino.Nome}", req.Valor,
+        TipoLancamento.Despesa, Categoria.TransferenciaId, origem.Id, DateTime.UtcNow);
+    var entrada = new Lancamento($"Transferência de {origem.Nome}", req.Valor,
+        TipoLancamento.Receita, Categoria.TransferenciaId, destino.Id, DateTime.UtcNow);
+
+    // os dois lançamentos na MESMA transação local (mesmo banco) — não precisa
+    // de Saga: atomicidade aqui é do próprio SQL Server, diferente do resgate
+    // de moedas que cruza dois serviços/bancos
+    await lancamentos.AdicionarTransferenciaAsync(saida, entrada, ct);
+
+    return Results.Created("/transferencias", new TransferenciaResponse(saida.Id, entrada.Id));
+}).AddEndpointFilter<ValidationFilter<TransferenciaRequest>>();
 
 // ----- Categorias -----
 
@@ -236,7 +292,7 @@ app.UseHttpsRedirection();
 app.Run();
 
 static LancamentoResponse ParaResponse(Lancamento l) =>
-    new(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.Data);
+    new(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.ContaId, l.Data);
 
 static ImportacaoStatusResponse ParaImportacaoResponse(ImportacaoExtrato i) =>
     new(i.Id, i.NomeArquivo, i.Status.ToString(), i.LinhasImportadas, i.LinhasComErro, i.Erro, i.CriadoEm, i.ProcessadoEm);

@@ -160,3 +160,15 @@ Todos os serviços agora expõem `GET /health` (padrão **Health Checks** do ASP
 **Teste de regressão:** `ApiResilienciaTests` sobe a API da Gamificação inteira (`WebApplicationFactory`) com o RabbitMQ apontando pra uma porta fechada e verifica que `/health` e `/saldo` continuam respondendo 200 — exatamente o cenário que derrubava o serviço antes.
 
 **Conceitos de entrevista:** comportamento de exceções em `BackgroundService` (StopHost vs. Ignore), diferença entre resiliência de *startup* (dependência ainda não disponível) e de *runtime* (dependência caiu), liveness/readiness probes, e por que um serviço não deve morrer por causa de dependência indisponível que só afeta parte das suas funções.
+
+### Contas, transferências e saldo por conta (Item 1 do backlog)
+
+Todo lançamento agora pertence a uma **Conta** (Carteira, Banco X...), estilo Mobills. Três pontos de interesse:
+
+**Migração com backfill:** `ContaId` nasceu obrigatório num banco que já tinha lançamentos. A migration `ContasComBackfill` faz na ordem: cria a tabela → seeda a conta padrão "Carteira" → adiciona `ContaId` **nullable** → `UPDATE` atribuindo os lançamentos existentes à Carteira → só então `ALTER` para `NOT NULL` + FK + índice. Se a coluna nascesse `NOT NULL` com default `Guid.Empty` (o que o EF gera sozinho), a FK quebraria em qualquer banco com dados — a ordem das operações é o ponto da entrevista.
+
+**Transferência entre contas = transação local, não Saga:** `POST /transferencias` cria DOIS lançamentos (despesa na origem "Transferência para X", receita no destino "Transferência de Y") num único `SaveChanges`. Mesmo banco → a atomicidade é do próprio SQL Server; comparar com o resgate de moedas (Etapa 4), que precisa de Saga porque cruza dois serviços/bancos. Transferências usam a categoria técnica "Transferência" e **não passam pela outbox**: não são fato econômico novo (não geram moedas — evita farm de moedas transferindo dinheiro em círculos — nem notificação). O saldo geral do mês não muda (débito e crédito se anulam); o saldo por conta sim.
+
+**Saldo por conta via view nativa:** `GET /contas/saldos` lê a view `vw_SaldoPorConta` (LEFT JOIN + SUM com CASE), mapeada como keyless entity — mesmo padrão SQL-nativo dos relatórios da Etapa 1.
+
+No app: seletor de conta no formulário de novo lançamento (com pré-seleção quando só existe uma) e bloco "Contas" no dashboard, exibido quando há mais de uma conta.

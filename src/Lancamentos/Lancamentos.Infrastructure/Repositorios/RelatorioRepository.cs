@@ -22,4 +22,9 @@ public class RelatorioRepository : IRelatorioRepository
         => await _db.Database
             .SqlQuery<decimal>($"SELECT dbo.fn_SaldoPeriodo({inicio}, {fim}) AS Value")
             .SingleAsync(ct);
+
+    public async Task<IReadOnlyList<SaldoPorConta>> SaldosPorContaAsync(CancellationToken ct)
+        => await _db.Database
+            .SqlQuery<SaldoPorConta>($"SELECT ContaId, Conta, Saldo FROM vw_SaldoPorConta")
+            .ToListAsync(ct);
 }

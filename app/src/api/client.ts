@@ -1,10 +1,12 @@
 import { Platform } from "react-native";
 import {
   Categoria,
+  Conta,
   CriarLancamentoRequest,
   Lancamento,
   OrcamentoStatus,
   Resgate,
+  SaldoPorConta,
 } from "../types";
 
 // Em desenvolvimento, "localhost" aponta pro proprio dispositivo/emulador,
@@ -49,6 +51,23 @@ export function excluirLancamento(id: string): Promise<void> {
 
 export function listarCategorias(): Promise<Categoria[]> {
   return requisitar("/api/categorias");
+}
+
+// ----- Contas -----
+
+export function listarContas(): Promise<Conta[]> {
+  return requisitar("/api/contas");
+}
+
+export function listarSaldosPorConta(): Promise<SaldoPorConta[]> {
+  return requisitar("/api/contas/saldos");
+}
+
+export function transferir(contaOrigemId: string, contaDestinoId: string, valor: number): Promise<void> {
+  return requisitar("/api/transferencias", {
+    method: "POST",
+    body: JSON.stringify({ contaOrigemId, contaDestinoId, valor }),
+  });
 }
 
 // ----- Orçamentos -----

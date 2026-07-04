@@ -69,4 +69,13 @@ public class LancamentoRepository : ILancamentoRepository
         var removidos = await _db.Lancamentos.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
         return removidos > 0;
     }
+
+    public async Task AdicionarTransferenciaAsync(Lancamento saida, Lancamento entrada, CancellationToken ct)
+    {
+        // sem AdicionarComEvento de proposito: transferencia entre contas
+        // proprias nao gera moedas nem notificacao (nao e fato economico novo)
+        _db.Lancamentos.Add(saida);
+        _db.Lancamentos.Add(entrada);
+        await _db.SaveChangesAsync(ct); // atomicidade: mesmo banco, mesma transacao (por isso nao precisa de Saga)
+    }
 }

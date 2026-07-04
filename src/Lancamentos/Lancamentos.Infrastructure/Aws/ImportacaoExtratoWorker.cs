@@ -131,6 +131,7 @@ public class ImportacaoExtratoWorker : BackgroundService
                 l.Valor,
                 l.Tipo,
                 porNome.GetValueOrDefault(l.Categoria, fallback),
+                Conta.CarteiraPadraoId, // o CSV não tem coluna de conta: tudo cai na Carteira
                 l.Data))
             .ToList();
     }
