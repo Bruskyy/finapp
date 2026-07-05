@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { cores } from "../tema";
+import { cor } from "../tema";
 import { EvolucaoMensalPonto } from "../types";
 
 const ALTURA_MAXIMA = 90;
@@ -21,13 +21,13 @@ export default function GraficoEvolucaoMensal({ dados }: { dados: EvolucaoMensal
               <View
                 style={[
                   styles.barra,
-                  { height: Math.max(2, (d.receitas / maior) * ALTURA_MAXIMA), backgroundColor: cores.receita },
+                  { height: Math.max(2, (d.receitas / maior) * ALTURA_MAXIMA), backgroundColor: cor.verde },
                 ]}
               />
               <View
                 style={[
                   styles.barra,
-                  { height: Math.max(2, (d.despesas / maior) * ALTURA_MAXIMA), backgroundColor: cores.despesa },
+                  { height: Math.max(2, (d.despesas / maior) * ALTURA_MAXIMA), backgroundColor: cor.vermelho },
                 ]}
               />
             </View>
@@ -36,9 +36,9 @@ export default function GraficoEvolucaoMensal({ dados }: { dados: EvolucaoMensal
         ))}
       </View>
       <View style={styles.legenda}>
-        <View style={[styles.bolinha, { backgroundColor: cores.receita }]} />
+        <View style={[styles.bolinha, { backgroundColor: cor.verde }]} />
         <Text style={styles.textoLegenda}>Receitas</Text>
-        <View style={[styles.bolinha, { backgroundColor: cores.despesa }]} />
+        <View style={[styles.bolinha, { backgroundColor: cor.vermelho }]} />
         <Text style={styles.textoLegenda}>Despesas</Text>
       </View>
     </View>
@@ -55,8 +55,8 @@ const styles = StyleSheet.create({
   coluna: { alignItems: "center", gap: 4 },
   parDeBarras: { flexDirection: "row", alignItems: "flex-end", gap: 3 },
   barra: { width: 12, borderRadius: 3 },
-  rotuloMes: { fontSize: 11, color: cores.textoSuave },
+  rotuloMes: { fontSize: 11, color: cor.cinza500 },
   legenda: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8 },
   bolinha: { width: 8, height: 8, borderRadius: 4 },
-  textoLegenda: { fontSize: 11, color: cores.textoSuave, marginRight: 8 },
+  textoLegenda: { fontSize: 11, color: cor.cinza500, marginRight: 8 },
 });

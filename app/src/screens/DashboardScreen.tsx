@@ -1,15 +1,6 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   excluirLancamento,
@@ -20,12 +11,18 @@ import {
   obterEvolucaoMensal,
   obterGastosPorCategoria,
   obterSaldoFinanceiro,
+  obterSaldoMoedas,
 } from "../api/client";
+import Card from "../componentes/Card";
+import Chip from "../componentes/Chip";
+import EstadoVazio from "../componentes/EstadoVazio";
 import GraficoGastosPorCategoria from "../componentes/GraficoGastosPorCategoria";
 import GraficoEvolucaoMensal from "../componentes/GraficoEvolucaoMensal";
+import Input from "../componentes/Input";
+import ItemLancamento from "../componentes/ItemLancamento";
 import { fimDoMes, inicioDoMes } from "../constants";
 import { confirmar } from "../confirmar";
-import { cores, formatarData, formatarMoeda, sombraCartao } from "../tema";
+import { cor, espaco, fonte, formatarMoeda } from "../tema";
 import {
   EvolucaoMensalPonto,
   GastoPorCategoria,
@@ -36,6 +33,7 @@ import {
 
 export default function DashboardScreen() {
   const [saldo, setSaldo] = useState<number | null>(null);
+  const [moedas, setMoedas] = useState<number | null>(null);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [nomesCategorias, setNomesCategorias] = useState<Record<string, string>>({});
   const [saldosContas, setSaldosContas] = useState<SaldoPorConta[]>([]);
@@ -56,9 +54,10 @@ export default function DashboardScreen() {
         tags: tag ? [tag] : undefined,
         texto: texto && texto.trim().length > 0 ? texto.trim() : undefined,
       };
-      const [resSaldo, resLancamentos, resCategorias, resSaldosContas, resGastos, resEvolucao, resTags] =
+      const [resSaldo, resMoedas, resLancamentos, resCategorias, resSaldosContas, resGastos, resEvolucao, resTags] =
         await Promise.all([
           obterSaldoFinanceiro(inicio, fim),
+          obterSaldoMoedas(),
           listarLancamentos(inicio, fim, filtros),
           listarCategorias(),
           listarSaldosPorConta(),
@@ -67,6 +66,7 @@ export default function DashboardScreen() {
           listarTags(),
         ]);
       setSaldo(resSaldo.saldo);
+      setMoedas(resMoedas.saldo);
       setLancamentos(resLancamentos.itens);
       setNomesCategorias(Object.fromEntries(resCategorias.map((c) => [c.id, c.nome])));
       setSaldosContas(resSaldosContas);
@@ -116,8 +116,8 @@ export default function DashboardScreen() {
 
   if (carregando) {
     return (
-      <View style={styles.centro}>
-        <ActivityIndicator size="large" color={cores.primaria} />
+      <View style={estilos.centro}>
+        <ActivityIndicator size="large" color={cor.primaria} />
       </View>
     );
   }
@@ -132,36 +132,42 @@ export default function DashboardScreen() {
   const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.cartaoSaldo, sombraCartao]}>
-        <Text style={styles.rotuloMes}>{mesAtual}</Text>
-        <Text style={styles.rotuloSaldo}>Saldo do mês</Text>
-        <Text style={[styles.saldo, saldo !== null && saldo < 0 && styles.saldoNegativo]}>
+    <View style={estilos.container}>
+      {/* Cartão principal: muito respiro, saldo é o protagonista da tela */}
+      <View style={estilos.cartaoSaldo}>
+        <Text style={estilos.rotuloMes}>{mesAtual}</Text>
+        <Text style={estilos.rotuloSaldo}>Saldo disponível</Text>
+        <Text style={[estilos.saldo, saldo !== null && saldo < 0 && estilos.saldoNegativo]}>
           {saldo !== null ? formatarMoeda(saldo) : "--"}
         </Text>
-        <View style={styles.linhaResumo}>
-          <View style={styles.resumoItem}>
-            <Ionicons name="arrow-up-circle" size={20} color={cores.receita} />
+        <View style={estilos.linhaResumo}>
+          <View style={estilos.resumoItem}>
+            <Ionicons name="arrow-up-circle" size={20} color={cor.verde} />
             <View>
-              <Text style={styles.resumoRotulo}>Receitas</Text>
-              <Text style={[styles.resumoValor, { color: cores.receita }]}>
-                {formatarMoeda(receitas)}
-              </Text>
+              <Text style={estilos.resumoRotulo}>Receitas</Text>
+              <Text style={[estilos.resumoValor, { color: cor.verde }]}>{formatarMoeda(receitas)}</Text>
             </View>
           </View>
-          <View style={styles.resumoItem}>
-            <Ionicons name="arrow-down-circle" size={20} color={cores.despesa} />
+          <View style={estilos.resumoItem}>
+            <Ionicons name="arrow-down-circle" size={20} color={cor.vermelho} />
             <View>
-              <Text style={styles.resumoRotulo}>Despesas</Text>
-              <Text style={[styles.resumoValor, { color: cores.despesa }]}>
-                {formatarMoeda(despesas)}
-              </Text>
+              <Text style={estilos.resumoRotulo}>Despesas</Text>
+              <Text style={[estilos.resumoValor, { color: cor.vermelho }]}>{formatarMoeda(despesas)}</Text>
             </View>
           </View>
         </View>
       </View>
 
-      {erro && <Text style={styles.erro}>{erro}</Text>}
+      {/* Espaço permanente de gamificação — só dados reais hoje (moedas).
+          Slot preparado para nível/XP/sequência quando o backend existir. */}
+      <View style={estilos.faixaMoedas}>
+        <Ionicons name="medal" size={18} color={cor.moeda} />
+        <Text style={estilos.textoMoedas}>
+          {moedas !== null ? moedas : "--"} moedas
+        </Text>
+      </View>
+
+      {erro && <Text style={estilos.erro}>{erro}</Text>}
 
       <FlatList
         data={lancamentos}
@@ -170,212 +176,121 @@ export default function DashboardScreen() {
         ListHeaderComponent={
           <View>
             {saldosContas.length > 1 && (
-              <View style={[styles.cartaoContas, sombraCartao]}>
-                <Text style={styles.subtitulo}>Contas</Text>
+              <Card estiloExtra={estilos.cartaoSecao}>
+                <Text style={estilos.tituloSecao}>Contas</Text>
                 {saldosContas.map((c) => (
-                  <View key={c.contaId} style={styles.linhaConta}>
-                    <View style={styles.nomeConta}>
-                      <Ionicons name="wallet-outline" size={16} color={cores.textoSuave} />
-                      <Text style={styles.textoConta}>{c.conta}</Text>
+                  <View key={c.contaId} style={estilos.linhaConta}>
+                    <View style={estilos.nomeConta}>
+                      <Ionicons name="wallet-outline" size={16} color={cor.cinza500} />
+                      <Text style={estilos.textoConta}>{c.conta}</Text>
                     </View>
-                    <Text style={[styles.saldoConta, c.saldo < 0 && { color: cores.despesa }]}>
+                    <Text style={[estilos.saldoConta, c.saldo < 0 && { color: cor.vermelho }]}>
                       {formatarMoeda(c.saldo)}
                     </Text>
                   </View>
                 ))}
-              </View>
+              </Card>
             )}
 
             {gastosCategoria.length > 0 && (
-              <View style={[styles.cartaoContas, sombraCartao]}>
-                <Text style={styles.subtitulo}>Gastos por categoria (mês)</Text>
+              <Card estiloExtra={estilos.cartaoSecao}>
+                <Text style={estilos.tituloSecao}>Gastos por categoria (mês)</Text>
                 <GraficoGastosPorCategoria dados={gastosCategoria} />
-              </View>
+              </Card>
             )}
 
             {evolucao.length > 1 && (
-              <View style={[styles.cartaoContas, sombraCartao]}>
-                <Text style={styles.subtitulo}>Últimos meses</Text>
+              <Card estiloExtra={estilos.cartaoSecao}>
+                <Text style={estilos.tituloSecao}>Últimos meses</Text>
                 <GraficoEvolucaoMensal dados={evolucao} />
-              </View>
+              </Card>
             )}
 
-            <Text style={styles.subtitulo}>Lançamentos recentes</Text>
-            <TextInput
-              style={styles.inputBusca}
+            <Text style={estilos.tituloSecao}>Lançamentos recentes</Text>
+            <Input
               placeholder="Buscar na descrição..."
-              placeholderTextColor={cores.textoSuave}
               value={textoBusca}
               onChangeText={buscarPorTexto}
             />
             {tagsDisponiveis.length > 0 && (
-              <View style={styles.filtroTags}>
+              <View style={estilos.filtroTags}>
                 {tagsDisponiveis.map((tag) => (
-                  <Pressable
+                  <Chip
                     key={tag}
-                    style={[styles.chipTag, tagFiltro === tag && styles.chipTagAtivo]}
+                    texto={`#${tag}`}
+                    selecionado={tagFiltro === tag}
                     onPress={() => alternarFiltroTag(tag)}
-                  >
-                    <Text style={tagFiltro === tag ? styles.textoChipTagAtivo : styles.textoChipTag}>
-                      #{tag}
-                    </Text>
-                  </Pressable>
+                  />
                 ))}
               </View>
             )}
           </View>
         }
         renderItem={({ item }) => (
-          <View style={[styles.item, sombraCartao]}>
-            <View
-              style={[
-                styles.iconeTipo,
-                { backgroundColor: item.tipo === TipoLancamento.Despesa ? "#fdecea" : "#e8f5e9" },
-              ]}
-            >
-              <Ionicons
-                name={item.tipo === TipoLancamento.Despesa ? "arrow-down" : "arrow-up"}
-                size={16}
-                color={item.tipo === TipoLancamento.Despesa ? cores.despesa : cores.receita}
-              />
-            </View>
-            <View style={styles.itemCentro}>
-              <Text style={styles.itemDescricao} numberOfLines={1}>
-                {item.descricao}
-              </Text>
-              <View style={styles.linhaDetalhe}>
-                <Text style={styles.itemDetalhe}>
-                  {nomesCategorias[item.categoriaId] ?? "Sem categoria"} · {formatarData(item.data)}
-                </Text>
-                {item.recorrenciaId && (
-                  <View style={styles.badgeRecorrente}>
-                    <Ionicons name="repeat" size={10} color={cores.primaria} />
-                    <Text style={styles.textoBadge}>fixa</Text>
-                  </View>
-                )}
-                {item.tags.map((tag) => (
-                  <Text key={tag} style={styles.tagItem}>
-                    #{tag}
-                  </Text>
-                ))}
-              </View>
-            </View>
-            <Text
-              style={[
-                styles.itemValor,
-                { color: item.tipo === TipoLancamento.Despesa ? cores.despesa : cores.receita },
-              ]}
-            >
-              {item.tipo === TipoLancamento.Despesa ? "-" : "+"}
-              {formatarMoeda(item.valor)}
-            </Text>
-            <Pressable
-              onPress={() => excluir(item)}
-              hitSlop={8}
-              style={styles.botaoExcluir}
-              accessibilityLabel={`Excluir ${item.descricao}`}
-            >
-              <Ionicons name="trash-outline" size={18} color={cores.textoSuave} />
-            </Pressable>
-          </View>
+          <ItemLancamento
+            descricao={item.descricao}
+            valor={item.valor}
+            tipo={item.tipo}
+            categoria={nomesCategorias[item.categoriaId] ?? "Outros"}
+            data={item.data}
+            tags={item.tags}
+            recorrente={!!item.recorrenciaId}
+            onExcluir={() => excluir(item)}
+          />
         )}
-        ListEmptyComponent={<Text style={styles.vazio}>Nenhum lançamento neste mês ainda.</Text>}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        ItemSeparatorComponent={() => <View style={estilos.separador} />}
+        ListEmptyComponent={
+          <EstadoVazio icone="receipt-outline" mensagem="Nenhum lançamento neste mês ainda. Registre sua primeira despesa!" />
+        }
+        contentContainerStyle={estilos.listaConteudo}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 56, backgroundColor: cores.fundo },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cores.fundo },
-  cartaoSaldo: {
-    backgroundColor: cores.cartao,
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 18,
-  },
-  rotuloMes: { fontSize: 13, color: cores.textoSuave, textTransform: "capitalize" },
-  rotuloSaldo: { fontSize: 15, color: cores.textoSuave, marginTop: 6 },
-  saldo: { fontSize: 34, fontWeight: "bold", color: cores.texto, marginBottom: 14 },
-  saldoNegativo: { color: cores.despesa },
-  linhaResumo: { flexDirection: "row", gap: 28 },
-  resumoItem: { flexDirection: "row", alignItems: "center", gap: 8 },
-  resumoRotulo: { fontSize: 12, color: cores.textoSuave },
+const estilos = StyleSheet.create({
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.xxxl + espaco.sm, backgroundColor: cor.cinza100 },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
+
+  cartaoSaldo: { marginBottom: espaco.lg },
+  rotuloMes: { ...fonte.legenda, textTransform: "capitalize" },
+  rotuloSaldo: { fontSize: 15, color: cor.cinza500, marginTop: espaco.sm },
+  saldo: { ...fonte.saldo, color: cor.cinza900, marginTop: espaco.xs, marginBottom: espaco.lg },
+  saldoNegativo: { color: cor.vermelho },
+  linhaResumo: { flexDirection: "row", gap: espaco.xl },
+  resumoItem: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
+  resumoRotulo: { fontSize: 12, color: cor.cinza500 },
   resumoValor: { fontSize: 15, fontWeight: "600" },
-  subtitulo: { fontSize: 16, fontWeight: "600", color: cores.texto, marginBottom: 10 },
-  item: {
+
+  faixaMoedas: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: cores.cartao,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    gap: 10,
+    gap: espaco.sm,
+    alignSelf: "flex-start",
+    backgroundColor: cor.moedaSuave,
+    borderRadius: 20,
+    paddingHorizontal: espaco.md,
+    paddingVertical: espaco.xs + 2,
+    marginBottom: espaco.xl,
   },
-  iconeTipo: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  itemCentro: { flex: 1 },
-  itemDescricao: { fontSize: 15, color: cores.texto, fontWeight: "500" },
-  itemDetalhe: { fontSize: 12, color: cores.textoSuave, marginTop: 2 },
-  linhaDetalhe: { flexDirection: "row", alignItems: "center", gap: 6 },
-  badgeRecorrente: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    backgroundColor: "#e3f2fd",
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    marginTop: 2,
-  },
-  textoBadge: { fontSize: 10, color: cores.primaria, fontWeight: "600" },
-  inputBusca: {
-    borderWidth: 1,
-    borderColor: cores.borda,
-    backgroundColor: cores.cartao,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: cores.texto,
-    marginBottom: 10,
-  },
-  filtroTags: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
-  chipTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: cores.borda,
-    backgroundColor: cores.cartao,
-  },
-  chipTagAtivo: { backgroundColor: cores.primaria, borderColor: cores.primaria },
-  textoChipTag: { fontSize: 12, color: cores.textoSuave },
-  textoChipTagAtivo: { fontSize: 12, color: "#fff", fontWeight: "600" },
-  tagItem: { fontSize: 11, color: cores.primaria, marginTop: 2 },
-  itemValor: { fontSize: 15, fontWeight: "600" },
-  botaoExcluir: { padding: 4 },
-  cartaoContas: {
-    backgroundColor: cores.cartao,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 18,
-  },
+  textoMoedas: { fontSize: 13, fontWeight: "600", color: cor.cinza900 },
+
+  cartaoSecao: { marginBottom: espaco.lg },
+  tituloSecao: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
+
+  filtroTags: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.sm },
+  separador: { height: 1, backgroundColor: cor.cinza200 },
+  listaConteudo: { paddingBottom: espaco.xl },
+
   linhaConta: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: espaco.xs + 2,
   },
-  nomeConta: { flexDirection: "row", alignItems: "center", gap: 8 },
-  textoConta: { fontSize: 14, color: cores.texto },
-  saldoConta: { fontSize: 14, fontWeight: "600", color: cores.texto },
-  vazio: { color: cores.textoSuave, textAlign: "center", marginTop: 20 },
-  erro: { color: cores.despesa, marginBottom: 10 },
+  nomeConta: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
+  textoConta: { fontSize: 14, color: cor.cinza900 },
+  saldoConta: { fontSize: 14, fontWeight: "600", color: cor.cinza900 },
+
+  erro: { color: cor.vermelho, marginBottom: espaco.sm },
 });

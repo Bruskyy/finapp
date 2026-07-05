@@ -1,17 +1,12 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { criarLancamento, listarCategorias, listarContas } from "../api/client";
-import { cores, sombraCartao } from "../tema";
+import Botao from "../componentes/Botao";
+import Chip from "../componentes/Chip";
+import Input from "../componentes/Input";
+import { cor, espaco, fonte, iconeDaCategoria, raio } from "../tema";
 import { Categoria, Conta, TipoLancamento } from "../types";
 
 export default function NovoLancamentoScreen() {
@@ -83,182 +78,123 @@ export default function NovoLancamentoScreen() {
     }
   }
 
-  return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.titulo}>Novo lançamento</Text>
+  const ehDespesa = tipo === TipoLancamento.Despesa;
+  const ehReceita = tipo === TipoLancamento.Receita;
 
-      <View style={styles.seletorTipo}>
+  return (
+    <ScrollView style={estilos.container} keyboardShouldPersistTaps="handled">
+      <Text style={estilos.titulo}>Novo lançamento</Text>
+
+      {/* Segmented control grande: a ação mais frequente do app merece destaque */}
+      <View style={estilos.seletorTipo}>
         <Pressable
-          style={[styles.botaoTipo, tipo === TipoLancamento.Despesa && styles.botaoTipoAtivoDespesa]}
+          style={[estilos.segmento, ehDespesa && estilos.segmentoDespesaAtivo]}
           onPress={() => setTipo(TipoLancamento.Despesa)}
         >
-          <Ionicons
-            name="arrow-down"
-            size={16}
-            color={tipo === TipoLancamento.Despesa ? "#fff" : cores.despesa}
-          />
-          <Text style={tipo === TipoLancamento.Despesa ? styles.textoTipoAtivo : styles.textoTipo}>
-            Despesa
-          </Text>
+          <Ionicons name="arrow-down" size={20} color={ehDespesa ? "#fff" : cor.vermelho} />
+          <Text style={[estilos.textoSegmento, ehDespesa && estilos.textoSegmentoAtivo]}>Despesa</Text>
         </Pressable>
         <Pressable
-          style={[styles.botaoTipo, tipo === TipoLancamento.Receita && styles.botaoTipoAtivoReceita]}
+          style={[estilos.segmento, ehReceita && estilos.segmentoReceitaAtivo]}
           onPress={() => setTipo(TipoLancamento.Receita)}
         >
-          <Ionicons
-            name="arrow-up"
-            size={16}
-            color={tipo === TipoLancamento.Receita ? "#fff" : cores.receita}
-          />
-          <Text style={tipo === TipoLancamento.Receita ? styles.textoTipoAtivo : styles.textoTipo}>
-            Receita
-          </Text>
+          <Ionicons name="arrow-up" size={20} color={ehReceita ? "#fff" : cor.verde} />
+          <Text style={[estilos.textoSegmento, ehReceita && estilos.textoSegmentoAtivo]}>Receita</Text>
         </Pressable>
       </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Descrição"
-        placeholderTextColor={cores.textoSuave}
-        value={descricao}
-        onChangeText={setDescricao}
-      />
-      <TextInput
-        style={styles.input}
+      <Input placeholder="Descrição" value={descricao} onChangeText={setDescricao} />
+      <Input
         placeholder="Valor (ex: 35,50)"
-        placeholderTextColor={cores.textoSuave}
         value={valor}
         onChangeText={setValor}
         keyboardType="decimal-pad"
       />
 
-      <Text style={styles.rotuloCategorias}>Conta</Text>
-      <View style={styles.listaCategorias}>
-        {contas.length === 0 && <ActivityIndicator color={cores.primaria} />}
+      <Text style={estilos.rotulo}>Conta</Text>
+      <View style={estilos.linhaChips}>
+        {contas.length === 0 && <ActivityIndicator color={cor.primaria} />}
         {contas.map((c) => (
-          <Pressable
-            key={c.id}
-            style={[styles.chip, contaId === c.id && styles.chipAtivo]}
-            onPress={() => setContaId(c.id)}
-          >
-            <Text style={contaId === c.id ? styles.textoChipAtivo : styles.textoChip}>
-              {c.nome}
-            </Text>
-          </Pressable>
+          <Chip key={c.id} texto={c.nome} selecionado={contaId === c.id} onPress={() => setContaId(c.id)} />
         ))}
       </View>
 
-      <Text style={styles.rotuloCategorias}>Categoria</Text>
-      <View style={styles.listaCategorias}>
-        {categorias.length === 0 && <ActivityIndicator color={cores.primaria} />}
-        {categorias.map((c) => (
-          <Pressable
-            key={c.id}
-            style={[styles.chip, categoriaId === c.id && styles.chipAtivo]}
-            onPress={() => setCategoriaId(c.id)}
-          >
-            <Text style={categoriaId === c.id ? styles.textoChipAtivo : styles.textoChip}>
-              {c.nome}
-            </Text>
-          </Pressable>
-        ))}
+      <Text style={estilos.rotulo}>Categoria</Text>
+      <View style={estilos.linhaChips}>
+        {categorias.length === 0 && <ActivityIndicator color={cor.primaria} />}
+        {categorias.map((c) => {
+          const iconeCategoria = iconeDaCategoria(c.nome);
+          return (
+            <Chip
+              key={c.id}
+              texto={c.nome}
+              icone={iconeCategoria.icone}
+              corIcone={iconeCategoria.cor}
+              selecionado={categoriaId === c.id}
+              onPress={() => setCategoriaId(c.id)}
+            />
+          );
+        })}
       </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Tags (opcional, separadas por vírgula: viagem, natal)"
-        placeholderTextColor={cores.textoSuave}
+      <Input
+        placeholder="Tags (opcional: viagem, natal)"
         value={tags}
         onChangeText={setTags}
         autoCapitalize="none"
       />
 
-      <Pressable
-        style={[styles.botaoSalvar, !valido && styles.botaoDesabilitado]}
-        onPress={salvar}
-        disabled={!valido || salvando}
-      >
-        {salvando ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.textoBotaoSalvar}>Salvar</Text>
-        )}
-      </Pressable>
+      <Botao texto="Salvar" onPress={salvar} disabled={!valido} carregando={salvando} />
 
       {mensagem && (
-        <View style={[styles.mensagem, sombraCartao, mensagem.erro && styles.mensagemErro]}>
+        <View style={[estilos.mensagem, mensagem.erro ? estilos.mensagemErro : estilos.mensagemSucesso]}>
           <Ionicons
             name={mensagem.erro ? "alert-circle" : "checkmark-circle"}
             size={18}
-            color={mensagem.erro ? cores.despesa : cores.receita}
+            color={mensagem.erro ? cor.vermelho : cor.verde}
           />
-          <Text style={styles.textoMensagem}>{mensagem.texto}</Text>
+          <Text style={estilos.textoMensagem}>{mensagem.texto}</Text>
         </View>
       )}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 56, backgroundColor: cores.fundo },
-  titulo: { fontSize: 20, fontWeight: "bold", color: cores.texto, marginBottom: 20 },
-  seletorTipo: { flexDirection: "row", marginBottom: 20, gap: 10 },
-  botaoTipo: {
+const estilos = StyleSheet.create({
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.xxxl + espaco.sm, backgroundColor: cor.cinza100 },
+  titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xl },
+
+  seletorTipo: { flexDirection: "row", gap: espaco.md, marginBottom: espaco.lg },
+  segmento: {
     flex: 1,
     flexDirection: "row",
-    gap: 6,
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: cores.borda,
-    backgroundColor: cores.cartao,
+    gap: espaco.sm,
+    paddingVertical: espaco.lg,
+    borderRadius: raio.botao,
+    borderWidth: 1.5,
+    borderColor: cor.cinza300,
+    backgroundColor: cor.branco,
     alignItems: "center",
     justifyContent: "center",
   },
-  botaoTipoAtivoDespesa: { backgroundColor: cores.despesa, borderColor: cores.despesa },
-  botaoTipoAtivoReceita: { backgroundColor: cores.receita, borderColor: cores.receita },
-  textoTipo: { color: cores.texto },
-  textoTipoAtivo: { color: "#fff", fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderColor: cores.borda,
-    backgroundColor: cores.cartao,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    fontSize: 16,
-    color: cores.texto,
-  },
-  rotuloCategorias: { fontSize: 14, fontWeight: "600", color: cores.texto, marginBottom: 8 },
-  listaCategorias: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: cores.borda,
-    backgroundColor: cores.cartao,
-  },
-  chipAtivo: { backgroundColor: cores.primaria, borderColor: cores.primaria },
-  textoChip: { color: cores.texto, fontSize: 14 },
-  textoChipAtivo: { color: "#fff", fontSize: 14, fontWeight: "600" },
-  botaoSalvar: {
-    backgroundColor: cores.primaria,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  botaoDesabilitado: { opacity: 0.5 },
-  textoBotaoSalvar: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  segmentoDespesaAtivo: { backgroundColor: cor.vermelho, borderColor: cor.vermelho },
+  segmentoReceitaAtivo: { backgroundColor: cor.verde, borderColor: cor.verde },
+  textoSegmento: { fontSize: 16, fontWeight: "600", color: cor.cinza700 },
+  textoSegmentoAtivo: { color: "#fff" },
+
+  rotulo: { fontSize: 14, fontWeight: "600", color: cor.cinza900, marginBottom: espaco.sm },
+  linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.lg },
+
   mensagem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: cores.cartao,
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 16,
+    gap: espaco.sm,
+    borderRadius: raio.card,
+    padding: espaco.md,
+    marginTop: espaco.lg,
+    marginBottom: espaco.xl,
   },
-  mensagemErro: { backgroundColor: "#fdecea" },
-  textoMensagem: { flex: 1, color: cores.texto, fontSize: 14 },
+  mensagemSucesso: { backgroundColor: cor.verdeSuave },
+  mensagemErro: { backgroundColor: cor.vermelhoSuave },
+  textoMensagem: { flex: 1, color: cor.cinza900, fontSize: 14 },
 });

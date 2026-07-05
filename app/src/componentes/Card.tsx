@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import { cor, espaco, raio, sombra } from "../tema";
 
 interface CardProps {
   children: ReactNode;
-  estiloExtra?: ViewStyle;
+  estiloExtra?: StyleProp<ViewStyle>;
 }
 
 /**
