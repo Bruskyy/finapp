@@ -103,3 +103,27 @@ export interface PaginaLancamentos {
   total: number;
   itens: Lancamento[];
 }
+
+export interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  criadoEm: string;
+}
+
+export interface RegistrarRequest {
+  nome: string;
+  email: string;
+  senha: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  senha: string;
+}
+
+export interface TokenResponse {
+  token: string;
+  nome: string;
+  email: string;
+}

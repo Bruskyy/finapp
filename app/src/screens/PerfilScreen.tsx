@@ -1,10 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../auth/AuthContext";
+import Botao from "../componentes/Botao";
 import EstadoVazio from "../componentes/EstadoVazio";
 import { cor, espaco, fonte } from "../tema";
-
-// Placeholder minimalista: ainda não existe autenticação/usuário no backend.
-// Nome fixo até a etapa de auth existir — nunca inventar dados de nível/XP.
-const NOME_USUARIO = "Vitor";
 
 function iniciais(nome: string): string {
   return nome
@@ -15,18 +13,24 @@ function iniciais(nome: string): string {
 }
 
 export default function PerfilScreen() {
+  const { usuario, logout } = useAuth();
+  const nome = usuario?.nome ?? "";
+
   return (
     <View style={estilos.container}>
       <View style={estilos.avatar}>
-        <Text style={estilos.iniciais}>{iniciais(NOME_USUARIO)}</Text>
+        <Text style={estilos.iniciais}>{iniciais(nome)}</Text>
       </View>
-      <Text style={estilos.nome}>{NOME_USUARIO}</Text>
+      <Text style={estilos.nome}>{nome}</Text>
+      <Text style={estilos.email}>{usuario?.email}</Text>
 
       <Text style={estilos.tituloSecao}>Conquistas</Text>
       <EstadoVazio
         icone="trophy-outline"
         mensagem="Em breve: níveis, conquistas e sequências de uso."
       />
+
+      <Botao texto="Sair" variante="secundario" onPress={logout} estiloExtra={estilos.botaoSair} />
     </View>
   );
 }
@@ -43,6 +47,8 @@ const estilos = StyleSheet.create({
     marginBottom: espaco.md,
   },
   iniciais: { fontSize: 32, fontWeight: "700", color: "#fff" },
-  nome: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.xxl },
+  nome: { ...fonte.tituloCard, color: cor.cinza900 },
+  email: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.xxl },
   tituloSecao: { ...fonte.tituloSecao, color: cor.cinza900, alignSelf: "flex-start", marginBottom: espaco.sm },
+  botaoSair: { width: "100%", marginTop: espaco.xxl },
 });
