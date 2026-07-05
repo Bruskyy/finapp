@@ -1,15 +1,6 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   criarRecorrencia,
@@ -19,7 +10,12 @@ import {
   pausarRecorrencia,
   reativarRecorrencia,
 } from "../api/client";
-import { cores, formatarMoeda, sombraCartao } from "../tema";
+import Botao from "../componentes/Botao";
+import Card from "../componentes/Card";
+import Chip from "../componentes/Chip";
+import EstadoVazio from "../componentes/EstadoVazio";
+import Input from "../componentes/Input";
+import { cor, espaco, fonte, formatarMoeda, iconeDaRecorrencia, raio } from "../tema";
 import { Categoria, Conta, Recorrencia, TipoLancamento } from "../types";
 
 export default function RecorrenciasScreen() {
@@ -111,207 +107,181 @@ export default function RecorrenciasScreen() {
 
   if (carregando) {
     return (
-      <View style={styles.centro}>
-        <ActivityIndicator size="large" color={cores.primaria} />
+      <View style={estilos.centro}>
+        <ActivityIndicator size="large" color={cor.primaria} />
       </View>
     );
   }
 
+  const ehDespesa = tipo === TipoLancamento.Despesa;
+  const ehReceita = tipo === TipoLancamento.Receita;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.cabecalho}>
-        <Text style={styles.titulo}>Contas fixas</Text>
-        <Pressable style={styles.botaoNova} onPress={() => setMostrarFormulario(!mostrarFormulario)}>
-          <Ionicons name={mostrarFormulario ? "close" : "add"} size={18} color="#fff" />
-          <Text style={styles.textoBotaoNova}>{mostrarFormulario ? "Cancelar" : "Nova"}</Text>
+    <View style={estilos.container}>
+      <View style={estilos.cabecalho}>
+        <View>
+          <Text style={estilos.titulo}>Contas fixas</Text>
+          <Text style={estilos.subtitulo}>Lançadas automaticamente todo mês no dia do vencimento.</Text>
+        </View>
+        <Pressable
+          onPress={() => setMostrarFormulario(!mostrarFormulario)}
+          hitSlop={8}
+          accessibilityLabel={mostrarFormulario ? "Cancelar nova conta fixa" : "Nova conta fixa"}
+        >
+          <Ionicons
+            name={mostrarFormulario ? "close-circle" : "add-circle"}
+            size={32}
+            color={cor.primaria}
+          />
         </Pressable>
       </View>
-      <Text style={styles.subtituloPagina}>
-        Lançadas automaticamente todo mês no dia do vencimento.
-      </Text>
 
-      {erro && <Text style={styles.erro}>{erro}</Text>}
+      {erro && <Text style={estilos.erro}>{erro}</Text>}
 
       {mostrarFormulario && (
-        <View style={[styles.formulario, sombraCartao]}>
-          <TextInput
-            style={styles.input}
-            placeholder="Descrição (ex: Aluguel)"
-            placeholderTextColor={cores.textoSuave}
-            value={descricao}
-            onChangeText={setDescricao}
-          />
-          <View style={styles.linhaDupla}>
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
+        <Card estiloExtra={estilos.formulario}>
+          <Input placeholder="Descrição (ex: Aluguel)" value={descricao} onChangeText={setDescricao} />
+          <View style={estilos.linhaDupla}>
+            <Input
               placeholder="Valor"
-              placeholderTextColor={cores.textoSuave}
               value={valor}
               onChangeText={setValor}
               keyboardType="decimal-pad"
+              style={estilos.metadeLinha}
             />
-            <TextInput
-              style={[styles.input, { width: 110 }]}
+            <Input
               placeholder="Dia (1-31)"
-              placeholderTextColor={cores.textoSuave}
               value={diaDoMes}
               onChangeText={setDiaDoMes}
               keyboardType="number-pad"
+              style={estilos.diaInput}
             />
           </View>
 
-          <View style={styles.linhaDupla}>
+          <View style={estilos.seletorTipo}>
             <Pressable
-              style={[styles.botaoTipo, tipo === TipoLancamento.Despesa && { backgroundColor: cores.despesa, borderColor: cores.despesa }]}
+              style={[estilos.segmento, ehDespesa && estilos.segmentoDespesaAtivo]}
               onPress={() => setTipo(TipoLancamento.Despesa)}
             >
-              <Text style={tipo === TipoLancamento.Despesa ? styles.textoTipoAtivo : styles.textoTipo}>Despesa</Text>
+              <Ionicons name="arrow-down" size={18} color={ehDespesa ? "#fff" : cor.vermelho} />
+              <Text style={[estilos.textoSegmento, ehDespesa && estilos.textoSegmentoAtivo]}>Despesa</Text>
             </Pressable>
             <Pressable
-              style={[styles.botaoTipo, tipo === TipoLancamento.Receita && { backgroundColor: cores.receita, borderColor: cores.receita }]}
+              style={[estilos.segmento, ehReceita && estilos.segmentoReceitaAtivo]}
               onPress={() => setTipo(TipoLancamento.Receita)}
             >
-              <Text style={tipo === TipoLancamento.Receita ? styles.textoTipoAtivo : styles.textoTipo}>Receita</Text>
+              <Ionicons name="arrow-up" size={18} color={ehReceita ? "#fff" : cor.verde} />
+              <Text style={[estilos.textoSegmento, ehReceita && estilos.textoSegmentoAtivo]}>Receita</Text>
             </Pressable>
           </View>
 
-          <Text style={styles.rotulo}>Conta</Text>
-          <View style={styles.chips}>
+          <Text style={estilos.rotulo}>Conta</Text>
+          <View style={estilos.linhaChips}>
             {contas.map((c) => (
-              <Pressable
-                key={c.id}
-                style={[styles.chip, contaId === c.id && styles.chipAtivo]}
-                onPress={() => setContaId(c.id)}
-              >
-                <Text style={contaId === c.id ? styles.textoChipAtivo : styles.textoChip}>{c.nome}</Text>
-              </Pressable>
+              <Chip key={c.id} texto={c.nome} selecionado={contaId === c.id} onPress={() => setContaId(c.id)} />
             ))}
           </View>
 
-          <Text style={styles.rotulo}>Categoria</Text>
-          <View style={styles.chips}>
+          <Text style={estilos.rotulo}>Categoria</Text>
+          <View style={estilos.linhaChips}>
             {categorias.map((c) => (
-              <Pressable
+              <Chip
                 key={c.id}
-                style={[styles.chip, categoriaId === c.id && styles.chipAtivo]}
+                texto={c.nome}
+                selecionado={categoriaId === c.id}
                 onPress={() => setCategoriaId(c.id)}
-              >
-                <Text style={categoriaId === c.id ? styles.textoChipAtivo : styles.textoChip}>{c.nome}</Text>
-              </Pressable>
+              />
             ))}
           </View>
 
-          <Pressable
-            style={[styles.botaoSalvar, !valido && { opacity: 0.5 }]}
-            onPress={salvar}
-            disabled={!valido || salvando}
-          >
-            {salvando ? <ActivityIndicator color="#fff" /> : <Text style={styles.textoBotaoSalvar}>Salvar</Text>}
-          </Pressable>
-        </View>
+          <Botao texto="Salvar" onPress={salvar} disabled={!valido} carregando={salvando} />
+        </Card>
       )}
 
       <FlatList
         data={recorrencias}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.item, sombraCartao, !item.ativa && { opacity: 0.55 }]}>
-            <View style={styles.itemCentro}>
-              <Text style={styles.itemDescricao}>{item.descricao}</Text>
-              <Text style={styles.itemDetalhe}>todo dia {item.diaDoMes}</Text>
-            </View>
-            <Text
-              style={[
-                styles.itemValor,
-                { color: item.tipo === TipoLancamento.Despesa ? cores.despesa : cores.receita },
-              ]}
-            >
-              {item.tipo === TipoLancamento.Despesa ? "-" : "+"}
-              {formatarMoeda(item.valor)}
-            </Text>
-            <Switch
-              value={item.ativa}
-              onValueChange={() => alternarAtiva(item)}
-              trackColor={{ true: cores.primaria, false: cores.borda }}
-              accessibilityLabel={item.ativa ? `Pausar ${item.descricao}` : `Reativar ${item.descricao}`}
-            />
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const icone = iconeDaRecorrencia(item.descricao);
+          const corValor = item.tipo === TipoLancamento.Despesa ? cor.vermelho : cor.verde;
+          return (
+            <Card estiloExtra={[estilos.itemCartao, !item.ativa && estilos.itemPausado]}>
+              <View style={estilos.iconeWrapper}>
+                <Ionicons name={icone} size={18} color={cor.primaria} />
+              </View>
+              <View style={estilos.itemCentro}>
+                <Text style={estilos.itemDescricao}>{item.descricao}</Text>
+                <Text style={estilos.itemDetalhe}>todo dia {item.diaDoMes}</Text>
+              </View>
+              <Text style={[estilos.itemValor, { color: corValor }]}>
+                {item.tipo === TipoLancamento.Despesa ? "-" : "+"}
+                {formatarMoeda(item.valor)}
+              </Text>
+              <Switch
+                value={item.ativa}
+                onValueChange={() => alternarAtiva(item)}
+                trackColor={{ true: cor.primaria, false: cor.cinza300 }}
+                accessibilityLabel={item.ativa ? `Pausar ${item.descricao}` : `Reativar ${item.descricao}`}
+              />
+            </Card>
+          );
+        }}
         ListEmptyComponent={
-          <Text style={styles.vazio}>Nenhuma conta fixa ainda. Crie a primeira em "Nova".</Text>
+          <EstadoVazio icone="repeat-outline" mensagem='Nenhuma conta fixa ainda. Crie a primeira em "Nova".' />
         }
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={estilos.listaConteudo}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, paddingTop: 56, backgroundColor: cores.fundo },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cores.fundo },
-  cabecalho: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  titulo: { fontSize: 20, fontWeight: "bold", color: cores.texto },
-  subtituloPagina: { fontSize: 13, color: cores.textoSuave, marginTop: 4, marginBottom: 14 },
-  botaoNova: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: cores.primaria,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  textoBotaoNova: { color: "#fff", fontWeight: "600" },
-  formulario: { backgroundColor: cores.cartao, borderRadius: 14, padding: 14, marginBottom: 16 },
-  linhaDupla: { flexDirection: "row", gap: 10 },
-  input: {
-    borderWidth: 1,
-    borderColor: cores.borda,
-    borderRadius: 10,
-    padding: 11,
-    marginBottom: 10,
-    fontSize: 15,
-    color: cores.texto,
-  },
-  botaoTipo: {
+const estilos = StyleSheet.create({
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.xxxl + espaco.sm, backgroundColor: cor.cinza100 },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
+  cabecalho: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
+  subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, maxWidth: 260 },
+  erro: { color: cor.vermelho, marginTop: espaco.sm, marginBottom: espaco.sm },
+
+  formulario: { marginTop: espaco.lg, marginBottom: espaco.md },
+  linhaDupla: { flexDirection: "row", gap: espaco.sm },
+  metadeLinha: { flex: 1 },
+  diaInput: { width: 110 },
+
+  seletorTipo: { flexDirection: "row", gap: espaco.sm, marginBottom: espaco.md },
+  segmento: {
     flex: 1,
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: cores.borda,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  textoTipo: { color: cores.texto },
-  textoTipoAtivo: { color: "#fff", fontWeight: "600" },
-  rotulo: { fontSize: 13, fontWeight: "600", color: cores.texto, marginBottom: 6 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 12 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: cores.borda,
-    backgroundColor: cores.cartao,
-  },
-  chipAtivo: { backgroundColor: cores.primaria, borderColor: cores.primaria },
-  textoChip: { color: cores.texto, fontSize: 13 },
-  textoChipAtivo: { color: "#fff", fontSize: 13, fontWeight: "600" },
-  botaoSalvar: { backgroundColor: cores.primaria, padding: 12, borderRadius: 10, alignItems: "center" },
-  textoBotaoSalvar: { color: "#fff", fontWeight: "600", fontSize: 15 },
-  item: {
     flexDirection: "row",
+    gap: espaco.sm,
+    paddingVertical: espaco.md,
+    borderRadius: raio.botao,
+    borderWidth: 1.5,
+    borderColor: cor.cinza300,
+    backgroundColor: cor.branco,
     alignItems: "center",
-    backgroundColor: cores.cartao,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    gap: 10,
+    justifyContent: "center",
+  },
+  segmentoDespesaAtivo: { backgroundColor: cor.vermelho, borderColor: cor.vermelho },
+  segmentoReceitaAtivo: { backgroundColor: cor.verde, borderColor: cor.verde },
+  textoSegmento: { fontSize: 15, fontWeight: "600", color: cor.cinza700 },
+  textoSegmentoAtivo: { color: "#fff" },
+
+  rotulo: { fontSize: 14, fontWeight: "600", color: cor.cinza900, marginBottom: espaco.sm },
+  linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
+
+  listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xl },
+  itemCartao: { flexDirection: "row", alignItems: "center", gap: espaco.md, marginBottom: espaco.sm },
+  itemPausado: { opacity: 0.55 },
+  iconeWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: cor.primariaSuave,
+    justifyContent: "center",
+    alignItems: "center",
   },
   itemCentro: { flex: 1 },
-  itemDescricao: { fontSize: 15, color: cores.texto, fontWeight: "500" },
-  itemDetalhe: { fontSize: 12, color: cores.textoSuave, marginTop: 2 },
+  itemDescricao: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
+  itemDetalhe: { fontSize: 12, color: cor.cinza500, marginTop: 2 },
   itemValor: { fontSize: 15, fontWeight: "600" },
-  vazio: { color: cores.textoSuave, textAlign: "center", marginTop: 24 },
-  erro: { color: cores.despesa, marginBottom: 10 },
 });
