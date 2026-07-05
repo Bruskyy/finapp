@@ -1,5 +1,16 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Usuarios.Api.Aplicacao;
+using Usuarios.Api.Contratos;
+using Usuarios.Api.Dominio;
 using Usuarios.Api.Persistencia;
+using Usuarios.Api.Validacao;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +18,35 @@ builder.Services.AddDbContext<UsuariosDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("UsuariosDb")));
 
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
+builder.Services.AddSingleton<JwtTokenGenerator>();
+builder.Services.AddScoped<AuthService>();
+
+// Validators são stateless — singleton evita recriar a cada request.
+builder.Services.AddSingleton<IValidator<RegistrarRequest>, RegistrarRequestValidator>();
+builder.Services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        // Sem isso, o handler remapeia "sub"/"email" pra URIs longas do
+        // WS-Federation (ClaimTypes.NameIdentifier etc) - mantemos os claims
+        // exatamente como foram emitidos, mais previsível de ler depois.
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<UsuariosDbContext>("postgres");
@@ -21,6 +61,43 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapPost("/registrar", async (RegistrarRequest req, AuthService auth, CancellationToken ct) =>
+{
+    try
+    {
+        var resposta = await auth.RegistrarAsync(req.Nome, req.Email, req.Senha, ct);
+        return Results.Created("/me", resposta);
+    }
+    catch (EmailJaExisteException ex)
+    {
+        return Results.Conflict(new { erro = ex.Message });
+    }
+}).AddEndpointFilter<ValidationFilter<RegistrarRequest>>();
+
+app.MapPost("/login", async (LoginRequest req, AuthService auth, CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await auth.LoginAsync(req.Email, req.Senha, ct));
+    }
+    catch (CredenciaisInvalidasException)
+    {
+        return Results.Unauthorized();
+    }
+}).AddEndpointFilter<ValidationFilter<LoginRequest>>();
+
+app.MapGet("/me", async (ClaimsPrincipal principal, IUsuarioRepository repo, CancellationToken ct) =>
+{
+    var id = Guid.Parse(principal.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+    var usuario = await repo.ObterPorIdAsync(id, ct);
+    return usuario is null
+        ? Results.NotFound()
+        : Results.Ok(new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm));
+}).RequireAuthorization();
 
 app.MapHealthChecks("/health");
 
