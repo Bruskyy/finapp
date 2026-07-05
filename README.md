@@ -4,12 +4,13 @@ App mobile de controle financeiro pessoal (inspirado no Mobills) com gamificaç�
 
 ## Arquitetura
 
-Monorepo com 3 microserviços + gateway, cada um com seu próprio banco (*database per service*):
+Monorepo com 4 microserviços + gateway, cada um com seu próprio banco (*database per service*):
 
 - **Lancamentos** (core) — SQL Server, Clean Architecture (Api → Application → Domain → Infrastructure). CRUD via EF Core; relatórios via views/procedures/functions nativas.
 - **Gamificacao** — PostgreSQL. Ledger de moedas.
 - **Notificacoes** — consumidor de tópico RabbitMQ.
-- **Gateway.Api** — YARP, entrada única para o app mobile.
+- **Usuarios** — PostgreSQL. Registro/login, hash de senha e emissão de JWT.
+- **Gateway.Api** — YARP, entrada única para o app mobile; único ponto que valida o Bearer token.
 
 `BuildingBlocks.Contracts` contém apenas contratos de eventos (records), sem lógica compartilhada.
 
@@ -17,7 +18,7 @@ Em `app/`: o app mobile (Expo + React Native + TypeScript), que fala só com o G
 
 ## Stack
 
-Backend em C#/.NET (Minimal APIs, EF Core), mensageria RabbitMQ (fila e tópico), SQL Server + PostgreSQL, AWS via LocalStack, testes com xUnit, CI no GitHub Actions. Mobile em Expo + React Native + TypeScript.
+Backend em C#/.NET (Minimal APIs, EF Core), autenticação JWT (`Microsoft.AspNetCore.Authentication.JwtBearer` + `PasswordHasher<T>`), mensageria RabbitMQ (fila e tópico), SQL Server + PostgreSQL, AWS via LocalStack, testes com xUnit, CI no GitHub Actions. Mobile em Expo + React Native + TypeScript.
 
 ## Como rodar localmente
 
@@ -25,17 +26,27 @@ Backend em C#/.NET (Minimal APIs, EF Core), mensageria RabbitMQ (fila e tópico)
 # 1. Subir a infraestrutura (SQL Server, Postgres, RabbitMQ, LocalStack)
 docker compose up -d
 
+# 1.1 Na primeira vez: criar a base do serviço de Usuarios (o volume do
+# Postgres já existe, então o script de init do compose não roda de novo)
+docker exec -it <container_postgres> psql -U finapp -c "CREATE DATABASE usuarios;"
+
+# 1.2 Na primeira vez: configurar a chave de assinatura do JWT (a MESMA chave
+# nos dois projetos — Usuarios emite, Gateway valida)
+dotnet user-secrets set "Jwt:SecretKey" "<qualquer string aleatória de 32+ bytes>" --project src/Usuarios/Usuarios.Api
+dotnet user-secrets set "Jwt:SecretKey" "<a mesma string de cima>" --project src/Gateway/Gateway.Api
+
 # 2. Rodar cada serviço (um terminal por serviço)
 dotnet run --project src/Lancamentos/Lancamentos.Api   # -> http://localhost:5272
 dotnet run --project src/Gamificacao/Gamificacao.Api   # -> http://localhost:5273
 dotnet run --project src/Notificacoes/Notificacoes.Api # -> http://localhost:5274
+dotnet run --project src/Usuarios/Usuarios.Api          # -> http://localhost:5276
 dotnet run --project src/Gateway/Gateway.Api            # -> http://localhost:5275
 ```
 
-O app mobile fala só com o Gateway (`http://localhost:5275/api/...`) — ver a seção "Gateway.Api com YARP" abaixo.
+O app mobile fala só com o Gateway (`http://localhost:5275/api/...`) — ver as seções "Gateway.Api com YARP" e "Autenticação real" abaixo. Todas as rotas exigem login (`POST /api/usuarios/registrar` ou `/login`), exceto as duas de login/registro em si.
 
 ```bash
-# 3. Rodar o app (com os 4 serviços acima já no ar)
+# 3. Rodar o app (com os 5 serviços acima já no ar)
 cd app
 npm install
 npm run web    # abre no navegador - mais rapido pra desenvolver
@@ -224,3 +235,19 @@ No app: campo de tags no formulário (separadas por vírgula), tags visíveis no
 **Sensibilidade do `Contains`:** em memória é case-sensitive; no SQL Server quem decide é o *collation* do banco (o padrão é case-insensitive) — mesma expressão LINQ, semânticas diferentes por provider (anotado no teste).
 
 No app: campo de busca por texto na listagem, combinável com o filtro de tag.
+
+### Autenticação real: microserviço Usuarios + JWT no Gateway
+
+O app deixou de ser "sem dono" — cada tela com dado financeiro agora exige login. Fluxo dividido em três peças:
+
+1. **`Usuarios.Api`** (novo microserviço, PostgreSQL, porta 5276, mesmo padrão enxuto da Gamificação): `POST /registrar` e `POST /login` devolvem um JWT; `GET /me` (protegido) devolve os dados do usuário logado. Senha nunca é armazenada em texto puro — hash via `PasswordHasher<Usuario>` do `Microsoft.Extensions.Identity.Core` (PBKDF2/HMAC-SHA256 com salt aleatório por senha), o mesmo mecanismo por trás do ASP.NET Identity "de verdade", sem puxar dependência de terceiro. O JWT usa assinatura simétrica (HS256), claims `sub`/`email`/`name`/`jti` e expira em 60 minutos — sem refresh token nesta etapa (ver backlog abaixo). A chave de assinatura vive em `dotnet user-secrets`, nunca em `appsettings.Development.json` (que está versionado).
+2. **Gateway como único ponto de autenticação**: `AddAuthentication().AddJwtBearer(...)` valida o token com a mesma chave/issuer/audience do `Usuarios.Api`; uma `AuthorizationPolicy` (`RequerAutenticacao` — o nome `default` é reservado internamente pelo YARP) é aplicada a todas as rotas do `ReverseProxy`, exceto `/api/usuarios/login` e `/api/usuarios/registrar`. Login com senha errada ou e-mail inexistente devolvem a mesma mensagem genérica ("email ou senha inválidos") — evita confirmar pra quem tenta adivinhar se um e-mail tem conta cadastrada (mitigação de user enumeration).
+3. **App (Expo)**: `AuthContext` guarda o token via `expo-secure-store` (Keychain/Keystore nativo; web cai para `localStorage`, já que SecureStore não existe nesse ambiente) e restaura a sessão no boot validando contra `GET /me`. Todas as chamadas do `client.ts` passam a anexar `Authorization: Bearer` via um "token holder" simples, sem reescrever as ~20 funções já existentes.
+
+**Por quê (e o trade-off deliberado):** a decisão consciente foi autenticar **só no Gateway**, não em cada microserviço (Lançamentos, Gamificação, Notificações continuam sem qualquer awareness de auth). Isso é a primeira feature de autenticação do projeto — introduzir o conceito (JWT, `[Authorize]`, Bearer scheme) num único lugar já é o que cai em entrevista ("API Gateway como ponto único de autenticação"); replicar em quatro `Program.cs` ao mesmo tempo dilui o aprendizado e multiplica a chance de desalinhamento de configuração (issuer/audience/chave). **Dívida técnica documentada, não escondida:** hoje, quem acessar um microserviço diretamente na porta (ex: `5272`), sem passar pelo Gateway, não encontra autenticação nenhuma — aceitável porque em produção só o Gateway ficaria exposto publicamente, mas o próximo passo natural é propagar o Bearer token do Gateway pros serviços downstream (zero trust de verdade). O próprio `Usuarios.Api` já faz isso no seu endpoint `/me`, como prova de conceito de que o padrão é replicável.
+
+**Backlog de autenticação (não implementado agora, deliberadamente):**
+- **Refresh token** — hoje o usuário é deslogado a cada 60 minutos e precisa logar de novo manualmente; refresh token adiciona rotação de token e storage server-side, e é uma segunda feature por si só.
+- **Revogação de JWT** (blacklist do claim `jti`) — o claim já existe no token, mas nada o invalida antes da expiração natural.
+- **Zero trust entre serviços** — propagar a validação do Bearer token pra Lançamentos/Gamificação/Notificações, não só confiar no Gateway.
+- **Login com Google (OAuth)** — exige criar um app OAuth no Google Cloud Console (passo manual, gratuito); ficou de fora pra manter o escopo em e-mail/senha primeiro.
