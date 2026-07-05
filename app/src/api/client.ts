@@ -7,14 +7,18 @@ import {
   EvolucaoMensalPonto,
   GastoPorCategoria,
   Lancamento,
+  LoginRequest,
   Objetivo,
   PaginaLancamentos,
+  RegistrarRequest,
   Tag,
   OrcamentoStatus,
   Recorrencia,
   Resgate,
   SaldoPorConta,
   TipoLancamento,
+  TokenResponse,
+  Usuario,
 } from "../types";
 
 const PORTA_GATEWAY = 5275;
@@ -45,9 +49,22 @@ function resolverGatewayUrl(): string {
 
 const GATEWAY_URL = resolverGatewayUrl();
 
+// "Token holder" fora do React: client.ts é um módulo de funções puras sem
+// acesso a Context, então o AuthContext chama definirToken() sempre que o
+// token muda (login, restauração no boot, logout) e requisitar() só lê essa
+// variável - evita reescrever as ~20 funções exportadas deste arquivo.
+let tokenAtual: string | null = null;
+
+export function definirToken(token: string | null): void {
+  tokenAtual = token;
+}
+
 async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (tokenAtual) headers.Authorization = `Bearer ${tokenAtual}`;
+
   const resposta = await fetch(`${GATEWAY_URL}${caminho}`, {
-    headers: { "Content-Type": "application/json" },
+    headers,
     ...init,
   });
 
@@ -57,6 +74,20 @@ async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
   }
 
   return resposta.status === 204 ? (undefined as T) : resposta.json();
+}
+
+// ----- Autenticação -----
+
+export function registrar(dto: RegistrarRequest): Promise<TokenResponse> {
+  return requisitar("/api/usuarios/registrar", { method: "POST", body: JSON.stringify(dto) });
+}
+
+export function login(dto: LoginRequest): Promise<TokenResponse> {
+  return requisitar("/api/usuarios/login", { method: "POST", body: JSON.stringify(dto) });
+}
+
+export function obterUsuarioLogado(): Promise<Usuario> {
+  return requisitar("/api/usuarios/me");
 }
 
 // ----- Lançamentos -----

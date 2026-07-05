@@ -1,0 +1,89 @@
+import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../auth/AuthContext";
+import Botao from "../componentes/Botao";
+import Input from "../componentes/Input";
+import { cor, espaco, fonte } from "../tema";
+
+interface Props {
+  aoIrParaRegistro: () => void;
+}
+
+export default function LoginScreen({ aoIrParaRegistro }: Props) {
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [entrando, setEntrando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const valido = email.trim().length > 0 && senha.length > 0;
+
+  async function handleLogin() {
+    if (!valido) return;
+    setErro(null);
+    setEntrando(true);
+    try {
+      await login(email.trim(), senha);
+    } catch {
+      setErro("Email ou senha inválidos.");
+    } finally {
+      setEntrando(false);
+    }
+  }
+
+  return (
+    <View style={estilos.container}>
+      <View style={estilos.icone}>
+        <Ionicons name="bar-chart" size={32} color="#fff" />
+      </View>
+      <Text style={estilos.titulo}>Bem-vindo de volta</Text>
+      <Text style={estilos.subtitulo}>Entre para continuar acompanhando suas finanças.</Text>
+
+      {erro && <Text style={estilos.erro}>{erro}</Text>}
+
+      <Input
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      <Input placeholder="Senha" value={senha} onChangeText={setSenha} secureTextEntry />
+
+      <Botao texto="Entrar" onPress={handleLogin} disabled={!valido} carregando={entrando} />
+
+      <Botao
+        texto="Não tem conta? Cadastre-se"
+        variante="texto"
+        onPress={aoIrParaRegistro}
+        estiloExtra={estilos.botaoCadastro}
+      />
+    </View>
+  );
+}
+
+const estilos = StyleSheet.create({
+  container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.cinza100 },
+  icone: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: cor.primaria,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: espaco.xl,
+  },
+  titulo: { ...fonte.tituloSecao, color: cor.cinza900, textAlign: "center" },
+  subtitulo: {
+    fontSize: 14,
+    color: cor.cinza500,
+    textAlign: "center",
+    marginTop: espaco.xs,
+    marginBottom: espaco.xxl,
+  },
+  erro: { color: cor.vermelho, textAlign: "center", marginBottom: espaco.md },
+  botaoCadastro: { alignSelf: "center", marginTop: espaco.sm },
+});
