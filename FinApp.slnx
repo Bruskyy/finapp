@@ -18,9 +18,13 @@
   <Folder Name="/src/Notificacoes/">
     <Project Path="src/Notificacoes/Notificacoes.Api/Notificacoes.Api.csproj" />
   </Folder>
+  <Folder Name="/src/Usuarios/">
+    <Project Path="src/Usuarios/Usuarios.Api/Usuarios.Api.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Gamificacao.Tests/Gamificacao.Tests.csproj" />
     <Project Path="tests/Lancamentos.Tests/Lancamentos.Tests.csproj" />
     <Project Path="tests/Notificacoes.Tests/Notificacoes.Tests.csproj" />
+    <Project Path="tests/Usuarios.Tests/Usuarios.Tests.csproj" />
   </Folder>
 </Solution>
