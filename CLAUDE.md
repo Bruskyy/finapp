@@ -34,12 +34,13 @@ App **mobile** de controle financeiro pessoal (inspirado no Mobills) com **gamif
 
 ## Arquitetura
 
-Monorepo com 3 microserviços + gateway:
+Monorepo com 4 microserviços + gateway:
 
 1. **Lancamentos** (core) — SQL Server. Clean Architecture completa: Api → Application → Domain → Infrastructure. CRUD via EF Core; relatórios via procedures/views/functions.
 2. **Gamificacao** — PostgreSQL. Ledger de moedas, regras como Strategy, consumidor idempotente de eventos. Estrutura mais enxuta (decisão documentada: complexidade proporcional ao serviço).
 3. **Notificacoes** — consome tópico RabbitMQ; futuramente consome SQS via LocalStack.
-4. **Gateway.Api** — YARP, entrada única para o app mobile.
+4. **Usuarios** — PostgreSQL. Registro/login, hash de senha (`PasswordHasher<T>`) e emissão de JWT. Mesma estrutura enxuta da Gamificacao.
+5. **Gateway.Api** — YARP, entrada única para o app mobile; único ponto que valida o Bearer token (demais serviços ainda sem awareness de auth própria — dívida técnica documentada no README).
 
 `BuildingBlocks.Contracts` contém APENAS contratos de eventos (records) — nunca lógica compartilhada, para evitar monolito distribuído.
 
@@ -52,7 +53,9 @@ Monorepo com 3 microserviços + gateway:
 - ✅ **Etapa 4** — resgate de moedas com Saga coreografada (Gamificação ↔ Notificações) + Polly (retry + circuit breaker), 32 testes verdes no total
 - ✅ **Etapa 5** — Gateway YARP + app Expo/React Native/TypeScript (dashboard, lançamento rápido, moedas), validado end-to-end via preview web (CORS configurado no Gateway)
 - ✅ **Etapa 6** — Notificações consumindo o tópico de lançamentos (`lancamento.*`) + importação de extrato CSV assíncrona (202 + polling, worker SQS idempotente) + S3/SQS via LocalStack com AWS SDK oficial, 69 testes verdes no total
-- 🔄 **Etapa 7 (ATUAL)** — deploy gratuito (Render/Fly + Neon + CloudAMQP + Expo) + seção do README com arquitetura AWS/Azure. Atenção: free tier do Render/Fly hiberna (cold start) — documentar isso como trade-off conhecido
+- ✅ **Refatoração de UI (fora da sequência de etapas)** — design system (tokens, componentes reutilizáveis), telas refeitas com Nubank/Duolingo/Material 3 como inspiração, animações leves
+- ✅ **Autenticação real (fora da sequência de etapas, antes de retomar a Etapa 7)** — novo microserviço Usuarios (registro/login/JWT), Gateway como único ponto de autenticação, telas de Login/Registro no app com `expo-secure-store`. 135 testes verdes no total. Ver "Decisões de arquitetura" no README para detalhes e trade-offs (auth só no Gateway, sem refresh token, sem revogação de JWT)
+- 🔄 **Etapa 7 (ATUAL)** — deploy gratuito (Render/Fly + Neon + CloudAMQP + Expo) + seção do README com arquitetura AWS/Azure. Atenção: free tier do Render/Fly hiberna (cold start) — documentar isso como trade-off conhecido. Lembrar de configurar `Jwt:SecretKey` como variável de ambiente (`Jwt__SecretKey`) no painel do serviço de deploy — não é automático
 
 Regra: não avançar de etapa sem testes e documentação da anterior no README.
 
@@ -66,8 +69,9 @@ Regra: não avançar de etapa sem testes e documentação da anterior no README.
 - ✅ LocalStack RESOLVIDO (03/07/2026): a tag `latest` passou a exigir `LOCALSTACK_AUTH_TOKEN` (licença Pro) e o container morria no boot; imagem fixada em `localstack/localstack:4` (community, s3+sqs gratuitos)
 - Connection string de Lançamentos em `appsettings.Development.json` (senha local descartável; documentar no README que produção usaria secrets)
 - Pacote `Microsoft.OpenApi` FIXADO em versão `2.*` — a 3.x quebra o source generator do ASP.NET (já aconteceu). Não atualizar para 3.x
-- Testes: 117 verdes no total (95 Lancamentos, 18 Gamificacao com Testcontainers, 4 Notificacoes)
-- Portas dos serviços padronizadas nos `launchSettings.json` conforme README: Lancamentos 5272, Gamificacao 5273, Notificacoes 5274, Gateway 5275
+- Testes: 135 verdes no total (95 Lancamentos, 18 Gamificacao com Testcontainers, 4 Notificacoes, 18 Usuarios com Testcontainers)
+- Portas dos serviços padronizadas nos `launchSettings.json` conforme README: Lancamentos 5272, Gamificacao 5273, Notificacoes 5274, Gateway 5275, Usuarios 5276
+- Chave de assinatura do JWT (`Jwt:SecretKey`) via `dotnet user-secrets` em `Usuarios.Api` e `Gateway.Api` — MESMA chave nos dois, nunca em `appsettings.Development.json` (que está no git). Sem isso os dois serviços não sobem/validam token corretamente
 
 ## Convenções do projeto
 
