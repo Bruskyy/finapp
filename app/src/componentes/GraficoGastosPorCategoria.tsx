@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { cores, formatarMoeda } from "../tema";
+import { cor, espaco, formatarMoeda } from "../tema";
 import { GastoPorCategoria } from "../types";
 
 // paleta ciclica para as barras (estilo Mobills)
@@ -44,10 +44,10 @@ export default function GraficoGastosPorCategoria({ dados }: { dados: GastoPorCa
 }
 
 const styles = StyleSheet.create({
-  linha: { marginBottom: 10 },
+  linha: { marginBottom: espaco.sm + 2 },
   cabecalhoLinha: { flexDirection: "row", justifyContent: "space-between", marginBottom: 3 },
-  nomeCategoria: { fontSize: 13, color: cores.texto, flex: 1 },
-  valor: { fontSize: 12, color: cores.textoSuave },
-  trilha: { height: 8, borderRadius: 4, backgroundColor: cores.fundo, overflow: "hidden" },
+  nomeCategoria: { fontSize: 13, color: cor.cinza900, flex: 1 },
+  valor: { fontSize: 12, color: cor.cinza500 },
+  trilha: { height: 8, borderRadius: 4, backgroundColor: cor.cinza200, overflow: "hidden" },
   barra: { height: 8, borderRadius: 4 },
 });
