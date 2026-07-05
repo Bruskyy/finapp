@@ -13,6 +13,7 @@ import OrcamentosScreen from "./src/screens/OrcamentosScreen";
 import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
 import ObjetivosScreen from "./src/screens/ObjetivosScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
+import PerfilScreen from "./src/screens/PerfilScreen";
 import { cor, sombra } from "./src/tema";
 
 const Tab = createBottomTabNavigator();
@@ -23,6 +24,7 @@ const icones: Record<string, keyof typeof Ionicons.glyphMap> = {
   Fixas: "repeat",
   Metas: "flag",
   Moedas: "medal",
+  Perfil: "person-circle",
 };
 
 /** Botão central "Novo": FAB elevado acima da tab bar, ~20% maior que os demais. */
@@ -69,6 +71,7 @@ export default function App() {
         <Tab.Screen name="Fixas" component={RecorrenciasScreen} />
         <Tab.Screen name="Metas" component={ObjetivosScreen} />
         <Tab.Screen name="Moedas" component={MoedasScreen} />
+        <Tab.Screen name="Perfil" component={PerfilScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );
