@@ -9,9 +9,22 @@ builder.Services.AddReverseProxy()
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AppMobileWeb", policy =>
-        policy.WithOrigins("http://localhost:8081", "http://localhost:19006")
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            // Em dev o Expo Web pode rodar em qualquer porta/IP da rede local
+            // (preview no navegador da máquina, teste no navegador do celular
+            // via IP da máquina) - liberar qualquer origem é seguro aqui pois
+            // o Gateway não fica exposto à internet nesta fase do projeto.
+            policy.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod();
+        }
+        else
+        {
+            policy.WithOrigins("http://localhost:8081", "http://localhost:19006")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+    });
 });
 
 builder.Services.AddHealthChecks();
