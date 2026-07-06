@@ -32,6 +32,13 @@ export const cor = {
   moeda: "#f9a825",
   moedaSuave: "#fff8e1",
 
+  // Marca (IDENTIDADE-VISUAL.md) — só em pontos estratégicos de destaque
+  // (ver ITEM-DRAWER-E-CORES-DE-MARCA.md, Ajuste 5); NÃO substitui azul de
+  // ação/verde de receita/vermelho de despesa, que continuam intocados.
+  marcaFundo: "#0B0B0D",
+  marcaDourado: "#F5B800",
+  marcaDouradoClaro: "#FFD84D",
+
   // Escala de cinzas (fundos, bordas, textos)
   cinza100: "#f6f8fa", // fundo das telas (nunca branco puro)
   cinza200: "#eef1f4", // fundos de trilhas/divisórias

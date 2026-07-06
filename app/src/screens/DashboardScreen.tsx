@@ -298,14 +298,23 @@ const estilos = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
   centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
 
-  cartaoSaldo: { marginBottom: espaco.lg },
-  rotuloMes: { ...fonte.legenda, textTransform: "capitalize" },
-  rotuloSaldo: { fontSize: 15, color: cor.cinza500, marginTop: espaco.sm },
-  saldo: { ...fonte.saldo, color: cor.cinza900, marginTop: espaco.xs, marginBottom: espaco.lg },
+  // Cartão de saldo em preto+dourado da marca (Ajuste 5 do
+  // ITEM-DRAWER-E-CORES-DE-MARCA.md) - é o elemento mais visto do app, todo
+  // abre do Dashboard. Verde/vermelho de receita/despesa continuam os
+  // mesmos tokens funcionais - só o fundo ao redor muda.
+  cartaoSaldo: {
+    backgroundColor: cor.marcaFundo,
+    borderRadius: raio.card,
+    padding: espaco.lg,
+    marginBottom: espaco.lg,
+  },
+  rotuloMes: { fontSize: 13, color: "#9CA3AF", textTransform: "capitalize" },
+  rotuloSaldo: { fontSize: 15, color: "#9CA3AF", marginTop: espaco.sm },
+  saldo: { ...fonte.saldo, color: cor.marcaDouradoClaro, marginTop: espaco.xs, marginBottom: espaco.lg },
   saldoNegativo: { color: cor.vermelho },
   linhaResumo: { flexDirection: "row", gap: espaco.xl },
   resumoItem: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
-  resumoRotulo: { fontSize: 12, color: cor.cinza500 },
+  resumoRotulo: { fontSize: 12, color: "#9CA3AF" },
   resumoValor: { fontSize: 15, fontWeight: "600" },
 
   faixaMoedas: {

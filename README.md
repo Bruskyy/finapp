@@ -332,3 +332,19 @@ O rebranding anterior trocou ícone/nome no `app.json` e o logo da tela de Login
 **"Contas Fixas" sai da lista do drawer, mas a tela continua existindo:** como criar uma recorrência já é feito direto em Novo Lançamento (toggle "fixa", ver Ajuste 1 de ITEM-AJUSTES-RECORRENCIA-E-MARCA.md), o item de nível superior no drawer perdeu sentido. A rota `Fixas` continua registrada no `Drawer.Navigator` (só não aparece mais na lista renderizada pelo `DrawerContent`) e passa a ser alcançada por um link contextual ("Ver minhas contas fixas") logo abaixo do toggle em Novo Lançamento — `navigation.navigate("Fixas")` funciona a partir de uma tela aninhada dentro do Tab.Navigator porque o React Navigation propaga a navegação pro navigator pai quando a rota não existe no navigator atual (bubbling implícito, sem precisar de `getParent()`).
 
 **"Definir teto de gastos" vira accordion em Orçamentos:** por padrão mostra só um botão secundário "+ Definir novo teto de gastos"; tocar expande in-place o card com chips de categoria + input + botão "Definir" (um X ao lado do título fecha de novo). Prioriza visualmente os orçamentos já definidos — o conteúdo que o usuário quer ver primeiro — em vez do formulário de criação ocupando a tela inteira por padrão.
+
+### Rebalanceamento de cor: preto+dourado da marca em pontos estratégicos (ITEM-DRAWER-E-CORES-DE-MARCA.md, Ajuste 5)
+
+**Diagnóstico:** o rebranding anterior trocou ícone/nome/logo, mas nenhuma cor da identidade (preto+dourado) aparecia dentro do app além do ícone/splash/tela de login — o app funcionava corretamente (azul=ação, verde=receita, vermelho=despesa, convenção de UX que não deve mudar) mas não tinha "assinatura" visual. A correção é introduzir preto+dourado como destaque de marca em pontos estratégicos, sem tocar no significado das cores funcionais.
+
+Três novos tokens em `tokens.ts`: `cor.marcaFundo` (`#0B0B0D`), `cor.marcaDourado` (`#F5B800`), `cor.marcaDouradoClaro` (`#FFD84D`) — lista fechada, aplicados só onde o Ajuste 5 especificou:
+
+- **Card de saldo do Dashboard** (o elemento mais visto do app): fundo preto de marca, valor do saldo em dourado claro, ícones de receita/despesa mantendo `cor.verde`/`cor.vermelho` exatamente como antes — confirmado via `getComputedStyle` que o texto de receitas continua `rgb(46, 125, 50)` (o mesmo hex de `cor.verde`), só o fundo ao redor mudou.
+- **Cabeçalho do `DrawerContent`**: fundo preto de marca envolvendo o wordmark (que já era dourado desde o Ajuste 2 anterior) e o avatar/nome do usuário — troca o fundo branco genérico por um fundo de marca de verdade. Só o cabeçalho; o resto da lista do drawer continua no fundo claro padrão.
+- **Tela de Moedas**: card de saldo redesenhado com o mesmo tema escuro+dourado do Dashboard, mascote do Cofrin ilustrando o card (reaproveita `mascote.png` do Ajuste 2 anterior).
+- **Estados vazios**: já usavam o mascote desde o Ajuste 2 anterior — mantido, sem mudança de código nesta parte.
+- **Indicador da tab ativa**: avaliado o detalhe dourado sutil sugerido no item (ponto/sublinhado), mas descartado por não agregar clareza suficiente pra justificar a complexidade extra — item explicitamente marcado como opcional no backlog ("só se ficar elegante, não forçar").
+
+**O que não mudou (intocado de propósito):** botões de ação primária continuam azuis, verde/vermelho de receita/despesa nas listas de lançamentos e nos orçamentos, ícones/cores de categoria — nenhum desses foi tocado.
+
+**Nota sobre verificação visual:** a ferramenta de screenshot do preview apresentou instabilidade recorrente durante esta sessão (mesmo com o servidor saudável e sem erros no console) — a verificação desta mudança foi feita via inspeção de estilo computado (`getComputedStyle`/`getBoundingClientRect`, confirmando cores exatas em hex e posicionamento correto dos elementos) em vez de capturas de tela pixel-a-pixel. Recomendado conferir visualmente no preview quando conveniente.
