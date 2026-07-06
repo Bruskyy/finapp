@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import { useGoogleAuth } from "../auth/useGoogleAuth";
 import Botao from "../componentes/Botao";
 import Input from "../componentes/Input";
-import { cor, espaco, fonte, raio } from "../tema";
+import { cor, espaco, fonte } from "../tema";
 
 interface Props {
   aoIrParaRegistro: () => void;
@@ -60,9 +59,7 @@ export default function LoginScreen({ aoIrParaRegistro }: Props) {
 
   return (
     <View style={estilos.container}>
-      <View style={estilos.icone}>
-        <Ionicons name="bar-chart" size={32} color={cor.branco} />
-      </View>
+      <Image source={require("../../assets/logo-horizontal.png")} style={estilos.logo} resizeMode="contain" />
       <Text style={estilos.titulo}>Bem-vindo de volta</Text>
       <Text style={estilos.subtitulo}>Entre para continuar acompanhando suas finanças.</Text>
 
@@ -101,13 +98,9 @@ export default function LoginScreen({ aoIrParaRegistro }: Props) {
 
 const estilos = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.cinza100 },
-  icone: {
-    width: 64,
-    height: 64,
-    borderRadius: raio.chip,
-    backgroundColor: cor.primaria,
-    alignItems: "center",
-    justifyContent: "center",
+  logo: {
+    width: 220,
+    height: 78,
     alignSelf: "center",
     marginBottom: espaco.xl,
   },

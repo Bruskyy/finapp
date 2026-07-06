@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import Botao from "../componentes/Botao";
 import Input from "../componentes/Input";
@@ -42,6 +42,7 @@ export default function RegisterScreen({ aoIrParaLogin }: Props) {
 
   return (
     <View style={estilos.container}>
+      <Image source={require("../../assets/logo-horizontal.png")} style={estilos.logo} resizeMode="contain" />
       <Text style={estilos.titulo}>Criar conta</Text>
       <Text style={estilos.subtitulo}>Leva menos de um minuto.</Text>
 
@@ -79,6 +80,12 @@ export default function RegisterScreen({ aoIrParaLogin }: Props) {
 
 const estilos = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.cinza100 },
+  logo: {
+    width: 220,
+    height: 78,
+    alignSelf: "center",
+    marginBottom: espaco.xl,
+  },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900, textAlign: "center" },
   subtitulo: {
     fontSize: 14,
