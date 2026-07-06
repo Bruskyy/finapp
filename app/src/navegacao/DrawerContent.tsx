@@ -1,5 +1,5 @@
 import { DrawerContentComponentProps, DrawerContentScrollView } from "@react-navigation/drawer";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
 import { cor, espaco, fonte } from "../tema";
@@ -29,6 +29,8 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
 
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={estilos.scroll}>
+      <Image source={require("../../assets/logo-horizontal.png")} style={estilos.logo} resizeMode="contain" />
+
       <View style={estilos.cabecalho}>
         <View style={estilos.avatar}>
           <Text style={estilos.iniciais}>{iniciais(nome)}</Text>
@@ -69,6 +71,7 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
 
 const estilos = StyleSheet.create({
   scroll: { paddingTop: espaco.lg },
+  logo: { width: 130, height: 46, marginLeft: espaco.lg, marginBottom: espaco.xl },
   cabecalho: { paddingHorizontal: espaco.lg, marginBottom: espaco.lg },
   avatar: {
     width: 56,

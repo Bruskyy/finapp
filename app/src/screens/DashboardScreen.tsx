@@ -286,7 +286,7 @@ export default function DashboardScreen() {
         )}
         ItemSeparatorComponent={() => <View style={estilos.separador} />}
         ListEmptyComponent={
-          <EstadoVazio icone="receipt-outline" mensagem="Nenhum lançamento neste mês ainda. Registre sua primeira despesa!" />
+          <EstadoVazio mascote mensagem="Nenhum lançamento neste mês ainda. Registre sua primeira despesa!" />
         }
         contentContainerStyle={estilos.listaConteudo}
       />

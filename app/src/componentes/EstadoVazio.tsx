@@ -1,24 +1,32 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { cor, espaco } from "../tema";
 import Botao from "./Botao";
 
 interface EstadoVazioProps {
-  icone: keyof typeof Ionicons.glyphMap;
+  icone?: keyof typeof Ionicons.glyphMap;
+  /** Usa o mascote do Cofrin no lugar do ícone genérico - ver
+   * ITEM-AJUSTES-RECORRENCIA-E-MARCA.md (Ajuste 2). */
+  mascote?: boolean;
   mensagem: string;
   textoAcao?: string;
   onAcao?: () => void;
 }
 
 /**
- * Empty state padrão do app: ícone grande estilizado (nunca emoji/ilustração
- * externa), mensagem curta e botão de ação opcional.
+ * Empty state padrão do app: ícone grande estilizado (ou o mascote, em
+ * telas de maior destaque) - nunca emoji/ilustração externa - mensagem
+ * curta e botão de ação opcional.
  */
-export default function EstadoVazio({ icone, mensagem, textoAcao, onAcao }: EstadoVazioProps) {
+export default function EstadoVazio({ icone, mascote = false, mensagem, textoAcao, onAcao }: EstadoVazioProps) {
   return (
     <View style={estilos.container}>
       <View style={estilos.circuloIcone}>
-        <Ionicons name={icone} size={40} color={cor.primaria} />
+        {mascote ? (
+          <Image source={require("../../assets/mascote.png")} style={estilos.mascote} resizeMode="contain" />
+        ) : (
+          icone && <Ionicons name={icone} size={40} color={cor.primaria} />
+        )}
       </View>
       <Text style={estilos.mensagem}>{mensagem}</Text>
       {textoAcao && onAcao && (
@@ -39,6 +47,7 @@ const estilos = StyleSheet.create({
     alignItems: "center",
     marginBottom: espaco.lg,
   },
+  mascote: { width: 64, height: 64 },
   mensagem: { fontSize: 15, color: cor.cinza500, textAlign: "center", marginBottom: espaco.lg },
   botao: { minWidth: 180 },
 });
