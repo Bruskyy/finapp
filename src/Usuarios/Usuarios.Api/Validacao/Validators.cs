@@ -21,3 +21,20 @@ public class LoginRequestValidator : AbstractValidator<LoginRequest>
         RuleFor(x => x.Senha).NotEmpty();
     }
 }
+
+public class AtualizarPerfilRequestValidator : AbstractValidator<AtualizarPerfilRequest>
+{
+    public AtualizarPerfilRequestValidator()
+    {
+        RuleFor(x => x.Nome).NotEmpty().MaximumLength(100);
+    }
+}
+
+public class TrocarSenhaRequestValidator : AbstractValidator<TrocarSenhaRequest>
+{
+    public TrocarSenhaRequestValidator()
+    {
+        RuleFor(x => x.SenhaAtual).NotEmpty();
+        RuleFor(x => x.NovaSenha).NotEmpty().MinimumLength(8);
+    }
+}

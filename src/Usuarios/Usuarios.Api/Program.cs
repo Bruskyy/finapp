@@ -25,6 +25,8 @@ builder.Services.AddScoped<AuthService>();
 // Validators são stateless — singleton evita recriar a cada request.
 builder.Services.AddSingleton<IValidator<RegistrarRequest>, RegistrarRequestValidator>();
 builder.Services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>();
+builder.Services.AddSingleton<IValidator<AtualizarPerfilRequest>, AtualizarPerfilRequestValidator>();
+builder.Services.AddSingleton<IValidator<TrocarSenhaRequest>, TrocarSenhaRequestValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -92,15 +94,47 @@ app.MapPost("/login", async (LoginRequest req, AuthService auth, CancellationTok
 
 app.MapGet("/me", async (ClaimsPrincipal principal, IUsuarioRepository repo, CancellationToken ct) =>
 {
-    var id = Guid.Parse(principal.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+    var id = IdDoUsuario(principal);
     var usuario = await repo.ObterPorIdAsync(id, ct);
     return usuario is null
         ? Results.NotFound()
         : Results.Ok(new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm));
 }).RequireAuthorization();
 
+app.MapPut("/perfil", async (AtualizarPerfilRequest req, ClaimsPrincipal principal, AuthService auth, CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await auth.AtualizarPerfilAsync(IdDoUsuario(principal), req.Nome, ct));
+    }
+    catch (UsuarioNaoEncontradoException)
+    {
+        return Results.NotFound();
+    }
+}).RequireAuthorization().AddEndpointFilter<ValidationFilter<AtualizarPerfilRequest>>();
+
+app.MapPut("/senha", async (TrocarSenhaRequest req, ClaimsPrincipal principal, AuthService auth, CancellationToken ct) =>
+{
+    try
+    {
+        await auth.TrocarSenhaAsync(IdDoUsuario(principal), req.SenhaAtual, req.NovaSenha, ct);
+        return Results.NoContent();
+    }
+    catch (SenhaAtualIncorretaException ex)
+    {
+        return Results.BadRequest(new { erro = ex.Message });
+    }
+    catch (UsuarioNaoEncontradoException)
+    {
+        return Results.NotFound();
+    }
+}).RequireAuthorization().AddEndpointFilter<ValidationFilter<TrocarSenhaRequest>>();
+
 app.MapHealthChecks("/health");
 
 app.Run();
+
+static Guid IdDoUsuario(ClaimsPrincipal principal) =>
+    Guid.Parse(principal.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
 
 public partial class Program { } // visivel para os testes de integracao (WebApplicationFactory)

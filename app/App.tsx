@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
+import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
@@ -126,6 +127,11 @@ function DrawerPrincipal() {
       />
       <Drawer.Screen name="Fixas" component={RecorrenciasScreen} options={{ title: "Contas fixas" }} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} options={{ title: "Perfil" }} />
+      <Drawer.Screen
+        name="Configurações"
+        component={ConfiguracoesScreen}
+        options={{ title: "Configurações" }}
+      />
     </Drawer.Navigator>
   );
 }

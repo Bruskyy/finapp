@@ -10,4 +10,6 @@ public interface IUsuarioRepository
 
     /// <returns>false se já existe um usuário com o mesmo e-mail (índice único)</returns>
     Task<bool> AdicionarAsync(Usuario usuario, CancellationToken ct);
+
+    Task AtualizarAsync(Usuario usuario, CancellationToken ct);
 }

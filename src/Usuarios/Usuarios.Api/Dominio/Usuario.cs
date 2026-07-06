@@ -30,6 +30,22 @@ public class Usuario
         CriadoEm = DateTime.UtcNow;
     }
 
+    public void AtualizarNome(string novoNome)
+    {
+        if (string.IsNullOrWhiteSpace(novoNome))
+            throw new ArgumentException("Nome é obrigatório.", nameof(novoNome));
+
+        Nome = novoNome.Trim();
+    }
+
+    public void AtualizarSenhaHash(string novoHash)
+    {
+        if (string.IsNullOrWhiteSpace(novoHash))
+            throw new ArgumentException("Hash de senha é obrigatório.", nameof(novoHash));
+
+        SenhaHash = novoHash;
+    }
+
     private static bool EhEmailValido(string email)
     {
         try
