@@ -23,6 +23,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
 import NovoLancamentoScreen from "./src/screens/NovoLancamentoScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
+import PersonalizarInicioScreen from "./src/screens/PersonalizarInicioScreen";
 import PlanejamentoScreen from "./src/screens/PlanejamentoScreen";
 import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
@@ -124,6 +125,11 @@ function DrawerPrincipal() {
         name="Início"
         component={TabsPrincipais}
         options={({ route }) => ({ title: tituloDaRotaFocada(route) })}
+      />
+      <Drawer.Screen
+        name="Personalizar"
+        component={PersonalizarInicioScreen}
+        options={{ title: "Personalizar início" }}
       />
       <Drawer.Screen name="Fixas" component={RecorrenciasScreen} options={{ title: "Contas fixas" }} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} options={{ title: "Perfil" }} />

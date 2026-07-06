@@ -15,6 +15,7 @@ interface ItemDrawer {
 // precisa adicionar uma entrada aqui, sem tocar na lógica de renderização.
 const ITENS: ItemDrawer[] = [
   { rota: "Início", label: "Início", icone: "home-outline" },
+  { rota: "Personalizar", label: "Personalizar início", icone: "options-outline" },
   { rota: "Fixas", label: "Contas fixas", icone: "repeat-outline" },
   { rota: "Perfil", label: "Perfil", icone: "person-outline" },
   { rota: "Configurações", label: "Configurações", icone: "settings-outline" },
