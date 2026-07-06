@@ -48,7 +48,7 @@ export default function PlanejamentoScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cor.cinza100 },
+  container: { flex: 1, backgroundColor: cor.fundoTela },
   seletor: {
     flexDirection: "row",
     gap: espaco.sm,

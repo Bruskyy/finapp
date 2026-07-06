@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, Vie
 import { Ionicons } from "@expo/vector-icons";
 import { criarLancamento, criarRecorrencia, listarCategorias, listarContas } from "../api/client";
 import Botao from "../componentes/Botao";
+import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
 import Input from "../componentes/Input";
 import { cor, espaco, fonte, iconeDaCategoria, raio } from "../tema";
@@ -104,6 +105,7 @@ export default function NovoLancamentoScreen() {
     <ScrollView style={estilos.container} keyboardShouldPersistTaps="handled">
       <Text style={estilos.titulo}>Novo lançamento</Text>
 
+      <Card estiloExtra={estilos.cartaoForm}>
       {/* Segmented control grande: a ação mais frequente do app merece destaque */}
       <View style={estilos.seletorTipo}>
         <Pressable
@@ -195,6 +197,7 @@ export default function NovoLancamentoScreen() {
       )}
 
       <Botao texto="Salvar" onPress={salvar} disabled={!valido} carregando={salvando} />
+      </Card>
 
       {mensagem && (
         <View style={[estilos.mensagem, mensagem.erro ? estilos.mensagemErro : estilos.mensagemSucesso]}>
@@ -211,8 +214,9 @@ export default function NovoLancamentoScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xl },
+  cartaoForm: { marginBottom: espaco.xl },
 
   seletorTipo: { flexDirection: "row", gap: espaco.md, marginBottom: espaco.lg },
   segmento: {

@@ -74,11 +74,15 @@ export default function ItemLancamento({
 }
 
 const estilos = StyleSheet.create({
+  // Fundo branco próprio (em vez de confiar no fundo da tela): cada linha
+  // vira um "mini-card" branco, com contraste garantido em qualquer fundo.
   container: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: espaco.md,
+    padding: espaco.md,
     gap: espaco.md,
+    backgroundColor: cor.branco,
+    borderRadius: raio.card,
   },
   iconeWrapper: {
     width: 40,

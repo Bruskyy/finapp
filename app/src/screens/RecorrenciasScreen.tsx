@@ -102,8 +102,8 @@ export default function RecorrenciasScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
   subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs },
   erro: { color: cor.vermelho, marginTop: espaco.sm, marginBottom: espaco.sm },

@@ -32,15 +32,19 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
 
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={estilos.scroll}>
-      <Image source={require("../../assets/logo-horizontal.png")} style={estilos.logo} resizeMode="contain" />
+      {/* Bloco de marca escuro (teal) no cabeçalho - só aqui, o resto do
+          drawer continua no fundo claro padrão do Design System. */}
+      <View style={estilos.cabecalhoMarca}>
+        <Image source={require("../../assets/logo-horizontal.png")} style={estilos.logo} resizeMode="contain" />
 
-      <View style={estilos.cabecalho}>
-        <View style={estilos.avatar}>
-          <Text style={estilos.iniciais}>{iniciais(nome)}</Text>
+        <View style={estilos.cabecalho}>
+          <View style={estilos.avatar}>
+            <Text style={estilos.iniciais}>{iniciais(nome)}</Text>
+          </View>
+          <Text style={estilos.nome} numberOfLines={1}>
+            {nome}
+          </Text>
         </View>
-        <Text style={estilos.nome} numberOfLines={1}>
-          {nome}
-        </Text>
       </View>
 
       {ITENS.map((item) => {
@@ -73,9 +77,15 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
 }
 
 const estilos = StyleSheet.create({
-  scroll: { paddingTop: espaco.lg },
+  scroll: { paddingTop: 0 },
+  cabecalhoMarca: {
+    backgroundColor: cor.marcaEscura,
+    paddingTop: espaco.lg,
+    paddingBottom: espaco.lg,
+    marginBottom: espaco.lg,
+  },
   logo: { width: 130, height: 46, marginLeft: espaco.lg, marginBottom: espaco.xl },
-  cabecalho: { paddingHorizontal: espaco.lg, marginBottom: espaco.lg },
+  cabecalho: { paddingHorizontal: espaco.lg },
   avatar: {
     width: 56,
     height: 56,
@@ -86,7 +96,7 @@ const estilos = StyleSheet.create({
     marginBottom: espaco.sm,
   },
   iniciais: { fontSize: 20, fontWeight: "700", color: cor.branco },
-  nome: { ...fonte.tituloCard, color: cor.cinza900 },
+  nome: { ...fonte.tituloCard, color: cor.branco },
   item: {
     flexDirection: "row",
     alignItems: "center",

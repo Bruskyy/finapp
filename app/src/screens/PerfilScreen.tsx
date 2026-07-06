@@ -26,7 +26,7 @@ export default function PerfilScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100, alignItems: "center" },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela, alignItems: "center" },
   avatar: {
     width: 96,
     height: 96,

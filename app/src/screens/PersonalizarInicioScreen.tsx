@@ -58,7 +58,7 @@ export default function PersonalizarInicioScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xs },
   subtitulo: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.lg },
   cartao: { marginBottom: espaco.xxl },

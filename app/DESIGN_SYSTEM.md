@@ -18,12 +18,16 @@ administrativo/ERP.
 
 ## Cores
 
+Paleta única de marca+produto (ver IDENTIDADE-VISUAL.md), extraída por
+amostragem de pixel do kit Figma de referência — antes eram dois sistemas
+separados (marca preto+dourado vs. produto azul), agora é um só.
+
 | Token | Hex | Uso |
 |---|---|---|
-| `primaria` | `#1e88e5` | Botões primários, progresso, elementos ativos, links, navegação |
-| `primariaEscura` | `#1565c0` | Estado pressed/hover da primária |
-| `primariaSuave` | `#e3f2fd` | Fundos suaves de destaque (chips ativos claros, ícones) |
-| `verde` | `#2e7d32` | **Exclusivamente** dinheiro entrando, receitas, sucesso, conclusão |
+| `primaria` | `#00D09E` | Verde-primavera de marca: botões primários, progresso, elementos ativos, navegação |
+| `primariaEscura` | `#00A67D` | Estado pressed/hover da primária |
+| `primariaSuave` | `#DFF7E2` | Fundos suaves de destaque (chips ativos claros, nav inferior, ícones) |
+| `verde` | `#2e7d32` | **Exclusivamente** dinheiro entrando, receitas, sucesso, conclusão — deliberadamente distinto do verde de marca acima |
 | `verdeSuave` | `#e8f5e9` | Fundo suave associado a verde (ex: ícone de receita) |
 | `vermelho` | `#c62828` | **Exclusivamente** dinheiro saindo, erros, alertas |
 | `vermelhoSuave` | `#fdecea` | Fundo suave associado a vermelho |
@@ -31,7 +35,8 @@ administrativo/ERP.
 | `laranjaSuave` | `#fff3e0` | Fundo suave de atenção |
 | `moeda` | `#f9a825` | Gamificação (moedas) |
 | `moedaSuave` | `#fff8e1` | Fundo suave de moedas |
-| `cinza100` | `#f6f8fa` | **Fundo das telas** (nunca branco puro) |
+| `marcaEscura` | `#052224` | Teal escuro de marca: ícone/splash, nav inferior (ícones inativos), cabeçalho do drawer |
+| `fundoTela` | `#F1FFF3` | **Fundo das telas** (mint claro, nunca branco puro) |
 | `cinza200` | `#eef1f4` | Fundos de trilha/divisórias |
 | `cinza300` | `#e0e6ea` | Bordas |
 | `cinza500` | `#78909c` | Texto secundário, legendas |
@@ -41,6 +46,9 @@ administrativo/ERP.
 
 **Regra sem exceção:** verde = entrada, vermelho = saída. Nunca usados em
 elementos neutros (um botão neutro não é verde só porque "parece positivo").
+Isso vale mesmo dentro do cartão de saldo (fundo `primaria`, também verde) —
+lá o valor de Receitas/Despesas fica em branco, só o ícone de seta continua
+semântico, pra não virar "verde sobre verde".
 
 ## Espaçamentos
 
@@ -52,11 +60,14 @@ xs = 4   sm = 8   md = 12   lg = 16   xl = 24   xxl = 32   xxxl = 48
 
 ## Raios de borda (fixos)
 
+Cantos bem arredondados ("pill-first", inspirado no kit Figma de
+referência) — botões e inputs praticamente pílula.
+
 | Elemento | Raio |
 |---|---|
-| Card | 16px |
-| Botão | 14px |
-| Input | 14px |
+| Card | 24px |
+| Botão | 28px |
+| Input | 28px |
 | Chip | 20px |
 
 ## Tipografia
