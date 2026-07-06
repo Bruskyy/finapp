@@ -289,3 +289,13 @@ Dois widgets novos reaproveitam componentes e endpoints que já existiam (nenhum
 ### Gráficos reais no dashboard — decisão de manter as barras existentes (Item 4 do backlog de UX)
 
 O Item 4 pedia explicitamente uma pizza de gastos por categoria e uma linha de evolução do saldo. O dashboard já tinha os dois — como barras proporcionais com `View`s puras, decisão tomada e documentada na Etapa 5/6 (ver "Gráficos no dashboard agregados no banco" acima) justamente pra evitar dependência de biblioteca de gráfico incompatível com `react-native-web`. Reavaliado nesta fase e mantido deliberadamente: as barras já cumprem o objetivo real do item — visualização gráfica de dados reais (não texto), consistente com os tokens de cor, zero risco de quebrar o build web — trocar por uma lib de pizza/linha de verdade adicionaria uma dependência nova e um risco de compatibilidade sem ganho de informação. Item considerado concluído sem código adicional.
+
+### Rebranding para Cofrin (identidade visual)
+
+O app deixou de ser exibido como "app"/"finapp" genérico e passou a se chamar **Cofrin** ("Organize. Guarde. Evolua.") pro usuário final — decisão puramente de marca/apresentação, sem qualquer mudança de arquitetura, backend ou lógica de negócio (ver `IDENTIDADE-VISUAL.md`). Código-fonte, repositório GitHub e namespaces .NET continuam `finapp` por continuidade de infraestrutura.
+
+**Assets gerados sem depender de ferramenta externa de rasterização:** os 3 SVGs da identidade (ícone, versão simplificada pro adaptive icon do Android, logo horizontal com wordmark) foram convertidos para PNG usando o próprio navegador do preview como "rasterizador" — um `<canvas>` desenha o SVG carregado via `data:` URL e exporta `toDataURL('image/png')` no tamanho exato exigido (1024×1024 pro ícone, 600×600 pro splash, etc.). Evita instalar Sharp/ImageMagick só pra essa conversão pontual.
+
+**`app.json`:** `name`/`slug` viram `Cofrin`/`cofrin` (seguro trocar o slug — nenhum projeto EAS estava vinculado ainda); ícone adaptativo do Android simplificado pra `foregroundImage` + `backgroundColor` sólido (`#0B0B0D`), no lugar do esquema anterior com 3 imagens separadas (foreground/background/monochrome) — mais fácil de manter e a máscara adaptativa do Android já lida bem com fundo sólido. Splash screen configurada via plugin `expo-splash-screen` (a chave `splash` de nível raiz não existe mais no schema do Expo SDK 57 — ver nota em `app/AGENTS.md` sobre a doc do Expo mudar rápido).
+
+O logo horizontal (com wordmark) substitui o ícone genérico nas telas de Login e Registro, renderizado como `Image` estática — decisão consciente de não instalar `react-native-svg` só para isso, já que o mesmo processo de rasterização via canvas já resolve o caso.

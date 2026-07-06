@@ -1,0 +1,28 @@
+<svg width="340" height="120" viewBox="0 0 340 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ouro2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFE27A"/>
+      <stop offset="100%" stop-color="#E8A63B"/>
+    </linearGradient>
+    <linearGradient id="amarelo2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFD84D"/>
+      <stop offset="100%" stop-color="#F5B800"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10,10)">
+    <rect width="100" height="100" rx="24" fill="#000000"/>
+    <ellipse cx="50" cy="56" rx="30" ry="23" fill="url(#amarelo2)"/>
+    <path d="M30 38 Q26 27 38 32 Q35 39 30 38Z" fill="url(#amarelo2)"/>
+    <path d="M70 38 Q74 27 62 32 Q65 39 70 38Z" fill="url(#amarelo2)"/>
+    <rect x="30" y="72" width="8" height="10" rx="4" fill="#F5B800"/>
+    <rect x="62" y="72" width="8" height="10" rx="4" fill="#F5B800"/>
+    <ellipse cx="50" cy="58" rx="10" ry="7.5" fill="#000000" opacity="0.85"/>
+    <circle cx="46" cy="58" r="1.7" fill="#FFD84D"/>
+    <circle cx="54" cy="58" r="1.7" fill="#FFD84D"/>
+    <circle cx="36" cy="48" r="2.3" fill="#000000"/>
+    <rect x="44" y="36" width="12" height="3.5" rx="1.75" fill="#000000"/>
+    <circle cx="76" cy="30" r="9" fill="url(#ouro2)" stroke="#B8860B" stroke-width="1"/>
+  </g>
+  <text x="125" y="68" font-size="42" font-weight="800" fill="#FFD84D" font-family="Arial, sans-serif">Cofrin</text>
+  <text x="127" y="90" font-size="14" font-weight="500" fill="#9CA3AF" font-family="Arial, sans-serif">Organize. Guarde. Evolua.</text>
+</svg>
