@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { criarLancamento, listarCategorias, listarContas } from "../api/client";
+import { criarLancamento, criarRecorrencia, listarCategorias, listarContas } from "../api/client";
 import Botao from "../componentes/Botao";
 import Chip from "../componentes/Chip";
 import Input from "../componentes/Input";
@@ -18,6 +18,8 @@ export default function NovoLancamentoScreen() {
   const [contas, setContas] = useState<Conta[]>([]);
   const [contaId, setContaId] = useState<string | null>(null);
   const [tags, setTags] = useState("");
+  const [fixa, setFixa] = useState(false);
+  const [diaDoMes, setDiaDoMes] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<{ texto: string; erro: boolean } | null>(null);
 
@@ -38,11 +40,13 @@ export default function NovoLancamentoScreen() {
     }, [])
   );
 
+  const dia = Number(diaDoMes);
   const valido =
     descricao.trim().length > 0 &&
     Number(valor.replace(",", ".")) > 0 &&
     categoriaId !== null &&
-    contaId !== null;
+    contaId !== null &&
+    (!fixa || (dia >= 1 && dia <= 31));
 
   async function salvar() {
     if (!valido || categoriaId === null || contaId === null) return;
@@ -50,24 +54,38 @@ export default function NovoLancamentoScreen() {
     setSalvando(true);
     setMensagem(null);
     try {
-      const listaTags = tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0);
+      if (fixa) {
+        await criarRecorrencia({
+          descricao: descricao.trim(),
+          valor: Number(valor.replace(",", ".")),
+          tipo,
+          categoriaId,
+          contaId,
+          diaDoMes: dia,
+        });
+        setMensagem({ texto: "Conta fixa criada! Ela será lançada automaticamente todo mês.", erro: false });
+      } else {
+        const listaTags = tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0);
 
-      await criarLancamento({
-        descricao: descricao.trim(),
-        valor: Number(valor.replace(",", ".")),
-        tipo,
-        categoriaId,
-        contaId,
-        data: new Date().toISOString(),
-        tags: listaTags.length > 0 ? listaTags : undefined,
-      });
+        await criarLancamento({
+          descricao: descricao.trim(),
+          valor: Number(valor.replace(",", ".")),
+          tipo,
+          categoriaId,
+          contaId,
+          data: new Date().toISOString(),
+          tags: listaTags.length > 0 ? listaTags : undefined,
+        });
+        setMensagem({ texto: "Lançamento registrado! Suas moedas estão a caminho.", erro: false });
+      }
       setDescricao("");
       setValor("");
       setTags("");
-      setMensagem({ texto: "Lançamento registrado! Suas moedas estão a caminho.", erro: false });
+      setDiaDoMes("");
+      setFixa(false);
     } catch (e) {
       setMensagem({
         texto: e instanceof Error ? e.message : "Erro ao salvar.",
@@ -137,12 +155,36 @@ export default function NovoLancamentoScreen() {
         })}
       </View>
 
-      <Input
-        placeholder="Tags (opcional: viagem, natal)"
-        value={tags}
-        onChangeText={setTags}
-        autoCapitalize="none"
-      />
+      {!fixa && (
+        <Input
+          placeholder="Tags (opcional: viagem, natal)"
+          value={tags}
+          onChangeText={setTags}
+          autoCapitalize="none"
+        />
+      )}
+
+      <View style={estilos.linhaFixa}>
+        <View style={estilos.linhaFixaTexto}>
+          <Text style={estilos.rotuloFixa}>Esta é uma despesa/receita fixa</Text>
+          <Text style={estilos.legendaFixa}>Lançada automaticamente todo mês, no dia escolhido.</Text>
+        </View>
+        <Switch
+          value={fixa}
+          onValueChange={setFixa}
+          trackColor={{ true: cor.primaria, false: cor.cinza300 }}
+          accessibilityLabel="Marcar como despesa ou receita fixa"
+        />
+      </View>
+
+      {fixa && (
+        <Input
+          placeholder="Dia do mês (1-31)"
+          value={diaDoMes}
+          onChangeText={setDiaDoMes}
+          keyboardType="number-pad"
+        />
+      )}
 
       <Botao texto="Salvar" onPress={salvar} disabled={!valido} carregando={salvando} />
 
@@ -197,4 +239,15 @@ const estilos = StyleSheet.create({
   mensagemSucesso: { backgroundColor: cor.verdeSuave },
   mensagemErro: { backgroundColor: cor.vermelhoSuave },
   textoMensagem: { flex: 1, color: cor.cinza900, fontSize: 14 },
+
+  linhaFixa: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: espaco.md,
+    marginBottom: espaco.md,
+  },
+  linhaFixaTexto: { flex: 1 },
+  rotuloFixa: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
+  legendaFixa: { fontSize: 12, color: cor.cinza500, marginTop: espaco.xs },
 });
