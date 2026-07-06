@@ -1,9 +1,35 @@
 using System.Net;
 using System.Net.Http.Json;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Usuarios.Api.Aplicacao;
 using Usuarios.Api.Contratos;
 
 namespace Usuarios.Tests;
+
+/// <summary>
+/// Substitui a validação real do Google.Apis.Auth nos testes - não dá pra
+/// gerar um token assinado de verdade pelo Google fora de um fluxo OAuth
+/// real. "token-valido" simula um id_token que passaria na validação;
+/// qualquer outra string simula um token inválido/expirado/adulterado.
+/// </summary>
+public class FakeGoogleIdTokenValidator : IGoogleIdTokenValidator
+{
+    public const string TokenValido = "token-valido";
+
+    public Task<GoogleJsonWebSignature.Payload> ValidarAsync(string idToken, string clientId)
+    {
+        if (idToken != TokenValido)
+            throw new InvalidJwtException("Token inválido (fake de teste).");
+
+        return Task.FromResult(new GoogleJsonWebSignature.Payload
+        {
+            Email = "usuario.google@teste.com",
+            Name = "Usuário Google",
+        });
+    }
+}
 
 public class AuthEndpointsTests : IClassFixture<PostgresFixture>
 {
@@ -24,6 +50,11 @@ public class AuthEndpointsTests : IClassFixture<PostgresFixture>
             builder.UseSetting("Jwt:Issuer", "FinApp");
             builder.UseSetting("Jwt:Audience", "FinApp.Clientes");
             builder.UseSetting("Jwt:ExpiracaoMinutos", "60");
+            // AuthService exige a config presente no construtor - valor fake,
+            // suficiente pros testes que não passam pelo fluxo real do Google.
+            builder.UseSetting("Google:ClientId", "teste.apps.googleusercontent.com");
+            builder.ConfigureServices(services =>
+                services.AddSingleton<IGoogleIdTokenValidator, FakeGoogleIdTokenValidator>());
         });
 
     [Fact]
@@ -197,5 +228,52 @@ public class AuthEndpointsTests : IClassFixture<PostgresFixture>
 
         var loginNova = await clientSemAuth.PostAsJsonAsync("/login", new LoginRequest(email, "NovaSenha123!"));
         Assert.Equal(HttpStatusCode.OK, loginNova.StatusCode);
+    }
+
+    [Fact]
+    public async Task LoginGoogle_ComTokenInvalido_DeveRetornar401()
+    {
+        await using var factory = CriarFactory();
+        using var client = factory.CreateClient();
+
+        var resposta = await client.PostAsJsonAsync("/login-google", new LoginGoogleRequest("token-adulterado"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task LoginGoogle_SemContaExistente_DeveCriarUsuarioSemSenha()
+    {
+        await using var factory = CriarFactory();
+        using var client = factory.CreateClient();
+
+        var resposta = await client.PostAsJsonAsync("/login-google", new LoginGoogleRequest(FakeGoogleIdTokenValidator.TokenValido));
+
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+        var corpo = await resposta.Content.ReadFromJsonAsync<TokenResponse>();
+        Assert.Equal("usuario.google@teste.com", corpo!.Email);
+        Assert.Equal("Usuário Google", corpo.Nome);
+
+        // Login por senha nunca deve funcionar pra uma conta criada via Google.
+        var loginSenha = await client.PostAsJsonAsync(
+            "/login", new LoginRequest("usuario.google@teste.com", "QualquerSenha123!"));
+        Assert.Equal(HttpStatusCode.Unauthorized, loginSenha.StatusCode);
+    }
+
+    [Fact]
+    public async Task LoginGoogle_ComContaJaExistente_DeveAutenticarMesmoUsuario()
+    {
+        await using var factory = CriarFactory();
+        using var client = factory.CreateClient();
+        var primeiroLogin = await client.PostAsJsonAsync(
+            "/login-google", new LoginGoogleRequest(FakeGoogleIdTokenValidator.TokenValido));
+        var idPrimeiraConta = (await primeiroLogin.Content.ReadFromJsonAsync<TokenResponse>())!.Email;
+
+        var segundoLogin = await client.PostAsJsonAsync(
+            "/login-google", new LoginGoogleRequest(FakeGoogleIdTokenValidator.TokenValido));
+
+        Assert.Equal(HttpStatusCode.OK, segundoLogin.StatusCode);
+        var segundaConta = await segundoLogin.Content.ReadFromJsonAsync<TokenResponse>();
+        Assert.Equal(idPrimeiraConta, segundaConta!.Email);
     }
 }

@@ -2,6 +2,7 @@ import { createContext, ReactNode, useContext, useEffect, useState } from "react
 import {
   definirToken,
   login as apiLogin,
+  loginComGoogle as apiLoginComGoogle,
   obterUsuarioLogado,
   registrar as apiRegistrar,
 } from "../api/client";
@@ -14,6 +15,7 @@ interface AuthContextValue {
   status: StatusAuth;
   usuario: Usuario | null;
   login: (email: string, senha: string) => Promise<void>;
+  loginComGoogle: (idToken: string) => Promise<void>;
   registrar: (nome: string, email: string, senha: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Atualiza o usuário em memória após uma edição de perfil bem-sucedida. */
@@ -63,6 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await autenticarComToken(resposta.token);
   }
 
+  async function loginComGoogle(idToken: string) {
+    const resposta = await apiLoginComGoogle(idToken);
+    await autenticarComToken(resposta.token);
+  }
+
   async function registrar(nome: string, email: string, senha: string) {
     const resposta = await apiRegistrar({ nome, email, senha });
     await autenticarComToken(resposta.token);
@@ -79,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ status, usuario, login, registrar, logout, atualizarUsuario: setUsuario }}
+      value={{ status, usuario, login, loginComGoogle, registrar, logout, atualizarUsuario: setUsuario }}
     >
       {children}
     </AuthContext.Provider>

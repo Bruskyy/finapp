@@ -38,3 +38,11 @@ public class TrocarSenhaRequestValidator : AbstractValidator<TrocarSenhaRequest>
         RuleFor(x => x.NovaSenha).NotEmpty().MinimumLength(8);
     }
 }
+
+public class LoginGoogleRequestValidator : AbstractValidator<LoginGoogleRequest>
+{
+    public LoginGoogleRequestValidator()
+    {
+        RuleFor(x => x.IdToken).NotEmpty();
+    }
+}

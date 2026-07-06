@@ -2,6 +2,7 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
+import { useGoogleAuth } from "../auth/useGoogleAuth";
 import Botao from "../componentes/Botao";
 import Input from "../componentes/Input";
 import { cor, espaco, fonte, raio } from "../tema";
@@ -11,13 +12,38 @@ interface Props {
 }
 
 export default function LoginScreen({ aoIrParaRegistro }: Props) {
-  const { login } = useAuth();
+  const { login, loginComGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [entrando, setEntrando] = useState(false);
+  const [entrandoComGoogle, setEntrandoComGoogle] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
+  const { pronto: googlePronto, entrarComGoogle } = useGoogleAuth(async (idToken) => {
+    setErro(null);
+    setEntrandoComGoogle(true);
+    try {
+      await loginComGoogle(idToken);
+    } catch {
+      setErro("Não foi possível entrar com o Google.");
+    } finally {
+      setEntrandoComGoogle(false);
+    }
+  });
+
   const valido = email.trim().length > 0 && senha.length > 0;
+
+  async function handleGoogle() {
+    setErro(null);
+    try {
+      // promptAsync pode rejeitar direto (ex: popup bloqueado pelo
+      // navegador) em vez de resolver com { type: "error" } - sem o
+      // catch aqui, isso vira uma exceção não tratada.
+      await entrarComGoogle();
+    } catch {
+      setErro("Não foi possível abrir o login do Google. Verifique se o navegador não bloqueou o popup.");
+    }
+  }
 
   async function handleLogin() {
     if (!valido) return;
@@ -55,6 +81,15 @@ export default function LoginScreen({ aoIrParaRegistro }: Props) {
       <Botao texto="Entrar" onPress={handleLogin} disabled={!valido} carregando={entrando} />
 
       <Botao
+        texto="Continuar com Google"
+        variante="secundario"
+        onPress={handleGoogle}
+        disabled={!googlePronto}
+        carregando={entrandoComGoogle}
+        estiloExtra={estilos.botaoGoogle}
+      />
+
+      <Botao
         texto="Não tem conta? Cadastre-se"
         variante="texto"
         onPress={aoIrParaRegistro}
@@ -85,5 +120,6 @@ const estilos = StyleSheet.create({
     marginBottom: espaco.xxl,
   },
   erro: { color: cor.vermelho, textAlign: "center", marginBottom: espaco.md },
+  botaoGoogle: { marginTop: espaco.sm },
   botaoCadastro: { alignSelf: "center", marginTop: espaco.sm },
 });
