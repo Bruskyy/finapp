@@ -251,3 +251,27 @@ O app deixou de ser "sem dono" — cada tela com dado financeiro agora exige log
 - **Revogação de JWT** (blacklist do claim `jti`) — o claim já existe no token, mas nada o invalida antes da expiração natural.
 - **Zero trust entre serviços** — propagar a validação do Bearer token pra Lançamentos/Gamificação/Notificações, não só confiar no Gateway.
 - **Login com Google (OAuth)** — exige criar um app OAuth no Google Cloud Console (passo manual, gratuito); ficou de fora pra manter o escopo em e-mail/senha primeiro.
+
+### Navegação: menu lateral (drawer) + tab bar enxuta (Item 2 do backlog de UX)
+
+A tab bar tinha acumulado 6 itens (Dashboard, Orçamentos, Novo, Fixas, Metas, Moedas) — sintoma de "parece ERP". Reestruturado para um `Drawer.Navigator` (`@react-navigation/drawer`) envolvendo uma tab bar enxuta de 4 itens de uso diário (Dashboard, **Planejamento** — tela nova que mescla Orçamentos/Metas num segmented control local, Novo, Moedas); Contas Fixas e Perfil migraram pro menu lateral.
+
+**Risco técnico avaliado antes de integrar:** o projeto já teve um bug real de `@react-navigation/native-stack` forçando `@react-navigation/core` pra uma versão com um bug de ordem de hooks no `NavigationContainer` em ambiente web (resolvido na feature de autenticação trocando o fluxo de Login/Registro por um `useState` local, sem navigator). Antes de integrar o drawer, foi feito um spike isolado (app mínimo de 2 telas, fora do código real) — funcionou sem problemas, confirmando que o bug era específico do `native-stack`, não do `@react-navigation/core` em si (já usado com sucesso pelo `bottom-tabs` há semanas).
+
+`DrawerContent.tsx` (conteúdo customizado do menu) renderiza os itens a partir de um array de dados (`{ rota, label, icone }[]`) em vez de JSX hardcoded — decisão deliberada pra que novos itens (Configurações, Personalizar início, ambos adicionados depois) só precisem de uma entrada nova no array, sem tocar a lógica de renderização.
+
+### Tela de Configurações (Item 5 do backlog de UX)
+
+Editar nome, trocar senha e "Sobre o app" migraram pro menu lateral, numa tela dedicada — separação de responsabilidade que também vale citar em entrevista: Perfil fica focado em identidade/gamificação, Configurações em conta/preferências. O botão **Sair** também migrou do Perfil pra cá.
+
+Backend: dois endpoints novos e autenticados em `Usuarios.Api` — `PUT /perfil` (atualiza nome) e `PUT /senha` (troca de senha, valida a atual via `PasswordHasher<Usuario>` antes de gerar o novo hash, mesmo mecanismo já usado no login). Frontend: preferência de notificações (só armazenada, sem push real ainda) via `@react-native-async-storage/async-storage` — diferente do JWT, que usa `expo-secure-store`: dado não-sensível não precisa de Keychain/Keystore nativo.
+
+### Dashboard personalizável (Item 3 do backlog de UX)
+
+Nova tela "Personalizar início" (menu lateral) com 5 switches — Saldo, Gastos por categoria, Resumo de orçamentos, Meta em destaque, Saldo de moedas — que ligam/desligam as seções correspondentes do Dashboard. Preferência persistida em `AsyncStorage` (mesmo utilitário do Item 5), com merge profundo do objeto salvo: a tela de Configurações e a de Personalização escrevem no mesmo objeto de preferências, então cada `salvarPreferencias` precisa preservar as chaves que a outra tela não conhece.
+
+Dois widgets novos reaproveitam componentes e endpoints que já existiam (nenhuma lógica nova no backend): **Resumo de orçamentos** (até 3 categorias, ordenadas pelo percentual mais usado, mesma `BarraDeProgresso` da tela de Orçamentos) e **Meta em destaque** (a meta não concluída com maior percentual de conclusão). "Contas" e "Últimos meses" (evolução mensal) ficam fora da personalização por não estarem na lista de widgets do backlog.
+
+### Gráficos reais no dashboard — decisão de manter as barras existentes (Item 4 do backlog de UX)
+
+O Item 4 pedia explicitamente uma pizza de gastos por categoria e uma linha de evolução do saldo. O dashboard já tinha os dois — como barras proporcionais com `View`s puras, decisão tomada e documentada na Etapa 5/6 (ver "Gráficos no dashboard agregados no banco" acima) justamente pra evitar dependência de biblioteca de gráfico incompatível com `react-native-web`. Reavaliado nesta fase e mantido deliberadamente: as barras já cumprem o objetivo real do item — visualização gráfica de dados reais (não texto), consistente com os tokens de cor, zero risco de quebrar o build web — trocar por uma lib de pizza/linha de verdade adicionaria uma dependência nova e um risco de compatibilidade sem ganho de informação. Item considerado concluído sem código adicional.
