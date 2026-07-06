@@ -84,17 +84,17 @@ export default function MoedasScreen() {
     <View style={estilos.container}>
       <Text style={estilos.titulo}>Moedas</Text>
 
-      {/* Tema dourado sobre fundo escuro (Ajuste 5 do
-          ITEM-DRAWER-E-CORES-DE-MARCA.md) - a tela é literalmente sobre
-          moedas de ouro, maior oportunidade natural de marca do app. */}
+      {/* Cartão hero verde-primavera (mesmo padrão do saldo no Dashboard) -
+          a tela é literalmente sobre moedas, maior oportunidade natural de
+          marca do app; o ícone/moeda continua dourado (cor.moeda). */}
       <Card estiloExtra={estilos.cartaoSaldo}>
         <Image source={require("../../assets/mascote.png")} style={estilos.mascoteImagem} resizeMode="contain" />
         <Text style={estilos.rotulo}>Suas moedas</Text>
         {saldo === null ? (
-          <ActivityIndicator size="large" color={cor.marcaDourado} />
+          <ActivityIndicator size="large" color={cor.moeda} />
         ) : (
           <View style={estilos.linhaSaldo}>
-            <Ionicons name="medal" size={30} color={cor.marcaDourado} />
+            <Ionicons name="medal" size={30} color={cor.moeda} />
             <Text style={estilos.saldo}>{saldo}</Text>
           </View>
         )}
@@ -141,20 +141,24 @@ function rotuloStatus(status: Resgate["status"]): string {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.lg },
 
-  cartaoSaldo: { alignItems: "center", marginBottom: espaco.md, backgroundColor: cor.marcaFundo },
+  cartaoSaldo: {
+    alignItems: "center",
+    marginBottom: espaco.md,
+    backgroundColor: cor.primaria,
+  },
   mascoteImagem: { width: 72, height: 72, marginBottom: espaco.sm },
-  rotulo: { fontSize: 15, color: "#9CA3AF" },
+  rotulo: { fontSize: 15, color: cor.branco, opacity: 0.8 },
   linhaSaldo: { flexDirection: "row", alignItems: "center", gap: espaco.sm, marginTop: espaco.sm },
-  saldo: { ...fonte.saldo, color: cor.marcaDouradoClaro },
-  dica: { fontSize: 12, color: "#9CA3AF", marginTop: espaco.sm },
+  saldo: { ...fonte.saldo, color: cor.branco },
+  dica: { fontSize: 12, color: cor.branco, opacity: 0.8, marginTop: espaco.sm },
 
   subtitulo: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
   erro: { color: cor.vermelho, marginBottom: espaco.sm },
 
-  status: { marginTop: espaco.md, padding: espaco.md, backgroundColor: cor.cinza100, borderRadius: raio.input },
+  status: { marginTop: espaco.md, padding: espaco.md, backgroundColor: cor.fundoTela, borderRadius: raio.input },
   statusTexto: { fontSize: 14, fontWeight: "600" },
   statusSpinner: { marginTop: espaco.sm },
 });

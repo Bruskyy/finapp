@@ -11,12 +11,16 @@ type NomeIcone = keyof typeof Ionicons.glyphMap;
 // ----- Cores -----------------------------------------------------------------
 
 export const cor = {
-  // Primária (azul): botões primários, progresso, elementos ativos, navegação
-  primaria: "#1e88e5",
-  primariaEscura: "#1565c0",
-  primariaSuave: "#e3f2fd",
+  // Primária (verde-primavera, paleta única de marca+produto - ver
+  // IDENTIDADE-VISUAL.md): botões primários, progresso, elementos ativos,
+  // navegação. Extraído por amostragem de pixel do kit Figma de referência.
+  primaria: "#00D09E",
+  primariaEscura: "#00A67D",
+  primariaSuave: "#DFF7E2",
 
-  // Verde: EXCLUSIVAMENTE dinheiro entrando, receitas, sucesso, conclusão
+  // Verde de RECEITA: semântico, deliberadamente distinto do verde de marca
+  // acima (mais "floresta" que "primavera") - EXCLUSIVAMENTE dinheiro
+  // entrando, sucesso, conclusão.
   verde: "#2e7d32",
   verdeSuave: "#e8f5e9",
 
@@ -32,15 +36,13 @@ export const cor = {
   moeda: "#f9a825",
   moedaSuave: "#fff8e1",
 
-  // Marca (IDENTIDADE-VISUAL.md) — só em pontos estratégicos de destaque
-  // (ver ITEM-DRAWER-E-CORES-DE-MARCA.md, Ajuste 5); NÃO substitui azul de
-  // ação/verde de receita/vermelho de despesa, que continuam intocados.
-  marcaFundo: "#0B0B0D",
-  marcaDourado: "#F5B800",
-  marcaDouradoClaro: "#FFD84D",
+  // Teal bem escuro de marca (IDENTIDADE-VISUAL.md): ícone/splash, nav
+  // inferior (ícones inativos), cabeçalho do drawer - único ponto do app
+  // que mantém um bloco escuro deliberado.
+  marcaEscura: "#052224",
 
-  // Escala de cinzas (fundos, bordas, textos)
-  cinza100: "#f6f8fa", // fundo das telas (nunca branco puro)
+  // Escala de cinzas (bordas, textos, divisórias)
+  fundoTela: "#F1FFF3", // fundo das telas (mint claro, nunca branco puro)
   cinza200: "#eef1f4", // fundos de trilhas/divisórias
   cinza300: "#e0e6ea", // bordas
   cinza500: "#78909c", // texto secundário/legendas
@@ -78,9 +80,9 @@ export const espaco = {
 // ----- Raios de borda (fixos) -------------------------------------------------
 
 export const raio = {
-  card: 16,
-  botao: 14,
-  input: 14,
+  card: 24,
+  botao: 28,
+  input: 28,
   chip: 20,
 } as const;
 

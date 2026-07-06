@@ -156,6 +156,27 @@ nada que degrade o preview web.
    funciona (criar lançamento, definir orçamento, criar meta, resgatar
    moedas), sem regressão nas chamadas ao Gateway.
 
+## Fase 5 — Ideias do kit Figma de referência pra depois (backlog)
+
+O reset de identidade visual (ver `IDENTIDADE-VISUAL.md`) foi inspirado num
+kit de UI/UX do Figma (fintech, verde-primavera/mint). Nem tudo do kit
+entrou no reset — o que ficou de fora, mas vale considerar depois:
+
+- **Onboarding em 2 telas** (ilustração + "Bem-vindo ao Cofrin", dots de
+  progresso) antes do login, só na primeira abertura do app.
+- **Tela de Categorias dedicada** com grid de tiles grandes (gerenciar/ver
+  categorias) — hoje a seleção de categoria só existe via chips dentro do
+  formulário de Novo Lançamento.
+- **Tela de Análise com segmented Daily/Weekly/Monthly/Year** e gráfico de
+  Receita x Despesa por período, complementar ao `GraficoEvolucaoMensal`
+  que já existe no Dashboard.
+- **Login biométrico** (`expo-local-authentication`) — feature real (não só
+  visual) e gratuita, inspirada no "Use Fingerprint to Access" do kit.
+- **Central de notificações in-app**: o ícone de sino já existe no header,
+  mas sem tela por trás; o backend (`Notificacoes.Api`) já existe — falta
+  só a UI consumindo.
+- **PIN de segurança** como camada extra opcional de acesso.
+
 ## Filosofia (guia para qualquer decisão ambígua)
 
 O usuário não abre o finapp porque gosta de planilhas — abre porque quer

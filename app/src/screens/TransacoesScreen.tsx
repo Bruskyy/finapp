@@ -244,8 +244,8 @@ export default function TransacoesScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
 
   cabecalho: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: espaco.lg },
   tituloMesBotao: { flexDirection: "row", alignItems: "center", gap: espaco.xs },
@@ -266,8 +266,9 @@ const estilos = StyleSheet.create({
     marginTop: espaco.lg,
     marginBottom: espaco.sm,
   },
-  separador: { height: 1, backgroundColor: cor.cinza200 },
-  listaConteudo: { paddingBottom: espaco.xl },
+  separador: { height: espaco.sm },
+  // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
+  listaConteudo: { paddingBottom: espaco.xxxl + espaco.xl },
 
   modalFundo: {
     flex: 1,

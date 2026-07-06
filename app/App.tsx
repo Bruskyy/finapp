@@ -1,20 +1,14 @@
 import "react-native-gesture-handler";
-import {
-  DrawerActions,
-  getFocusedRouteNameFromRoute,
-  NavigationContainer,
-  RouteProp,
-  useNavigation,
-} from "@react-navigation/native";
+import { DrawerActions, NavigationContainer, useNavigation } from "@react-navigation/native";
 import {
   BottomTabBarButtonProps,
   createBottomTabNavigator,
 } from "@react-navigation/bottom-tabs";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
 import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
@@ -22,6 +16,7 @@ import DashboardScreen from "./src/screens/DashboardScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
 import NovoLancamentoScreen from "./src/screens/NovoLancamentoScreen";
+import OnboardingScreen from "./src/screens/OnboardingScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
 import PersonalizarInicioScreen from "./src/screens/PersonalizarInicioScreen";
 import PlanejamentoScreen from "./src/screens/PlanejamentoScreen";
@@ -29,6 +24,7 @@ import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import TransacoesScreen from "./src/screens/TransacoesScreen";
 import { cor, espaco, sombra } from "./src/tema";
+import { marcarOnboardingVisto, obterOnboardingVisto } from "./src/utils/onboarding";
 
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
@@ -38,13 +34,6 @@ const icones: Record<string, keyof typeof Ionicons.glyphMap> = {
   Transações: "receipt",
   Planejamento: "wallet",
   Mais: "menu",
-};
-
-const TITULOS_TAB: Record<string, string> = {
-  Dashboard: "Início",
-  Transações: "Transações",
-  Planejamento: "Planejamento",
-  Novo: "Novo lançamento",
 };
 
 /** Botão central "Novo": FAB elevado acima da tab bar, ~20% maior que os demais. */
@@ -82,16 +71,56 @@ function BotaoMaisTabBar({ children }: BottomTabBarButtonProps) {
   );
 }
 
+/** Botão padrão de aba (Dashboard/Transações/Planejamento): o bottom-tabs
+ * alinha ícone+label ao topo do item por padrão (hardcoded na lib, não dá
+ * pra mudar via tabBarItemStyle) - isso deixava essas abas desalinhadas em
+ * relação a "Mais"/"Novo", que já são Pressables próprios centralizados.
+ * Reaproveita o icone+label já montados via `children`, só centraliza. */
+function BotaoAbaPadrao({
+  children,
+  onPress,
+  onLongPress,
+  accessibilityState,
+  accessibilityLabel,
+  testID,
+}: BottomTabBarButtonProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityRole="button"
+      accessibilityState={accessibilityState}
+      accessibilityLabel={accessibilityLabel}
+      testID={testID}
+      style={estilos.botaoAba}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 function TabsPrincipais() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: cor.primaria,
-        tabBarInactiveTintColor: cor.cinza500,
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name={icones[route.name]} size={size} color={color} />
-        ),
+        tabBarInactiveTintColor: cor.marcaEscura,
+        tabBarStyle: estilos.tabBar,
+        tabBarButton: (props) => <BotaoAbaPadrao {...props} />,
+        // Item ativo ganha um círculo preenchido verde-primavera com o
+        // ícone em branco por dentro (padrão do kit Figma de referência) -
+        // não dá pra fazer só com tabBarActiveTintColor porque esse prop
+        // pintaria o label do texto de branco também, e o texto não fica
+        // dentro do círculo.
+        tabBarIcon: ({ focused, size }) =>
+          focused ? (
+            <View style={estilos.iconeAtivoCirculo}>
+              <Ionicons name={icones[route.name]} size={size} color={cor.branco} />
+            </View>
+          ) : (
+            <Ionicons name={icones[route.name]} size={size} color={cor.marcaEscura} />
+          ),
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
@@ -117,68 +146,28 @@ function TabsPrincipais() {
   );
 }
 
-/** Título discreto do header muda conforme a aba ativa dentro de TabsPrincipais. */
-function tituloDaRotaFocada(route: RouteProp<Record<string, object | undefined>, string>): string {
-  const nomeRota = getFocusedRouteNameFromRoute(route) ?? "Dashboard";
-  return TITULOS_TAB[nomeRota] ?? "Início";
-}
-
-/** Ícone pequeno do Cofrin ao lado do título - reforço de marca discreto em
- * toda tela principal (ver ITEM-AJUSTES-RECORRENCIA-E-MARCA.md, Ajuste 2). */
-function TituloComMarca({ children }: { children?: string }) {
-  return (
-    <View style={estilos.tituloComMarca}>
-      <Image source={require("./assets/icon.png")} style={estilos.iconeMarca} />
-      <Text style={estilos.headerTitulo}>{children}</Text>
-    </View>
-  );
-}
-
 function DrawerPrincipal() {
   return (
     <Drawer.Navigator
       screenOptions={{
-        headerShadowVisible: false,
-        headerStyle: estilos.header,
-        headerTitle: (props) => <TituloComMarca>{props.children}</TituloComMarca>,
-        // Único gatilho do drawer passa a ser o item "Mais" da tab bar (à
-        // direita) - o ícone de hambúrguer no header virou um segundo
-        // atalho redundante pra mesma ação. drawerPosition "right" alinha
-        // a abertura do menu ao mesmo lado do gatilho ("thumb zone": a
-        // maioria segura o celular com uma mão e alcança o lado direito
-        // com mais facilidade).
+        // Sem header: o ícone+nome de tela ali em cima não tinha nenhum
+        // botão funcional (o hambúrguer foi removido no Ajuste 1, o gatilho
+        // do drawer é só o item "Mais" da tab bar) - só ocupava espaço.
+        headerShown: false,
         drawerPosition: "right",
-        // O Drawer.Navigator injeta um botão padrão de abrir/fechar o menu
-        // sozinho quando nem headerLeft nem headerRight são definidos (do
-        // lado correspondente a drawerPosition) - sem isso aqui, o ícone
-        // "redundante" que o Ajuste 1 pediu pra remover simplesmente
-        // reaparece via esse fallback automático da lib.
-        headerRight: () => null,
       }}
       drawerContent={(props) => <DrawerContent {...props} />}
     >
-      <Drawer.Screen
-        name="Início"
-        component={TabsPrincipais}
-        options={({ route }) => ({ title: tituloDaRotaFocada(route) })}
-      />
-      <Drawer.Screen
-        name="Personalizar"
-        component={PersonalizarInicioScreen}
-        options={{ title: "Personalizar início" }}
-      />
-      <Drawer.Screen name="Moedas" component={MoedasScreen} options={{ title: "Moedas" }} />
+      <Drawer.Screen name="Início" component={TabsPrincipais} />
+      <Drawer.Screen name="Personalizar" component={PersonalizarInicioScreen} />
+      <Drawer.Screen name="Moedas" component={MoedasScreen} />
       {/* Não some do app - só sai da lista visível do DrawerContent (Ajuste 3
           do ITEM-DRAWER-E-CORES-DE-MARCA.md). Continua navegável via
           navigation.navigate("Fixas") a partir do link contextual em
           NovoLancamentoScreen. */}
-      <Drawer.Screen name="Fixas" component={RecorrenciasScreen} options={{ title: "Contas fixas" }} />
-      <Drawer.Screen name="Perfil" component={PerfilScreen} options={{ title: "Perfil" }} />
-      <Drawer.Screen
-        name="Configurações"
-        component={ConfiguracoesScreen}
-        options={{ title: "Configurações" }}
-      />
+      <Drawer.Screen name="Fixas" component={RecorrenciasScreen} />
+      <Drawer.Screen name="Perfil" component={PerfilScreen} />
+      <Drawer.Screen name="Configurações" component={ConfiguracoesScreen} />
     </Drawer.Navigator>
   );
 }
@@ -212,6 +201,23 @@ function FluxoAuth() {
 
 function RaizNavegacao() {
   const { status } = useAuth();
+  const [onboardingVisto, setOnboardingVisto] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    obterOnboardingVisto().then(setOnboardingVisto);
+  }, []);
+
+  if (onboardingVisto === null) return <TelaCarregandoAuth />;
+  if (!onboardingVisto) {
+    return (
+      <OnboardingScreen
+        aoConcluir={() => {
+          marcarOnboardingVisto();
+          setOnboardingVisto(true);
+        }}
+      />
+    );
+  }
 
   if (status === "carregando") return <TelaCarregandoAuth />;
   if (status === "nao-autenticado") return <FluxoAuth />;
@@ -233,11 +239,32 @@ export default function App() {
 }
 
 const estilos = StyleSheet.create({
-  carregando: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: cor.cinza100 },
-  header: { backgroundColor: cor.cinza100, elevation: 0 },
-  headerTitulo: { fontSize: 15, fontWeight: "600", color: cor.cinza700 },
-  tituloComMarca: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
-  iconeMarca: { width: 22, height: 22, borderRadius: 6 },
+  carregando: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: cor.fundoTela },
+  // Pílula flutuante (padrão do kit Figma de referência): fundo verde-suave,
+  // ícones inativos em teal escuro de marca, ícone ativo vira um círculo
+  // verde-primavera com o ícone em branco (ver iconeAtivoCirculo).
+  tabBar: {
+    position: "absolute",
+    left: espaco.lg,
+    right: espaco.lg,
+    bottom: espaco.lg,
+    height: 64,
+    borderRadius: 32,
+    borderTopWidth: 0,
+    backgroundColor: cor.primariaSuave,
+    ...sombra,
+  },
+  // 30x30: cabe dentro do slot de ícone que o bottom-tabs já reserva
+  // (~28x31) sem estourar - um círculo maior (ex: 40x40) sai da caixa e
+  // distorce visualmente em relação ao resto da barra.
+  iconeAtivoCirculo: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: cor.primaria,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   botaoAba: { flex: 1, alignItems: "center", justifyContent: "center" },
   wrapperFab: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
   fab: {

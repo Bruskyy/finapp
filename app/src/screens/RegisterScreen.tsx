@@ -79,7 +79,7 @@ export default function RegisterScreen({ aoIrParaLogin }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.cinza100 },
+  container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.fundoTela },
   logo: {
     width: 220,
     height: 78,

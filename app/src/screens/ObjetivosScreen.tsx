@@ -227,8 +227,8 @@ export default function ObjetivosScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.md, backgroundColor: cor.cinza100 },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.md, backgroundColor: cor.fundoTela },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
   cabecalho: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
   subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, maxWidth: 260 },
@@ -238,7 +238,8 @@ const estilos = StyleSheet.create({
   linhaDupla: { flexDirection: "row", gap: espaco.sm },
   metadeLinha: { flex: 1 },
 
-  listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xl },
+  // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
+  listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xxxl + espaco.xl },
   cartaoObjetivo: { marginBottom: espaco.md },
   linhaTitulo: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.sm, gap: espaco.sm },
   nomeObjetivo: { ...fonte.tituloCard, color: cor.cinza900, flex: 1 },

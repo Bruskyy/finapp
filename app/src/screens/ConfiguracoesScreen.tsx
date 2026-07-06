@@ -150,7 +150,7 @@ export default function ConfiguracoesScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.lg },
   cartao: { marginBottom: espaco.md },
   tituloCartao: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },

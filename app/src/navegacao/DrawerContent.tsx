@@ -32,9 +32,8 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
 
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={estilos.scroll}>
-      {/* Fundo preto de marca de verdade no cabeçalho (Ajuste 5 do
-          ITEM-DRAWER-E-CORES-DE-MARCA.md) - só aqui, o resto do drawer
-          continua no fundo claro padrão do Design System. */}
+      {/* Bloco de marca escuro (teal) no cabeçalho - só aqui, o resto do
+          drawer continua no fundo claro padrão do Design System. */}
       <View style={estilos.cabecalhoMarca}>
         <Image source={require("../../assets/logo-horizontal.png")} style={estilos.logo} resizeMode="contain" />
 
@@ -80,7 +79,7 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
 const estilos = StyleSheet.create({
   scroll: { paddingTop: 0 },
   cabecalhoMarca: {
-    backgroundColor: cor.marcaFundo,
+    backgroundColor: cor.marcaEscura,
     paddingTop: espaco.lg,
     paddingBottom: espaco.lg,
     marginBottom: espaco.lg,

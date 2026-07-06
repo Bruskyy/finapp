@@ -174,14 +174,14 @@ export default function DashboardScreen() {
               <Ionicons name="arrow-up-circle" size={20} color={cor.verde} />
               <View>
                 <Text style={estilos.resumoRotulo}>Receitas</Text>
-                <Text style={[estilos.resumoValor, { color: cor.verde }]}>{formatarMoeda(receitas)}</Text>
+                <Text style={estilos.resumoValor}>{formatarMoeda(receitas)}</Text>
               </View>
             </View>
             <View style={estilos.resumoItem}>
               <Ionicons name="arrow-down-circle" size={20} color={cor.vermelho} />
               <View>
                 <Text style={estilos.resumoRotulo}>Despesas</Text>
-                <Text style={[estilos.resumoValor, { color: cor.vermelho }]}>{formatarMoeda(despesas)}</Text>
+                <Text style={estilos.resumoValor}>{formatarMoeda(despesas)}</Text>
               </View>
             </View>
           </View>
@@ -295,27 +295,30 @@ export default function DashboardScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
+  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
 
-  // Cartão de saldo em preto+dourado da marca (Ajuste 5 do
-  // ITEM-DRAWER-E-CORES-DE-MARCA.md) - é o elemento mais visto do app, todo
-  // abre do Dashboard. Verde/vermelho de receita/despesa continuam os
-  // mesmos tokens funcionais - só o fundo ao redor muda.
+  // Cartão de saldo em verde-primavera de marca (hero, inspirado na tela
+  // Home/Account Balance do kit Figma de referência) - é o elemento mais
+  // visto do app, todo abre do Dashboard. Dentro deste cartão o valor de
+  // Receitas/Despesas fica em branco (não no verde/vermelho semântico
+  // usual) porque verde-floresta sobre verde-primavera perde contraste -
+  // só o ícone de seta continua na cor semântica. Fora daqui (lista de
+  // lançamentos, Transações) a regra verde/vermelho no texto é intocada.
   cartaoSaldo: {
-    backgroundColor: cor.marcaFundo,
+    backgroundColor: cor.primaria,
     borderRadius: raio.card,
     padding: espaco.lg,
     marginBottom: espaco.lg,
   },
-  rotuloMes: { fontSize: 13, color: "#9CA3AF", textTransform: "capitalize" },
-  rotuloSaldo: { fontSize: 15, color: "#9CA3AF", marginTop: espaco.sm },
-  saldo: { ...fonte.saldo, color: cor.marcaDouradoClaro, marginTop: espaco.xs, marginBottom: espaco.lg },
+  rotuloMes: { fontSize: 13, color: cor.branco, opacity: 0.8, textTransform: "capitalize" },
+  rotuloSaldo: { fontSize: 15, color: cor.branco, opacity: 0.8, marginTop: espaco.sm },
+  saldo: { ...fonte.saldo, color: cor.branco, marginTop: espaco.xs, marginBottom: espaco.lg },
   saldoNegativo: { color: cor.vermelho },
   linhaResumo: { flexDirection: "row", gap: espaco.xl },
   resumoItem: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
-  resumoRotulo: { fontSize: 12, color: "#9CA3AF" },
-  resumoValor: { fontSize: 15, fontWeight: "600" },
+  resumoRotulo: { fontSize: 12, color: cor.branco, opacity: 0.8 },
+  resumoValor: { fontSize: 15, fontWeight: "600", color: cor.branco },
 
   faixaMoedas: {
     flexDirection: "row",
@@ -334,8 +337,9 @@ const estilos = StyleSheet.create({
   tituloSecao: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
 
   filtroTags: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.sm },
-  separador: { height: 1, backgroundColor: cor.cinza200 },
-  listaConteudo: { paddingBottom: espaco.xl },
+  separador: { height: espaco.sm },
+  // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
+  listaConteudo: { paddingBottom: espaco.xxxl + espaco.xl },
 
   linhaConta: {
     flexDirection: "row",
