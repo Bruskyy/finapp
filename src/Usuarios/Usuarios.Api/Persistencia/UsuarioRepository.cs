@@ -34,4 +34,10 @@ public class UsuarioRepository : IUsuarioRepository
             return false;
         }
     }
+
+    public async Task AtualizarAsync(Usuario usuario, CancellationToken ct)
+    {
+        _db.Usuarios.Update(usuario);
+        await _db.SaveChangesAsync(ct);
+    }
 }

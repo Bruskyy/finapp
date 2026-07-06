@@ -1,12 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
-import Botao from "../componentes/Botao";
 import EstadoVazio from "../componentes/EstadoVazio";
 import { cor, espaco, fonte } from "../tema";
 import { iniciais } from "../utils/iniciais";
 
 export default function PerfilScreen() {
-  const { usuario, logout } = useAuth();
+  const { usuario } = useAuth();
   const nome = usuario?.nome ?? "";
 
   return (
@@ -22,8 +21,6 @@ export default function PerfilScreen() {
         icone="trophy-outline"
         mensagem="Em breve: níveis, conquistas e sequências de uso."
       />
-
-      <Botao texto="Sair" variante="secundario" onPress={logout} estiloExtra={estilos.botaoSair} />
     </View>
   );
 }
@@ -43,5 +40,4 @@ const estilos = StyleSheet.create({
   nome: { ...fonte.tituloCard, color: cor.cinza900 },
   email: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.xxl },
   tituloSecao: { ...fonte.tituloSecao, color: cor.cinza900, alignSelf: "flex-start", marginBottom: espaco.sm },
-  botaoSair: { width: "100%", marginTop: espaco.xxl },
 });

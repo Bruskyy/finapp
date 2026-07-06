@@ -15,6 +15,16 @@ public class CredenciaisInvalidasException : Exception
     public CredenciaisInvalidasException() : base("Email ou senha inválidos.") { }
 }
 
+public class SenhaAtualIncorretaException : Exception
+{
+    public SenhaAtualIncorretaException() : base("Senha atual incorreta.") { }
+}
+
+public class UsuarioNaoEncontradoException : Exception
+{
+    public UsuarioNaoEncontradoException() : base("Usuário não encontrado.") { }
+}
+
 public class AuthService
 {
     private readonly IUsuarioRepository _repositorio;
@@ -60,5 +70,32 @@ public class AuthService
             throw new CredenciaisInvalidasException();
 
         return new TokenResponse(_jwtGenerator.GerarToken(usuario), usuario.Nome, usuario.Email);
+    }
+
+    public async Task<UsuarioResponse> AtualizarPerfilAsync(Guid usuarioId, string novoNome, CancellationToken ct)
+    {
+        var usuario = await _repositorio.ObterPorIdAsync(usuarioId, ct);
+        if (usuario is null)
+            throw new UsuarioNaoEncontradoException();
+
+        usuario.AtualizarNome(novoNome);
+        await _repositorio.AtualizarAsync(usuario, ct);
+
+        return new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm);
+    }
+
+    public async Task TrocarSenhaAsync(Guid usuarioId, string senhaAtual, string novaSenha, CancellationToken ct)
+    {
+        var usuario = await _repositorio.ObterPorIdAsync(usuarioId, ct);
+        if (usuario is null)
+            throw new UsuarioNaoEncontradoException();
+
+        var resultado = _hasher.VerifyHashedPassword(usuario, usuario.SenhaHash, senhaAtual);
+        if (resultado == PasswordVerificationResult.Failed)
+            throw new SenhaAtualIncorretaException();
+
+        var novoHash = _hasher.HashPassword(usuario, novaSenha);
+        usuario.AtualizarSenhaHash(novoHash);
+        await _repositorio.AtualizarAsync(usuario, ct);
     }
 }

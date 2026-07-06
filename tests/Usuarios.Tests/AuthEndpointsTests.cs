@@ -133,4 +133,69 @@ public class AuthEndpointsTests : IClassFixture<PostgresFixture>
 
         Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
     }
+
+    private async Task<(HttpClient client, string token)> RegistrarELogarAsync(WebApplicationFactory<Program> factory, string email)
+    {
+        var client = factory.CreateClient();
+        var registro = await client.PostAsJsonAsync("/registrar", new RegistrarRequest("Vitor", email, "Senha123!"));
+        var token = (await registro.Content.ReadFromJsonAsync<TokenResponse>())!.Token;
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+        return (client, token);
+    }
+
+    [Fact]
+    public async Task AtualizarPerfil_SemToken_DeveRetornar401()
+    {
+        await using var factory = CriarFactory();
+        using var client = factory.CreateClient();
+
+        var resposta = await client.PutAsJsonAsync("/perfil", new AtualizarPerfilRequest("Novo Nome"));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task AtualizarPerfil_ComTokenValido_DeveAtualizarNome()
+    {
+        await using var factory = CriarFactory();
+        var (client, _) = await RegistrarELogarAsync(factory, $"{Guid.NewGuid()}@teste.com");
+
+        var resposta = await client.PutAsJsonAsync("/perfil", new AtualizarPerfilRequest("Novo Nome"));
+
+        Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
+        var usuario = await resposta.Content.ReadFromJsonAsync<UsuarioResponse>();
+        Assert.Equal("Novo Nome", usuario!.Nome);
+
+        var me = await client.GetFromJsonAsync<UsuarioResponse>("/me");
+        Assert.Equal("Novo Nome", me!.Nome);
+    }
+
+    [Fact]
+    public async Task TrocarSenha_ComSenhaAtualErrada_DeveRetornar400()
+    {
+        await using var factory = CriarFactory();
+        var (client, _) = await RegistrarELogarAsync(factory, $"{Guid.NewGuid()}@teste.com");
+
+        var resposta = await client.PutAsJsonAsync("/senha", new TrocarSenhaRequest("senhaerrada", "NovaSenha123!"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
+    }
+
+    [Fact]
+    public async Task TrocarSenha_ComSenhaAtualCorreta_DevePermitirLoginComNovaSenha()
+    {
+        await using var factory = CriarFactory();
+        var email = $"{Guid.NewGuid()}@teste.com";
+        var (client, _) = await RegistrarELogarAsync(factory, email);
+
+        var resposta = await client.PutAsJsonAsync("/senha", new TrocarSenhaRequest("Senha123!", "NovaSenha123!"));
+        Assert.Equal(HttpStatusCode.NoContent, resposta.StatusCode);
+
+        using var clientSemAuth = factory.CreateClient();
+        var loginAntiga = await clientSemAuth.PostAsJsonAsync("/login", new LoginRequest(email, "Senha123!"));
+        Assert.Equal(HttpStatusCode.Unauthorized, loginAntiga.StatusCode);
+
+        var loginNova = await clientSemAuth.PostAsJsonAsync("/login", new LoginRequest(email, "NovaSenha123!"));
+        Assert.Equal(HttpStatusCode.OK, loginNova.StatusCode);
+    }
 }

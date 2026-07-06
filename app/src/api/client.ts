@@ -90,6 +90,17 @@ export function obterUsuarioLogado(): Promise<Usuario> {
   return requisitar("/api/usuarios/me");
 }
 
+export function atualizarPerfil(nome: string): Promise<Usuario> {
+  return requisitar("/api/usuarios/perfil", { method: "PUT", body: JSON.stringify({ nome }) });
+}
+
+export function trocarSenha(senhaAtual: string, novaSenha: string): Promise<void> {
+  return requisitar("/api/usuarios/senha", {
+    method: "PUT",
+    body: JSON.stringify({ senhaAtual, novaSenha }),
+  });
+}
+
 // ----- Lançamentos -----
 
 export interface FiltrosLancamentos {
