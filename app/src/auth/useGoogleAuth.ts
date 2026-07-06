@@ -17,7 +17,13 @@ const GOOGLE_CLIENT_ID = "123292857800-c8v8tjkkbu57opnb5qgdnpgap6r8hqk2.apps.goo
  */
 export function useGoogleAuth(aoObterIdToken: (idToken: string) => void) {
   const discovery = useAutoDiscovery("https://accounts.google.com");
-  const nonce = useMemo(() => Crypto.randomUUID(), []);
+  // Crypto.randomUUID() exige "secure context" (HTTPS ou localhost) - quebra
+  // em http://IP:porta (acesso via LAN no celular). getRandomValues() não
+  // tem essa exigência, então geramos o nonce manualmente a partir dele.
+  const nonce = useMemo(() => {
+    const bytes = Crypto.getRandomValues(new Uint8Array(16));
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  }, []);
 
   const [request, response, promptAsync] = useAuthRequest(
     {
