@@ -6,6 +6,8 @@ import {
   excluirLancamento,
   listarCategorias,
   listarLancamentos,
+  listarObjetivos,
+  listarOrcamentos,
   listarSaldosPorConta,
   listarTags,
   obterEvolucaoMensal,
@@ -20,6 +22,8 @@ import GraficoGastosPorCategoria from "../componentes/GraficoGastosPorCategoria"
 import GraficoEvolucaoMensal from "../componentes/GraficoEvolucaoMensal";
 import Input from "../componentes/Input";
 import ItemLancamento from "../componentes/ItemLancamento";
+import MetaDestaque from "../componentes/MetaDestaque";
+import ResumoOrcamentos from "../componentes/ResumoOrcamentos";
 import { fimDoMes, inicioDoMes } from "../constants";
 import { confirmar } from "../confirmar";
 import { cor, espaco, fonte, formatarMoeda, raio } from "../tema";
@@ -27,9 +31,12 @@ import {
   EvolucaoMensalPonto,
   GastoPorCategoria,
   Lancamento,
+  Objetivo,
+  OrcamentoStatus,
   SaldoPorConta,
   TipoLancamento,
 } from "../types";
+import { obterPreferencias, Preferencias } from "../utils/preferencias";
 
 export default function DashboardScreen() {
   const [saldo, setSaldo] = useState<number | null>(null);
@@ -39,11 +46,14 @@ export default function DashboardScreen() {
   const [saldosContas, setSaldosContas] = useState<SaldoPorConta[]>([]);
   const [gastosCategoria, setGastosCategoria] = useState<GastoPorCategoria[]>([]);
   const [evolucao, setEvolucao] = useState<EvolucaoMensalPonto[]>([]);
+  const [orcamentos, setOrcamentos] = useState<OrcamentoStatus[]>([]);
+  const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [tagsDisponiveis, setTagsDisponiveis] = useState<string[]>([]);
   const [tagFiltro, setTagFiltro] = useState<string | null>(null);
   const [textoBusca, setTextoBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [preferencias, setPreferencias] = useState<Preferencias | null>(null);
 
   const carregar = useCallback(async (tag?: string | null, texto?: string) => {
     setErro(null);
@@ -54,17 +64,31 @@ export default function DashboardScreen() {
         tags: tag ? [tag] : undefined,
         texto: texto && texto.trim().length > 0 ? texto.trim() : undefined,
       };
-      const [resSaldo, resMoedas, resLancamentos, resCategorias, resSaldosContas, resGastos, resEvolucao, resTags] =
-        await Promise.all([
-          obterSaldoFinanceiro(inicio, fim),
-          obterSaldoMoedas(),
-          listarLancamentos(inicio, fim, filtros),
-          listarCategorias(),
-          listarSaldosPorConta(),
-          obterGastosPorCategoria(inicio, fim),
-          obterEvolucaoMensal(6),
-          listarTags(),
-        ]);
+      const [
+        resSaldo,
+        resMoedas,
+        resLancamentos,
+        resCategorias,
+        resSaldosContas,
+        resGastos,
+        resEvolucao,
+        resOrcamentos,
+        resObjetivos,
+        resTags,
+        resPreferencias,
+      ] = await Promise.all([
+        obterSaldoFinanceiro(inicio, fim),
+        obterSaldoMoedas(),
+        listarLancamentos(inicio, fim, filtros),
+        listarCategorias(),
+        listarSaldosPorConta(),
+        obterGastosPorCategoria(inicio, fim),
+        obterEvolucaoMensal(6),
+        listarOrcamentos(),
+        listarObjetivos(),
+        listarTags(),
+        obterPreferencias(),
+      ]);
       setSaldo(resSaldo.saldo);
       setMoedas(resMoedas.saldo);
       setLancamentos(resLancamentos.itens);
@@ -73,7 +97,10 @@ export default function DashboardScreen() {
       // transferências entre contas não são gasto real — fora do gráfico
       setGastosCategoria(resGastos.filter((g) => g.categoria !== "Transferência"));
       setEvolucao(resEvolucao);
+      setOrcamentos(resOrcamentos);
+      setObjetivos(resObjetivos);
       setTagsDisponiveis(resTags.map((t) => t.nome));
+      setPreferencias(resPreferencias);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar dados.");
     } finally {
@@ -130,42 +157,47 @@ export default function DashboardScreen() {
     .reduce((soma, l) => soma + l.valor, 0);
 
   const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const widgets = preferencias?.widgetsAtivos;
 
   return (
     <View style={estilos.container}>
       {/* Cartão principal: muito respiro, saldo é o protagonista da tela */}
-      <View style={estilos.cartaoSaldo}>
-        <Text style={estilos.rotuloMes}>{mesAtual}</Text>
-        <Text style={estilos.rotuloSaldo}>Saldo disponível</Text>
-        <Text style={[estilos.saldo, saldo !== null && saldo < 0 && estilos.saldoNegativo]}>
-          {saldo !== null ? formatarMoeda(saldo) : "--"}
-        </Text>
-        <View style={estilos.linhaResumo}>
-          <View style={estilos.resumoItem}>
-            <Ionicons name="arrow-up-circle" size={20} color={cor.verde} />
-            <View>
-              <Text style={estilos.resumoRotulo}>Receitas</Text>
-              <Text style={[estilos.resumoValor, { color: cor.verde }]}>{formatarMoeda(receitas)}</Text>
+      {widgets?.saldo && (
+        <View style={estilos.cartaoSaldo}>
+          <Text style={estilos.rotuloMes}>{mesAtual}</Text>
+          <Text style={estilos.rotuloSaldo}>Saldo disponível</Text>
+          <Text style={[estilos.saldo, saldo !== null && saldo < 0 && estilos.saldoNegativo]}>
+            {saldo !== null ? formatarMoeda(saldo) : "--"}
+          </Text>
+          <View style={estilos.linhaResumo}>
+            <View style={estilos.resumoItem}>
+              <Ionicons name="arrow-up-circle" size={20} color={cor.verde} />
+              <View>
+                <Text style={estilos.resumoRotulo}>Receitas</Text>
+                <Text style={[estilos.resumoValor, { color: cor.verde }]}>{formatarMoeda(receitas)}</Text>
+              </View>
             </View>
-          </View>
-          <View style={estilos.resumoItem}>
-            <Ionicons name="arrow-down-circle" size={20} color={cor.vermelho} />
-            <View>
-              <Text style={estilos.resumoRotulo}>Despesas</Text>
-              <Text style={[estilos.resumoValor, { color: cor.vermelho }]}>{formatarMoeda(despesas)}</Text>
+            <View style={estilos.resumoItem}>
+              <Ionicons name="arrow-down-circle" size={20} color={cor.vermelho} />
+              <View>
+                <Text style={estilos.resumoRotulo}>Despesas</Text>
+                <Text style={[estilos.resumoValor, { color: cor.vermelho }]}>{formatarMoeda(despesas)}</Text>
+              </View>
             </View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* Espaço permanente de gamificação — só dados reais hoje (moedas).
           Slot preparado para nível/XP/sequência quando o backend existir. */}
-      <View style={estilos.faixaMoedas}>
-        <Ionicons name="medal" size={18} color={cor.moeda} />
-        <Text style={estilos.textoMoedas}>
-          {moedas !== null ? moedas : "--"} moedas
-        </Text>
-      </View>
+      {widgets?.saldoMoedas && (
+        <View style={estilos.faixaMoedas}>
+          <Ionicons name="medal" size={18} color={cor.moeda} />
+          <Text style={estilos.textoMoedas}>
+            {moedas !== null ? moedas : "--"} moedas
+          </Text>
+        </View>
+      )}
 
       {erro && <Text style={estilos.erro}>{erro}</Text>}
 
@@ -192,7 +224,7 @@ export default function DashboardScreen() {
               </Card>
             )}
 
-            {gastosCategoria.length > 0 && (
+            {widgets?.graficoCategorias && gastosCategoria.length > 0 && (
               <Card estiloExtra={estilos.cartaoSecao}>
                 <Text style={estilos.tituloSecao}>Gastos por categoria (mês)</Text>
                 <GraficoGastosPorCategoria dados={gastosCategoria} />
@@ -203,6 +235,20 @@ export default function DashboardScreen() {
               <Card estiloExtra={estilos.cartaoSecao}>
                 <Text style={estilos.tituloSecao}>Últimos meses</Text>
                 <GraficoEvolucaoMensal dados={evolucao} />
+              </Card>
+            )}
+
+            {widgets?.resumoOrcamentos && orcamentos.length > 0 && (
+              <Card estiloExtra={estilos.cartaoSecao}>
+                <Text style={estilos.tituloSecao}>Orçamentos do mês</Text>
+                <ResumoOrcamentos orcamentos={orcamentos} />
+              </Card>
+            )}
+
+            {widgets?.metasDestaque && objetivos.some((o) => !o.concluido) && (
+              <Card estiloExtra={estilos.cartaoSecao}>
+                <Text style={estilos.tituloSecao}>Meta em destaque</Text>
+                <MetaDestaque objetivos={objetivos} />
               </Card>
             )}
 

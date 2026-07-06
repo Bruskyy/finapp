@@ -7,7 +7,7 @@ import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Input from "../componentes/Input";
 import { cor, espaco, fonte } from "../tema";
-import { obterPreferencias, salvarPreferencias } from "../utils/preferencias";
+import { obterPreferencias, Preferencias, salvarPreferencias } from "../utils/preferencias";
 
 const URL_REPOSITORIO = "https://github.com/Bruskyy/finapp";
 
@@ -25,10 +25,10 @@ export default function ConfiguracoesScreen() {
   const [erroSenha, setErroSenha] = useState<string | null>(null);
   const [senhaTrocada, setSenhaTrocada] = useState(false);
 
-  const [notificacoesAtivas, setNotificacoesAtivas] = useState(true);
+  const [preferencias, setPreferencias] = useState<Preferencias | null>(null);
 
   useEffect(() => {
-    obterPreferencias().then((p) => setNotificacoesAtivas(p.notificacoesAtivas));
+    obterPreferencias().then(setPreferencias);
   }, []);
 
   const nomeValido = nome.trim().length > 0;
@@ -68,8 +68,10 @@ export default function ConfiguracoesScreen() {
   }
 
   async function alternarNotificacoes(valor: boolean) {
-    setNotificacoesAtivas(valor);
-    await salvarPreferencias({ notificacoesAtivas: valor });
+    if (!preferencias) return;
+    const atualizadas: Preferencias = { ...preferencias, notificacoesAtivas: valor };
+    setPreferencias(atualizadas);
+    await salvarPreferencias(atualizadas);
   }
 
   return (
@@ -123,7 +125,7 @@ export default function ConfiguracoesScreen() {
         <View style={estilos.linhaPreferencia}>
           <Text style={estilos.textoPreferencia}>Notificações</Text>
           <Switch
-            value={notificacoesAtivas}
+            value={preferencias?.notificacoesAtivas ?? true}
             onValueChange={alternarNotificacoes}
             trackColor={{ true: cor.primaria, false: cor.cinza300 }}
             accessibilityLabel="Ativar ou desativar notificações"
