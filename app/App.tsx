@@ -14,7 +14,7 @@ import { createDrawerNavigator } from "@react-navigation/drawer";
 import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
 import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
@@ -138,13 +138,24 @@ function tituloDaRotaFocada(route: RouteProp<Record<string, object | undefined>,
   return TITULOS_TAB[nomeRota] ?? "Início";
 }
 
+/** Ícone pequeno do Cofrin ao lado do título - reforço de marca discreto em
+ * toda tela principal (ver ITEM-AJUSTES-RECORRENCIA-E-MARCA.md, Ajuste 2). */
+function TituloComMarca({ children }: { children?: string }) {
+  return (
+    <View style={estilos.tituloComMarca}>
+      <Image source={require("./assets/icon.png")} style={estilos.iconeMarca} />
+      <Text style={estilos.headerTitulo}>{children}</Text>
+    </View>
+  );
+}
+
 function DrawerPrincipal() {
   return (
     <Drawer.Navigator
       screenOptions={{
         headerShadowVisible: false,
         headerStyle: estilos.header,
-        headerTitleStyle: estilos.headerTitulo,
+        headerTitle: (props) => <TituloComMarca>{props.children}</TituloComMarca>,
         headerLeft: () => <BotaoHamburguer />,
       }}
       drawerContent={(props) => <DrawerContent {...props} />}
@@ -224,6 +235,8 @@ const estilos = StyleSheet.create({
   carregando: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: cor.cinza100 },
   header: { backgroundColor: cor.cinza100, elevation: 0 },
   headerTitulo: { fontSize: 15, fontWeight: "600", color: cor.cinza700 },
+  tituloComMarca: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
+  iconeMarca: { width: 22, height: 22, borderRadius: 6 },
   botaoHamburguer: { marginLeft: espaco.lg },
   botaoAba: { flex: 1, alignItems: "center", justifyContent: "center" },
   wrapperFab: { flex: 1, alignItems: "center", justifyContent: "flex-end" },

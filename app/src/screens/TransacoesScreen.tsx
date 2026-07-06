@@ -202,7 +202,7 @@ export default function TransacoesScreen() {
         ItemSeparatorComponent={() => <View style={estilos.separador} />}
         ListEmptyComponent={
           <EstadoVazio
-            icone="receipt-outline"
+            mascote
             mensagem={`Nenhuma transação em ${MESES[mesReferencia.getMonth()].toLowerCase()} de ${mesReferencia.getFullYear()}.`}
             textoAcao="Novo lançamento"
             onAcao={() => navigation.navigate("Novo" as never)}
