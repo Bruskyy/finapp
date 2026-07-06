@@ -46,7 +46,7 @@ const estilos = StyleSheet.create({
     alignItems: "center",
     marginBottom: espaco.md,
   },
-  iniciais: { fontSize: 32, fontWeight: "700", color: "#fff" },
+  iniciais: { fontSize: 32, fontWeight: "700", color: cor.branco },
   nome: { ...fonte.tituloCard, color: cor.cinza900 },
   email: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.xxl },
   tituloSecao: { ...fonte.tituloSecao, color: cor.cinza900, alignSelf: "flex-start", marginBottom: espaco.sm },

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { cor, espaco, formatarData, formatarMoeda, iconeDaCategoria } from "../tema";
+import { cor, espaco, formatarData, formatarMoeda, iconeDaCategoria, raio } from "../tema";
 import { TipoLancamento } from "../types";
 
 interface ItemLancamentoProps {
@@ -89,17 +89,17 @@ const estilos = StyleSheet.create({
   },
   centro: { flex: 1 },
   descricao: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
-  linhaDetalhe: { flexDirection: "row", alignItems: "center", gap: espaco.xs, marginTop: 2 },
+  linhaDetalhe: { flexDirection: "row", alignItems: "center", gap: espaco.xs, marginTop: espaco.xs },
   detalhe: { fontSize: 13, color: cor.cinza500 },
-  tags: { fontSize: 12, color: cor.primaria, marginTop: 2 },
+  tags: { fontSize: 12, color: cor.primaria, marginTop: espaco.xs },
   badge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: espaco.xs,
     backgroundColor: cor.primariaSuave,
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    borderRadius: raio.chip,
+    paddingHorizontal: espaco.xs,
+    paddingVertical: espaco.xs,
   },
   textoBadge: { fontSize: 10, color: cor.primaria, fontWeight: "600" },
   valor: { fontSize: 15, fontWeight: "600" },

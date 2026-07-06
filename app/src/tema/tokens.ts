@@ -43,6 +43,19 @@ export const cor = {
   branco: "#ffffff", // superfície de cards
 } as const;
 
+// Paleta cíclica pra gráficos com N categorias (mais cores do que os tokens
+// semânticos acima cobrem) — usada em GraficoGastosPorCategoria. Fonte única
+// de verdade: nenhum componente deve declarar sua própria lista de hex aqui.
+export const paletaGraficos = [
+  "#1e88e5",
+  "#8e24aa",
+  "#f4511e",
+  "#00897b",
+  "#fdd835",
+  "#5e35b1",
+  "#43a047",
+] as const;
+
 // ----- Espaçamentos (escala fechada — nenhum valor fora dela) ----------------
 
 export const espaco = {

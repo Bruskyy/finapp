@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
 import Botao from "../componentes/Botao";
 import Input from "../componentes/Input";
-import { cor, espaco, fonte } from "../tema";
+import { cor, espaco, fonte, raio } from "../tema";
 
 interface Props {
   aoIrParaRegistro: () => void;
@@ -35,7 +35,7 @@ export default function LoginScreen({ aoIrParaRegistro }: Props) {
   return (
     <View style={estilos.container}>
       <View style={estilos.icone}>
-        <Ionicons name="bar-chart" size={32} color="#fff" />
+        <Ionicons name="bar-chart" size={32} color={cor.branco} />
       </View>
       <Text style={estilos.titulo}>Bem-vindo de volta</Text>
       <Text style={estilos.subtitulo}>Entre para continuar acompanhando suas finanças.</Text>
@@ -69,7 +69,7 @@ const estilos = StyleSheet.create({
   icone: {
     width: 64,
     height: 64,
-    borderRadius: 20,
+    borderRadius: raio.chip,
     backgroundColor: cor.primaria,
     alignItems: "center",
     justifyContent: "center",

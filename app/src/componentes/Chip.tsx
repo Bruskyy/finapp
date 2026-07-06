@@ -26,7 +26,7 @@ export default function Chip({ texto, selecionado = false, onPress, icone, corIc
         <Ionicons
           name={icone}
           size={14}
-          color={selecionado ? "#fff" : corIcone ?? cor.cinza500}
+          color={selecionado ? cor.branco : corIcone ?? cor.cinza500}
           style={estilos.icone}
         />
       )}
@@ -40,7 +40,7 @@ const estilos = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: espaco.md,
-    paddingVertical: espaco.xs + 2,
+    paddingVertical: espaco.sm,
     borderRadius: raio.chip,
     borderWidth: 1,
     borderColor: cor.cinza300,
@@ -49,5 +49,5 @@ const estilos = StyleSheet.create({
   selecionado: { backgroundColor: cor.primaria, borderColor: cor.primaria },
   icone: { marginRight: espaco.xs },
   texto: { fontSize: 13, color: cor.cinza900 },
-  textoSelecionado: { color: "#fff", fontWeight: "600" },
+  textoSelecionado: { color: cor.branco, fontWeight: "600" },
 });

@@ -42,7 +42,7 @@ export default function Botao({
       ]}
     >
       {carregando ? (
-        <ActivityIndicator color={variante === "primario" ? "#fff" : cor.primaria} />
+        <ActivityIndicator color={variante === "primario" ? cor.branco : cor.primaria} />
       ) : (
         <Text style={estiloRotulo}>{texto}</Text>
       )}
@@ -74,7 +74,7 @@ const estilos = StyleSheet.create({
   containerTexto: { backgroundColor: "transparent", paddingHorizontal: espaco.sm, minHeight: undefined },
   containerTextoPressed: { opacity: 0.6 },
 
-  rotuloPrimario: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  rotuloPrimario: { color: cor.branco, fontSize: 16, fontWeight: "600" },
   rotuloSecundario: { color: cor.primaria, fontSize: 16, fontWeight: "600" },
   rotuloTexto: { color: cor.primaria, fontSize: 15, fontWeight: "600" },
 });
