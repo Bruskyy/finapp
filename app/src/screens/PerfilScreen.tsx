@@ -3,14 +3,7 @@ import { useAuth } from "../auth/AuthContext";
 import Botao from "../componentes/Botao";
 import EstadoVazio from "../componentes/EstadoVazio";
 import { cor, espaco, fonte } from "../tema";
-
-function iniciais(nome: string): string {
-  return nome
-    .split(" ")
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
+import { iniciais } from "../utils/iniciais";
 
 export default function PerfilScreen() {
   const { usuario, logout } = useAuth();
@@ -36,7 +29,7 @@ export default function PerfilScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.xxxl + espaco.xl, backgroundColor: cor.cinza100, alignItems: "center" },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100, alignItems: "center" },
   avatar: {
     width: 96,
     height: 96,
