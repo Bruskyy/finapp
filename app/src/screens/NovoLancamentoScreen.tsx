@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { criarLancamento, criarRecorrencia, listarCategorias, listarContas } from "../api/client";
@@ -10,6 +10,7 @@ import { cor, espaco, fonte, iconeDaCategoria, raio } from "../tema";
 import { Categoria, Conta, TipoLancamento } from "../types";
 
 export default function NovoLancamentoScreen() {
+  const navigation = useNavigation();
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
   const [tipo, setTipo] = useState<TipoLancamento>(TipoLancamento.Despesa);
@@ -177,6 +178,13 @@ export default function NovoLancamentoScreen() {
         />
       </View>
 
+      <Botao
+        texto="Ver minhas contas fixas"
+        variante="texto"
+        onPress={() => navigation.navigate("Fixas" as never)}
+        estiloExtra={estilos.linkContasFixas}
+      />
+
       {fixa && (
         <Input
           placeholder="Dia do mês (1-31)"
@@ -250,4 +258,5 @@ const estilos = StyleSheet.create({
   linhaFixaTexto: { flex: 1 },
   rotuloFixa: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
   legendaFixa: { fontSize: 12, color: cor.cinza500, marginTop: espaco.xs },
+  linkContasFixas: { alignSelf: "flex-start", paddingHorizontal: 0, marginBottom: espaco.md },
 });

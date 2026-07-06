@@ -24,7 +24,10 @@ export default function OrcamentosScreen() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // formulário de novo/edição
+  // formulário de novo/edição - colapsado por padrão (Ajuste 4 do
+  // ITEM-DRAWER-E-CORES-DE-MARCA.md): prioriza visualmente os orçamentos
+  // já definidos em vez do formulário de criação.
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [categoriaId, setCategoriaId] = useState<string | null>(null);
   const [limite, setLimite] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -62,6 +65,7 @@ export default function OrcamentosScreen() {
       await definirOrcamento(categoriaId, Number(limite.replace(",", ".")));
       setCategoriaId(null);
       setLimite("");
+      setMostrarFormulario(false);
       await carregar();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao salvar orçamento.");
@@ -113,26 +117,43 @@ export default function OrcamentosScreen() {
         contentContainerStyle={estilos.listaConteudo}
       />
 
-      <Card estiloExtra={estilos.formulario}>
-        <Text style={estilos.rotuloFormulario}>Definir teto de gastos</Text>
-        <View style={estilos.linhaChips}>
-          {categorias.map((c) => (
-            <Chip
-              key={c.id}
-              texto={c.nome}
-              selecionado={categoriaId === c.id}
-              onPress={() => setCategoriaId(c.id)}
-            />
-          ))}
-        </View>
-        <Input
-          placeholder="Limite mensal (ex: 500)"
-          value={limite}
-          onChangeText={setLimite}
-          keyboardType="decimal-pad"
+      {!mostrarFormulario ? (
+        <Botao
+          texto="+ Definir novo teto de gastos"
+          variante="secundario"
+          onPress={() => setMostrarFormulario(true)}
         />
-        <Botao texto="Definir orçamento" onPress={salvar} disabled={!valido} carregando={salvando} />
-      </Card>
+      ) : (
+        <Card estiloExtra={estilos.formulario}>
+          <View style={estilos.cabecalhoFormulario}>
+            <Text style={estilos.rotuloFormulario}>Definir teto de gastos</Text>
+            <Pressable
+              onPress={() => setMostrarFormulario(false)}
+              hitSlop={8}
+              accessibilityLabel="Fechar formulário de novo teto"
+            >
+              <Ionicons name="close" size={20} color={cor.cinza500} />
+            </Pressable>
+          </View>
+          <View style={estilos.linhaChips}>
+            {categorias.map((c) => (
+              <Chip
+                key={c.id}
+                texto={c.nome}
+                selecionado={categoriaId === c.id}
+                onPress={() => setCategoriaId(c.id)}
+              />
+            ))}
+          </View>
+          <Input
+            placeholder="Limite mensal (ex: 500)"
+            value={limite}
+            onChangeText={setLimite}
+            keyboardType="decimal-pad"
+          />
+          <Botao texto="Definir orçamento" onPress={salvar} disabled={!valido} carregando={salvando} />
+        </Card>
+      )}
     </View>
   );
 }
@@ -175,6 +196,7 @@ const estilos = StyleSheet.create({
   cartaoPercentual: { fontSize: 12, fontWeight: "600", marginTop: espaco.sm },
 
   formulario: { marginBottom: espaco.sm },
-  rotuloFormulario: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
+  cabecalhoFormulario: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: espaco.md },
+  rotuloFormulario: { ...fonte.tituloCard, color: cor.cinza900 },
   linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
 });
