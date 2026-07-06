@@ -27,6 +27,7 @@ import PersonalizarInicioScreen from "./src/screens/PersonalizarInicioScreen";
 import PlanejamentoScreen from "./src/screens/PlanejamentoScreen";
 import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
+import TransacoesScreen from "./src/screens/TransacoesScreen";
 import { cor, espaco, sombra } from "./src/tema";
 
 const Tab = createBottomTabNavigator();
@@ -34,15 +35,16 @@ const Drawer = createDrawerNavigator();
 
 const icones: Record<string, keyof typeof Ionicons.glyphMap> = {
   Dashboard: "home",
+  Transações: "receipt",
   Planejamento: "wallet",
-  Moedas: "medal",
+  Mais: "menu",
 };
 
 const TITULOS_TAB: Record<string, string> = {
   Dashboard: "Início",
+  Transações: "Transações",
   Planejamento: "Planejamento",
   Novo: "Novo lançamento",
-  Moedas: "Moedas",
 };
 
 /** Botão central "Novo": FAB elevado acima da tab bar, ~20% maior que os demais. */
@@ -62,6 +64,24 @@ function BotaoNovoTabBar({ onPress, accessibilityState }: BottomTabBarButtonProp
   );
 }
 
+/** Botão "Mais": não navega pra tela nenhuma, só abre o menu lateral (mesmo
+ * padrão do ícone de hambúrguer no header) - reaproveita o icone+label já
+ * montados pelo tabBarIcon/tabBarLabel padrão via `children`, só troca o
+ * onPress. */
+function BotaoMaisTabBar({ children }: BottomTabBarButtonProps) {
+  const navigation = useNavigation();
+  return (
+    <Pressable
+      onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      accessibilityRole="button"
+      accessibilityLabel="Mais opções"
+      style={estilos.botaoAba}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 function TabsPrincipais() {
   return (
     <Tab.Navigator
@@ -75,7 +95,7 @@ function TabsPrincipais() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Planejamento" component={PlanejamentoScreen} />
+      <Tab.Screen name="Transações" component={TransacoesScreen} />
       <Tab.Screen
         name="Novo"
         component={NovoLancamentoScreen}
@@ -84,7 +104,15 @@ function TabsPrincipais() {
           tabBarButton: (props) => <BotaoNovoTabBar {...props} />,
         }}
       />
-      <Tab.Screen name="Moedas" component={MoedasScreen} />
+      <Tab.Screen name="Planejamento" component={PlanejamentoScreen} />
+      {/* "component" nunca renderiza de fato: BotaoMaisTabBar troca o onPress
+          padrão do tab por abrir o drawer, então essa rota nunca é focada
+          (bottom-tabs só monta a tela de uma aba quando ela é navegada). */}
+      <Tab.Screen
+        name="Mais"
+        component={PerfilScreen}
+        options={{ tabBarButton: (props) => <BotaoMaisTabBar {...props} /> }}
+      />
     </Tab.Navigator>
   );
 }
@@ -131,6 +159,7 @@ function DrawerPrincipal() {
         component={PersonalizarInicioScreen}
         options={{ title: "Personalizar início" }}
       />
+      <Drawer.Screen name="Moedas" component={MoedasScreen} options={{ title: "Moedas" }} />
       <Drawer.Screen name="Fixas" component={RecorrenciasScreen} options={{ title: "Contas fixas" }} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} options={{ title: "Perfil" }} />
       <Drawer.Screen
@@ -196,6 +225,7 @@ const estilos = StyleSheet.create({
   header: { backgroundColor: cor.cinza100, elevation: 0 },
   headerTitulo: { fontSize: 15, fontWeight: "600", color: cor.cinza700 },
   botaoHamburguer: { marginLeft: espaco.lg },
+  botaoAba: { flex: 1, alignItems: "center", justifyContent: "center" },
   wrapperFab: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
   fab: {
     width: 58,

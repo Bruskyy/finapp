@@ -16,6 +16,7 @@ interface ItemDrawer {
 const ITENS: ItemDrawer[] = [
   { rota: "Início", label: "Início", icone: "home-outline" },
   { rota: "Personalizar", label: "Personalizar início", icone: "options-outline" },
+  { rota: "Moedas", label: "Moedas", icone: "medal-outline" },
   { rota: "Fixas", label: "Contas fixas", icone: "repeat-outline" },
   { rota: "Perfil", label: "Perfil", icone: "person-outline" },
   { rota: "Configurações", label: "Configurações", icone: "settings-outline" },
