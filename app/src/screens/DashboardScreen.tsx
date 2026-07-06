@@ -249,7 +249,7 @@ export default function DashboardScreen() {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.xxxl + espaco.sm, backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
   centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
 
   cartaoSaldo: { marginBottom: espaco.lg },

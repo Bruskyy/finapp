@@ -137,7 +137,7 @@ function rotuloStatus(status: Resgate["status"]): string {
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.xxxl + espaco.sm, backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.cinza100 },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.lg },
 
   cartaoSaldo: { alignItems: "center", marginBottom: espaco.md },

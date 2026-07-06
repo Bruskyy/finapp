@@ -162,7 +162,7 @@ function CartaoOrcamento({ item, onRemover }: { item: OrcamentoStatus; onRemover
 }
 
 const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.xxxl + espaco.sm, backgroundColor: cor.cinza100 },
+  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.md, backgroundColor: cor.cinza100 },
   centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.cinza100 },
   titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.lg },
   erro: { color: cor.vermelho, marginBottom: espaco.sm },

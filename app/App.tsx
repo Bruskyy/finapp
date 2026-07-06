@@ -1,34 +1,46 @@
 import "react-native-gesture-handler";
-import { useState } from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  DrawerActions,
+  getFocusedRouteNameFromRoute,
+  NavigationContainer,
+  RouteProp,
+  useNavigation,
+} from "@react-navigation/native";
 import {
   BottomTabBarButtonProps,
   createBottomTabNavigator,
 } from "@react-navigation/bottom-tabs";
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
+import DrawerContent from "./src/navegacao/DrawerContent";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import LoginScreen from "./src/screens/LoginScreen";
+import MoedasScreen from "./src/screens/MoedasScreen";
 import NovoLancamentoScreen from "./src/screens/NovoLancamentoScreen";
-import OrcamentosScreen from "./src/screens/OrcamentosScreen";
+import PerfilScreen from "./src/screens/PerfilScreen";
+import PlanejamentoScreen from "./src/screens/PlanejamentoScreen";
 import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
-import ObjetivosScreen from "./src/screens/ObjetivosScreen";
-import MoedasScreen from "./src/screens/MoedasScreen";
-import PerfilScreen from "./src/screens/PerfilScreen";
-import { cor, sombra } from "./src/tema";
+import { cor, espaco, sombra } from "./src/tema";
 
 const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
 
 const icones: Record<string, keyof typeof Ionicons.glyphMap> = {
   Dashboard: "home",
-  Orçamentos: "pie-chart",
-  Fixas: "repeat",
-  Metas: "flag",
+  Planejamento: "wallet",
   Moedas: "medal",
-  Perfil: "person-circle",
+};
+
+const TITULOS_TAB: Record<string, string> = {
+  Dashboard: "Início",
+  Planejamento: "Planejamento",
+  Novo: "Novo lançamento",
+  Moedas: "Moedas",
 };
 
 /** Botão central "Novo": FAB elevado acima da tab bar, ~20% maior que os demais. */
@@ -61,7 +73,7 @@ function TabsPrincipais() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Orçamentos" component={OrcamentosScreen} />
+      <Tab.Screen name="Planejamento" component={PlanejamentoScreen} />
       <Tab.Screen
         name="Novo"
         component={NovoLancamentoScreen}
@@ -70,11 +82,51 @@ function TabsPrincipais() {
           tabBarButton: (props) => <BotaoNovoTabBar {...props} />,
         }}
       />
-      <Tab.Screen name="Fixas" component={RecorrenciasScreen} />
-      <Tab.Screen name="Metas" component={ObjetivosScreen} />
       <Tab.Screen name="Moedas" component={MoedasScreen} />
-      <Tab.Screen name="Perfil" component={PerfilScreen} />
     </Tab.Navigator>
+  );
+}
+
+function BotaoHamburguer() {
+  const navigation = useNavigation();
+  return (
+    <Pressable
+      onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      hitSlop={8}
+      style={estilos.botaoHamburguer}
+      accessibilityRole="button"
+      accessibilityLabel="Abrir menu"
+    >
+      <Ionicons name="menu" size={24} color={cor.cinza900} />
+    </Pressable>
+  );
+}
+
+/** Título discreto do header muda conforme a aba ativa dentro de TabsPrincipais. */
+function tituloDaRotaFocada(route: RouteProp<Record<string, object | undefined>, string>): string {
+  const nomeRota = getFocusedRouteNameFromRoute(route) ?? "Dashboard";
+  return TITULOS_TAB[nomeRota] ?? "Início";
+}
+
+function DrawerPrincipal() {
+  return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShadowVisible: false,
+        headerStyle: estilos.header,
+        headerTitleStyle: estilos.headerTitulo,
+        headerLeft: () => <BotaoHamburguer />,
+      }}
+      drawerContent={(props) => <DrawerContent {...props} />}
+    >
+      <Drawer.Screen
+        name="Início"
+        component={TabsPrincipais}
+        options={({ route }) => ({ title: tituloDaRotaFocada(route) })}
+      />
+      <Drawer.Screen name="Fixas" component={RecorrenciasScreen} options={{ title: "Contas fixas" }} />
+      <Drawer.Screen name="Perfil" component={PerfilScreen} options={{ title: "Perfil" }} />
+    </Drawer.Navigator>
   );
 }
 
@@ -92,8 +144,8 @@ function TelaCarregandoAuth() {
  * depender de @react-navigation/native-stack: essa lib força o
  * @react-navigation/core pra uma versão (7.21.5) com um bug de ordem de
  * hooks no NavigationContainer em ambiente web. O NavigationContainer real
- * só é montado depois de autenticado, envolvendo só o Tab.Navigator (que já
- * funcionava antes desta feature).
+ * só é montado depois de autenticado, envolvendo o Drawer (que já funciona
+ * bem nessa mesma versão do core, validado em spike isolado).
  */
 function FluxoAuth() {
   const [tela, setTela] = useState<"login" | "registrar">("login");
@@ -113,7 +165,7 @@ function RaizNavegacao() {
 
   return (
     <NavigationContainer>
-      <TabsPrincipais />
+      <DrawerPrincipal />
     </NavigationContainer>
   );
 }
@@ -129,6 +181,9 @@ export default function App() {
 
 const estilos = StyleSheet.create({
   carregando: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: cor.cinza100 },
+  header: { backgroundColor: cor.cinza100, elevation: 0 },
+  headerTitulo: { fontSize: 15, fontWeight: "600", color: cor.cinza700 },
+  botaoHamburguer: { marginLeft: espaco.lg },
   wrapperFab: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
   fab: {
     width: 58,
