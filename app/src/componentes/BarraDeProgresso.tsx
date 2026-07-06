@@ -25,7 +25,7 @@ export default function BarraDeProgresso({ percentual, limiteAtencao = 80 }: Bar
 
 const estilos = StyleSheet.create({
   trilha: {
-    height: espaco.xs + 4,
+    height: espaco.sm,
     borderRadius: espaco.xs,
     backgroundColor: cor.cinza200,
     overflow: "hidden",

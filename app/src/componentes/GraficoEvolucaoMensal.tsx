@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { cor } from "../tema";
+import { cor, espaco } from "../tema";
 import { EvolucaoMensalPonto } from "../types";
 
 const ALTURA_MAXIMA = 90;
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   parDeBarras: { flexDirection: "row", alignItems: "flex-end", gap: 3 },
   barra: { width: 12, borderRadius: 3 },
   rotuloMes: { fontSize: 11, color: cor.cinza500 },
-  legenda: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8 },
+  legenda: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: espaco.sm, marginTop: espaco.sm },
   bolinha: { width: 8, height: 8, borderRadius: 4 },
-  textoLegenda: { fontSize: 11, color: cor.cinza500, marginRight: 8 },
+  textoLegenda: { fontSize: 11, color: cor.cinza500, marginRight: espaco.sm },
 });

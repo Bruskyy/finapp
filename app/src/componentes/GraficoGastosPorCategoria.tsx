@@ -1,9 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { cor, espaco, formatarMoeda } from "../tema";
+import { cor, espaco, formatarMoeda, paletaGraficos } from "../tema";
 import { GastoPorCategoria } from "../types";
-
-// paleta ciclica para as barras (estilo Mobills)
-const CORES_BARRAS = ["#1e88e5", "#8e24aa", "#f4511e", "#00897b", "#fdd835", "#5e35b1", "#43a047"];
 
 /**
  * "Pizza" do Mobills renderizada como barras horizontais proporcionais —
@@ -32,7 +29,7 @@ export default function GraficoGastosPorCategoria({ dados }: { dados: GastoPorCa
               <View
                 style={[
                   styles.barra,
-                  { width: `${percentual}%`, backgroundColor: CORES_BARRAS[i % CORES_BARRAS.length] },
+                  { width: `${percentual}%`, backgroundColor: paletaGraficos[i % paletaGraficos.length] },
                 ]}
               />
             </View>
@@ -44,10 +41,10 @@ export default function GraficoGastosPorCategoria({ dados }: { dados: GastoPorCa
 }
 
 const styles = StyleSheet.create({
-  linha: { marginBottom: espaco.sm + 2 },
-  cabecalhoLinha: { flexDirection: "row", justifyContent: "space-between", marginBottom: 3 },
+  linha: { marginBottom: espaco.md },
+  cabecalhoLinha: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.xs },
   nomeCategoria: { fontSize: 13, color: cor.cinza900, flex: 1 },
   valor: { fontSize: 12, color: cor.cinza500 },
-  trilha: { height: 8, borderRadius: 4, backgroundColor: cor.cinza200, overflow: "hidden" },
-  barra: { height: 8, borderRadius: 4 },
+  trilha: { height: espaco.sm, borderRadius: espaco.xs, backgroundColor: cor.cinza200, overflow: "hidden" },
+  barra: { height: espaco.sm, borderRadius: espaco.xs },
 });

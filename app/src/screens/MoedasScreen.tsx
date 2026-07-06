@@ -6,7 +6,7 @@ import { obterResgate, obterSaldoMoedas, solicitarResgate } from "../api/client"
 import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Input from "../componentes/Input";
-import { cor, espaco, fonte } from "../tema";
+import { cor, espaco, fonte, raio } from "../tema";
 import { Resgate } from "../types";
 
 export default function MoedasScreen() {
@@ -149,7 +149,7 @@ const estilos = StyleSheet.create({
   subtitulo: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
   erro: { color: cor.vermelho, marginBottom: espaco.sm },
 
-  status: { marginTop: espaco.md, padding: espaco.md, backgroundColor: cor.cinza100, borderRadius: 10 },
+  status: { marginTop: espaco.md, padding: espaco.md, backgroundColor: cor.cinza100, borderRadius: raio.input },
   statusTexto: { fontSize: 14, fontWeight: "600" },
   statusSpinner: { marginTop: espaco.sm },
 });

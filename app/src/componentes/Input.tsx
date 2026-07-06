@@ -46,7 +46,7 @@ const estilos = StyleSheet.create({
     backgroundColor: cor.branco,
     borderRadius: raio.input,
     paddingHorizontal: espaco.md,
-    paddingVertical: espaco.md - 2,
+    paddingVertical: espaco.md,
     fontSize: 15,
     color: cor.cinza900,
   },

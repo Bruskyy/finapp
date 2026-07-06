@@ -91,14 +91,14 @@ export default function NovoLancamentoScreen() {
           style={[estilos.segmento, ehDespesa && estilos.segmentoDespesaAtivo]}
           onPress={() => setTipo(TipoLancamento.Despesa)}
         >
-          <Ionicons name="arrow-down" size={20} color={ehDespesa ? "#fff" : cor.vermelho} />
+          <Ionicons name="arrow-down" size={20} color={ehDespesa ? cor.branco : cor.vermelho} />
           <Text style={[estilos.textoSegmento, ehDespesa && estilos.textoSegmentoAtivo]}>Despesa</Text>
         </Pressable>
         <Pressable
           style={[estilos.segmento, ehReceita && estilos.segmentoReceitaAtivo]}
           onPress={() => setTipo(TipoLancamento.Receita)}
         >
-          <Ionicons name="arrow-up" size={20} color={ehReceita ? "#fff" : cor.verde} />
+          <Ionicons name="arrow-up" size={20} color={ehReceita ? cor.branco : cor.verde} />
           <Text style={[estilos.textoSegmento, ehReceita && estilos.textoSegmentoAtivo]}>Receita</Text>
         </Pressable>
       </View>
@@ -180,7 +180,7 @@ const estilos = StyleSheet.create({
   segmentoDespesaAtivo: { backgroundColor: cor.vermelho, borderColor: cor.vermelho },
   segmentoReceitaAtivo: { backgroundColor: cor.verde, borderColor: cor.verde },
   textoSegmento: { fontSize: 16, fontWeight: "600", color: cor.cinza700 },
-  textoSegmentoAtivo: { color: "#fff" },
+  textoSegmentoAtivo: { color: cor.branco },
 
   rotulo: { fontSize: 14, fontWeight: "600", color: cor.cinza900, marginBottom: espaco.sm },
   linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.lg },

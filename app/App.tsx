@@ -42,7 +42,7 @@ function BotaoNovoTabBar({ onPress, accessibilityState }: BottomTabBarButtonProp
       style={estilos.wrapperFab}
     >
       <View style={[estilos.fab, focado && estilos.fabFocado]}>
-        <Ionicons name="add" size={30} color="#fff" />
+        <Ionicons name="add" size={30} color={cor.branco} />
       </View>
     </Pressable>
   );

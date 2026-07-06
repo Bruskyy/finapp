@@ -22,7 +22,7 @@ import Input from "../componentes/Input";
 import ItemLancamento from "../componentes/ItemLancamento";
 import { fimDoMes, inicioDoMes } from "../constants";
 import { confirmar } from "../confirmar";
-import { cor, espaco, fonte, formatarMoeda } from "../tema";
+import { cor, espaco, fonte, formatarMoeda, raio } from "../tema";
 import {
   EvolucaoMensalPonto,
   GastoPorCategoria,
@@ -268,9 +268,9 @@ const estilos = StyleSheet.create({
     gap: espaco.sm,
     alignSelf: "flex-start",
     backgroundColor: cor.moedaSuave,
-    borderRadius: 20,
+    borderRadius: raio.chip,
     paddingHorizontal: espaco.md,
-    paddingVertical: espaco.xs + 2,
+    paddingVertical: espaco.sm,
     marginBottom: espaco.xl,
   },
   textoMoedas: { fontSize: 13, fontWeight: "600", color: cor.cinza900 },
@@ -286,7 +286,7 @@ const estilos = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: espaco.xs + 2,
+    paddingVertical: espaco.sm,
   },
   nomeConta: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
   textoConta: { fontSize: 14, color: cor.cinza900 },
