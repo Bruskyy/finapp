@@ -1,3 +1,4 @@
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Usuarios.Api.Contratos;
 using Usuarios.Api.Dominio;
@@ -25,17 +26,32 @@ public class UsuarioNaoEncontradoException : Exception
     public UsuarioNaoEncontradoException() : base("Usuário não encontrado.") { }
 }
 
+public class TokenGoogleInvalidoException : Exception
+{
+    public TokenGoogleInvalidoException() : base("Token do Google inválido.") { }
+}
+
 public class AuthService
 {
     private readonly IUsuarioRepository _repositorio;
     private readonly IPasswordHasher<Usuario> _hasher;
     private readonly JwtTokenGenerator _jwtGenerator;
+    private readonly IGoogleIdTokenValidator _googleValidator;
+    private readonly string _googleClientId;
 
-    public AuthService(IUsuarioRepository repositorio, IPasswordHasher<Usuario> hasher, JwtTokenGenerator jwtGenerator)
+    public AuthService(
+        IUsuarioRepository repositorio,
+        IPasswordHasher<Usuario> hasher,
+        JwtTokenGenerator jwtGenerator,
+        IGoogleIdTokenValidator googleValidator,
+        IConfiguration configuracao)
     {
         _repositorio = repositorio;
         _hasher = hasher;
         _jwtGenerator = jwtGenerator;
+        _googleValidator = googleValidator;
+        _googleClientId = configuracao["Google:ClientId"]
+            ?? throw new InvalidOperationException("Configuração 'Google:ClientId' ausente.");
     }
 
     public async Task<TokenResponse> RegistrarAsync(string nome, string email, string senha, CancellationToken ct)
@@ -62,12 +78,44 @@ public class AuthService
     public async Task<TokenResponse> LoginAsync(string email, string senha, CancellationToken ct)
     {
         var usuario = await _repositorio.ObterPorEmailAsync(email, ct);
-        if (usuario is null)
+        // SenhaHash nulo = conta criada via Google, sem senha própria pra
+        // verificar. Mesma mensagem genérica dos outros casos - não confirma
+        // pra quem tenta adivinhar se o e-mail existe (user enumeration).
+        if (usuario is null || usuario.SenhaHash is null)
             throw new CredenciaisInvalidasException();
 
         var resultado = _hasher.VerifyHashedPassword(usuario, usuario.SenhaHash, senha);
         if (resultado == PasswordVerificationResult.Failed)
             throw new CredenciaisInvalidasException();
+
+        return new TokenResponse(_jwtGenerator.GerarToken(usuario), usuario.Nome, usuario.Email);
+    }
+
+    public async Task<TokenResponse> LoginComGoogleAsync(string idToken, CancellationToken ct)
+    {
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            // Valida a assinatura do token contra as chaves públicas do Google
+            // (JWKS) e confere que foi emitido especificamente pro nosso
+            // Client ID (Audience) - nunca confiamos em dados decodificados
+            // sem validar a assinatura primeiro.
+            payload = await _googleValidator.ValidarAsync(idToken, _googleClientId);
+        }
+        catch (InvalidJwtException)
+        {
+            throw new TokenGoogleInvalidoException();
+        }
+
+        // "Encontrar ou criar" pelo e-mail: se já existe conta (com ou sem
+        // senha) para este e-mail, o login Google autentica a mesma conta -
+        // e-mail é a identidade, independente de como o usuário entrou.
+        var usuario = await _repositorio.ObterPorEmailAsync(payload.Email, ct);
+        if (usuario is null)
+        {
+            usuario = Usuario.CriarComGoogle(payload.Name, payload.Email);
+            await _repositorio.AdicionarAsync(usuario, ct);
+        }
 
         return new TokenResponse(_jwtGenerator.GerarToken(usuario), usuario.Nome, usuario.Email);
     }
@@ -90,8 +138,10 @@ public class AuthService
         if (usuario is null)
             throw new UsuarioNaoEncontradoException();
 
-        var resultado = _hasher.VerifyHashedPassword(usuario, usuario.SenhaHash, senhaAtual);
-        if (resultado == PasswordVerificationResult.Failed)
+        // Conta Google não tem senha própria - nada pra "trocar" ainda
+        // (permitir definir uma senha do zero seria outra feature).
+        if (usuario.SenhaHash is null ||
+            _hasher.VerifyHashedPassword(usuario, usuario.SenhaHash, senhaAtual) == PasswordVerificationResult.Failed)
             throw new SenhaAtualIncorretaException();
 
         var novoHash = _hasher.HashPassword(usuario, novaSenha);

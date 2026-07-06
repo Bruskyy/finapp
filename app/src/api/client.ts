@@ -86,6 +86,10 @@ export function login(dto: LoginRequest): Promise<TokenResponse> {
   return requisitar("/api/usuarios/login", { method: "POST", body: JSON.stringify(dto) });
 }
 
+export function loginComGoogle(idToken: string): Promise<TokenResponse> {
+  return requisitar("/api/usuarios/login-google", { method: "POST", body: JSON.stringify({ idToken }) });
+}
+
 export function obterUsuarioLogado(): Promise<Usuario> {
   return requisitar("/api/usuarios/me");
 }

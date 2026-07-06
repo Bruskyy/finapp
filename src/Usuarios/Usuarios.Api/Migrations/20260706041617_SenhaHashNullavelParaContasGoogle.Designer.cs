@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Usuarios.Api.Persistencia;
@@ -11,9 +12,11 @@ using Usuarios.Api.Persistencia;
 namespace Usuarios.Api.Migrations
 {
     [DbContext(typeof(UsuariosDbContext))]
-    partial class UsuariosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260706041617_SenhaHashNullavelParaContasGoogle")]
+    partial class SenhaHashNullavelParaContasGoogle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

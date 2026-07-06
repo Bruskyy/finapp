@@ -20,6 +20,7 @@ builder.Services.AddDbContext<UsuariosDbContext>(options =>
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddSingleton<JwtTokenGenerator>();
+builder.Services.AddSingleton<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
 builder.Services.AddScoped<AuthService>();
 
 // Validators são stateless — singleton evita recriar a cada request.
@@ -27,6 +28,7 @@ builder.Services.AddSingleton<IValidator<RegistrarRequest>, RegistrarRequestVali
 builder.Services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>();
 builder.Services.AddSingleton<IValidator<AtualizarPerfilRequest>, AtualizarPerfilRequestValidator>();
 builder.Services.AddSingleton<IValidator<TrocarSenhaRequest>, TrocarSenhaRequestValidator>();
+builder.Services.AddSingleton<IValidator<LoginGoogleRequest>, LoginGoogleRequestValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -91,6 +93,18 @@ app.MapPost("/login", async (LoginRequest req, AuthService auth, CancellationTok
         return Results.Unauthorized();
     }
 }).AddEndpointFilter<ValidationFilter<LoginRequest>>();
+
+app.MapPost("/login-google", async (LoginGoogleRequest req, AuthService auth, CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await auth.LoginComGoogleAsync(req.IdToken, ct));
+    }
+    catch (TokenGoogleInvalidoException)
+    {
+        return Results.Unauthorized();
+    }
+}).AddEndpointFilter<ValidationFilter<LoginGoogleRequest>>();
 
 app.MapGet("/me", async (ClaimsPrincipal principal, IUsuarioRepository repo, CancellationToken ct) =>
 {

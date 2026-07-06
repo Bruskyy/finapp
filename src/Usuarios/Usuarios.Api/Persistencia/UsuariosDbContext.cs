@@ -17,7 +17,7 @@ public class UsuariosDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Nome).HasMaxLength(100).IsRequired();
             e.Property(x => x.Email).HasMaxLength(200).IsRequired();
-            e.Property(x => x.SenhaHash).IsRequired();
+            e.Property(x => x.SenhaHash); // nulo para contas Google (ver Usuario.CriarComGoogle)
             e.HasIndex(x => x.Email).IsUnique();
         });
     }

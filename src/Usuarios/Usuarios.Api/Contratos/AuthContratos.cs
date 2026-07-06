@@ -11,3 +11,5 @@ public record UsuarioResponse(Guid Id, string Nome, string Email, DateTime Criad
 public record AtualizarPerfilRequest(string Nome);
 
 public record TrocarSenhaRequest(string SenhaAtual, string NovaSenha);
+
+public record LoginGoogleRequest(string IdToken);
