@@ -13,11 +13,14 @@ interface ItemDrawer {
 
 // Lista de dados, não JSX hardcoded: o Item 5 do backlog (Configurações) só
 // precisa adicionar uma entrada aqui, sem tocar na lógica de renderização.
+// "Fixas" (Contas fixas) saiu da lista - a criação de recorrência já é
+// feita direto em Novo Lançamento (toggle "fixa"), e a tela de gestão
+// continua acessível por um link contextual lá, não mais por aqui (ver
+// ITEM-DRAWER-E-CORES-DE-MARCA.md, Ajuste 3).
 const ITENS: ItemDrawer[] = [
   { rota: "Início", label: "Início", icone: "home-outline" },
   { rota: "Personalizar", label: "Personalizar início", icone: "options-outline" },
   { rota: "Moedas", label: "Moedas", icone: "medal-outline" },
-  { rota: "Fixas", label: "Contas fixas", icone: "repeat-outline" },
   { rota: "Perfil", label: "Perfil", icone: "person-outline" },
   { rota: "Configurações", label: "Configurações", icone: "settings-outline" },
 ];

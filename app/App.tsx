@@ -117,21 +117,6 @@ function TabsPrincipais() {
   );
 }
 
-function BotaoHamburguer() {
-  const navigation = useNavigation();
-  return (
-    <Pressable
-      onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-      hitSlop={8}
-      style={estilos.botaoHamburguer}
-      accessibilityRole="button"
-      accessibilityLabel="Abrir menu"
-    >
-      <Ionicons name="menu" size={24} color={cor.cinza900} />
-    </Pressable>
-  );
-}
-
 /** Título discreto do header muda conforme a aba ativa dentro de TabsPrincipais. */
 function tituloDaRotaFocada(route: RouteProp<Record<string, object | undefined>, string>): string {
   const nomeRota = getFocusedRouteNameFromRoute(route) ?? "Dashboard";
@@ -156,7 +141,19 @@ function DrawerPrincipal() {
         headerShadowVisible: false,
         headerStyle: estilos.header,
         headerTitle: (props) => <TituloComMarca>{props.children}</TituloComMarca>,
-        headerLeft: () => <BotaoHamburguer />,
+        // Único gatilho do drawer passa a ser o item "Mais" da tab bar (à
+        // direita) - o ícone de hambúrguer no header virou um segundo
+        // atalho redundante pra mesma ação. drawerPosition "right" alinha
+        // a abertura do menu ao mesmo lado do gatilho ("thumb zone": a
+        // maioria segura o celular com uma mão e alcança o lado direito
+        // com mais facilidade).
+        drawerPosition: "right",
+        // O Drawer.Navigator injeta um botão padrão de abrir/fechar o menu
+        // sozinho quando nem headerLeft nem headerRight são definidos (do
+        // lado correspondente a drawerPosition) - sem isso aqui, o ícone
+        // "redundante" que o Ajuste 1 pediu pra remover simplesmente
+        // reaparece via esse fallback automático da lib.
+        headerRight: () => null,
       }}
       drawerContent={(props) => <DrawerContent {...props} />}
     >
@@ -171,6 +168,10 @@ function DrawerPrincipal() {
         options={{ title: "Personalizar início" }}
       />
       <Drawer.Screen name="Moedas" component={MoedasScreen} options={{ title: "Moedas" }} />
+      {/* Não some do app - só sai da lista visível do DrawerContent (Ajuste 3
+          do ITEM-DRAWER-E-CORES-DE-MARCA.md). Continua navegável via
+          navigation.navigate("Fixas") a partir do link contextual em
+          NovoLancamentoScreen. */}
       <Drawer.Screen name="Fixas" component={RecorrenciasScreen} options={{ title: "Contas fixas" }} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} options={{ title: "Perfil" }} />
       <Drawer.Screen
@@ -237,7 +238,6 @@ const estilos = StyleSheet.create({
   headerTitulo: { fontSize: 15, fontWeight: "600", color: cor.cinza700 },
   tituloComMarca: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
   iconeMarca: { width: 22, height: 22, borderRadius: 6 },
-  botaoHamburguer: { marginLeft: espaco.lg },
   botaoAba: { flex: 1, alignItems: "center", justifyContent: "center" },
   wrapperFab: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
   fab: {
