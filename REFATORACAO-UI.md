@@ -162,8 +162,7 @@ O reset de identidade visual (ver `IDENTIDADE-VISUAL.md`) foi inspirado num
 kit de UI/UX do Figma (fintech, verde-primavera/mint). Nem tudo do kit
 entrou no reset — o que ficou de fora, mas vale considerar depois:
 
-- **Onboarding em 2 telas** (ilustração + "Bem-vindo ao Cofrin", dots de
-  progresso) antes do login, só na primeira abertura do app.
+- ~~Onboarding em 2 telas~~ — **feito** (`app/src/screens/OnboardingScreen.tsx`).
 - **Tela de Categorias dedicada** com grid de tiles grandes (gerenciar/ver
   categorias) — hoje a seleção de categoria só existe via chips dentro do
   formulário de Novo Lançamento.
@@ -172,9 +171,14 @@ entrou no reset — o que ficou de fora, mas vale considerar depois:
   que já existe no Dashboard.
 - **Login biométrico** (`expo-local-authentication`) — feature real (não só
   visual) e gratuita, inspirada no "Use Fingerprint to Access" do kit.
-- **Central de notificações in-app**: o ícone de sino já existe no header,
-  mas sem tela por trás; o backend (`Notificacoes.Api`) já existe — falta
-  só a UI consumindo.
+- **Central de notificações in-app** — inspirada no ícone de sino do kit,
+  que o Cofrin **não tem hoje** (nenhuma tela usa esse ícone). Escopo maior
+  do que parece: o `Notificacoes.Api` atual é só um consumidor stateless
+  (loga e descarta, sem banco) e os eventos que ele consome
+  (`LancamentoCriadoEvent`, `ResgateSolicitadoEvent`) não carregam
+  `UsuarioId` — precisaria de persistência nova (Postgres + EF Core),
+  `UsuarioId` nos eventos (mexe em Lançamentos/Gamificação) e rota no
+  Gateway antes de qualquer UI. Não é só front-end.
 - **PIN de segurança** como camada extra opcional de acesso.
 
 ## Filosofia (guia para qualquer decisão ambígua)
