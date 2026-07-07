@@ -99,7 +99,10 @@ public class ImportacaoExtratoWorker : BackgroundService
             var conteudo = await armazenamento.BaixarAsync(importacao.ChaveS3, ct);
 
             var resultado = ExtratoCsvParser.Parse(conteudo);
-            var lancamentos = await MontarLancamentosAsync(services, resultado.Linhas, ct);
+            // importacao.UsuarioId só é null pra registros anteriores à autenticação
+            // (ver README, "Zero trust real") - toda importação nova, criada via
+            // POST /importacoes autenticado, sempre tem dono.
+            var lancamentos = await MontarLancamentosAsync(services, resultado.Linhas, importacao.UsuarioId!.Value, ct);
 
             var lancamentoRepo = services.GetRequiredService<ILancamentoRepository>();
             await lancamentoRepo.AdicionarVariosAsync(lancamentos, ct);
@@ -119,11 +122,16 @@ public class ImportacaoExtratoWorker : BackgroundService
     }
 
     private static async Task<IReadOnlyList<Lancamento>> MontarLancamentosAsync(
-        IServiceProvider services, IReadOnlyList<LinhaExtrato> linhas, CancellationToken ct)
+        IServiceProvider services, IReadOnlyList<LinhaExtrato> linhas, Guid usuarioId, CancellationToken ct)
     {
-        var categorias = await services.GetRequiredService<ICategoriaRepository>().ListarAsync(ct);
+        var categorias = await services.GetRequiredService<ICategoriaRepository>().ListarAsync(usuarioId, ct);
         var porNome = categorias.ToDictionary(c => c.Nome, c => c.Id, StringComparer.OrdinalIgnoreCase);
         var fallback = porNome.TryGetValue("Outros", out var outros) ? outros : categorias[0].Id;
+
+        // Contas agora são por usuário - a Conta.CarteiraPadraoId global (sem
+        // dono) não serve mais de fallback. Garante que ESTE usuário tem sua
+        // própria "Carteira" (cria na primeira importação, se ainda não tiver).
+        var contaId = await ObterOuCriarCarteiraAsync(services, usuarioId, ct);
 
         return linhas
             .Select(l => new Lancamento(
@@ -131,9 +139,23 @@ public class ImportacaoExtratoWorker : BackgroundService
                 l.Valor,
                 l.Tipo,
                 porNome.GetValueOrDefault(l.Categoria, fallback),
-                Conta.CarteiraPadraoId, // o CSV não tem coluna de conta: tudo cai na Carteira
-                l.Data))
+                contaId, // o CSV não tem coluna de conta: tudo cai na Carteira do usuário
+                l.Data,
+                usuarioId))
             .ToList();
+    }
+
+    private static async Task<Guid> ObterOuCriarCarteiraAsync(IServiceProvider services, Guid usuarioId, CancellationToken ct)
+    {
+        var contas = services.GetRequiredService<IContaRepository>();
+        var existente = (await contas.ListarAsync(usuarioId, ct))
+            .FirstOrDefault(c => c.Nome.Equals("Carteira", StringComparison.OrdinalIgnoreCase));
+        if (existente is not null)
+            return existente.Id;
+
+        var carteira = new Conta("Carteira", usuarioId);
+        await contas.AdicionarAsync(carteira, ct);
+        return carteira.Id;
     }
 
     /// <summary>Cria bucket e fila se não existirem (idempotente) — em produção isso seria IaC (Terraform/CDK).</summary>

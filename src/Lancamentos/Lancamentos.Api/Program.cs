@@ -120,22 +120,24 @@ var app = builder.Build();
 
 // ----- Lançamentos -----
 
-app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>
+app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ClaimsPrincipal principal, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>
 {
-    if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
+    var usuarioId = IdDoUsuario(principal);
+
+    if (await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct) is null)
         return Results.BadRequest(new { erro = "Conta não encontrada." });
 
-    var lancamento = new Lancamento(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data);
+    var lancamento = new Lancamento(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data, usuarioId);
     if (req.Tags is { Count: > 0 })
-        lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, ct));
+        lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, usuarioId, ct));
 
     await repo.AdicionarAsync(lancamento, ct);
     return Results.Created($"/lancamentos/{lancamento.Id}", ParaResponse(lancamento));
 }).AddEndpointFilter<ValidationFilter<CriarLancamentoRequest>>();
 
-app.MapGet("/lancamentos/{id:guid}", async (Guid id, ILancamentoRepository repo, CancellationToken ct) =>
+app.MapGet("/lancamentos/{id:guid}", async (Guid id, ClaimsPrincipal principal, ILancamentoRepository repo, CancellationToken ct) =>
 {
-    var l = await repo.ObterPorIdAsync(id, ct);
+    var l = await repo.ObterPorIdAsync(id, IdDoUsuario(principal), ct);
     return l is null ? Results.NotFound() : Results.Ok(ParaResponse(l));
 });
 
@@ -149,11 +151,12 @@ app.MapGet("/lancamentos", async (
     string? tags,
     int? skip,
     int? take,
+    ClaimsPrincipal principal,
     ILancamentoRepository repo,
     CancellationToken ct) =>
 {
     var filtro = new FiltroLancamentos(
-        inicio, fim, categoriaId, contaId, tipo, texto,
+        inicio, fim, IdDoUsuario(principal), categoriaId, contaId, tipo, texto,
         Tags: tags?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
         Skip: skip ?? 0,
         Take: take ?? 50);
@@ -162,72 +165,75 @@ app.MapGet("/lancamentos", async (
     return Results.Ok(new PaginaLancamentosResponse(pagina.Total, pagina.Itens.Select(ParaResponse).ToList()));
 });
 
-app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest req, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>
+app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest req, ClaimsPrincipal principal, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>
 {
-    var lancamento = await repo.ObterPorIdAsync(id, ct);
+    var usuarioId = IdDoUsuario(principal);
+    var lancamento = await repo.ObterPorIdAsync(id, usuarioId, ct);
     if (lancamento is null)
         return Results.NotFound();
 
-    if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
+    if (await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct) is null)
         return Results.BadRequest(new { erro = "Conta não encontrada." });
 
     lancamento.Atualizar(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data);
     if (req.Tags is not null)
-        lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, ct));
+        lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, usuarioId, ct));
 
     await repo.AtualizarAsync(lancamento, ct);
     return Results.Ok(ParaResponse(lancamento));
 }).AddEndpointFilter<ValidationFilter<AtualizarLancamentoRequest>>();
 
-app.MapDelete("/lancamentos/{id:guid}", async (Guid id, ILancamentoRepository repo, CancellationToken ct) =>
-    await repo.RemoverAsync(id, ct) ? Results.NoContent() : Results.NotFound());
+app.MapDelete("/lancamentos/{id:guid}", async (Guid id, ClaimsPrincipal principal, ILancamentoRepository repo, CancellationToken ct) =>
+    await repo.RemoverAsync(id, IdDoUsuario(principal), ct) ? Results.NoContent() : Results.NotFound());
 
 // ----- Tags (etiquetas livres) -----
 
-app.MapGet("/tags", async (ITagRepository repo, CancellationToken ct) =>
+app.MapGet("/tags", async (ClaimsPrincipal principal, ITagRepository repo, CancellationToken ct) =>
 {
-    var lista = await repo.ListarAsync(ct);
+    var lista = await repo.ListarAsync(IdDoUsuario(principal), ct);
     return Results.Ok(lista.Select(t => new TagResponse(t.Id, t.Nome)));
 });
 
 // ----- Contas (caixas de dinheiro, estilo Mobills) -----
 
-app.MapGet("/contas", async (IContaRepository repo, CancellationToken ct) =>
+app.MapGet("/contas", async (ClaimsPrincipal principal, IContaRepository repo, CancellationToken ct) =>
 {
-    var contas = await repo.ListarAsync(ct);
+    var contas = await repo.ListarAsync(IdDoUsuario(principal), ct);
     return Results.Ok(contas.Select(c => new ContaResponse(c.Id, c.Nome)));
 });
 
-app.MapPost("/contas", async (CriarContaRequest req, IContaRepository repo, CancellationToken ct) =>
+app.MapPost("/contas", async (CriarContaRequest req, ClaimsPrincipal principal, IContaRepository repo, CancellationToken ct) =>
 {
-    if (await repo.ExisteComNomeAsync(req.Nome, ct))
+    var usuarioId = IdDoUsuario(principal);
+    if (await repo.ExisteComNomeAsync(req.Nome, usuarioId, ct))
         return Results.Conflict(new { erro = $"Conta '{req.Nome.Trim()}' já existe." });
 
-    var conta = new Conta(req.Nome);
+    var conta = new Conta(req.Nome, usuarioId);
     await repo.AdicionarAsync(conta, ct);
     return Results.Created($"/contas/{conta.Id}", new ContaResponse(conta.Id, conta.Nome));
 }).AddEndpointFilter<ValidationFilter<CriarContaRequest>>();
 
 // saldo por conta via view SQL nativa (vw_SaldoPorConta) — requisito de SQL da vaga
-app.MapGet("/contas/saldos", async (IRelatorioRepository relatorios, CancellationToken ct) =>
+app.MapGet("/contas/saldos", async (ClaimsPrincipal principal, IRelatorioRepository relatorios, CancellationToken ct) =>
 {
-    var saldos = await relatorios.SaldosPorContaAsync(ct);
+    var saldos = await relatorios.SaldosPorContaAsync(IdDoUsuario(principal), ct);
     return Results.Ok(saldos.Select(s => new SaldoPorContaResponse(s.ContaId, s.Conta, s.Saldo)));
 });
 
 // ----- Transferências entre contas -----
 
-app.MapPost("/transferencias", async (TransferenciaRequest req, ILancamentoRepository lancamentos, IContaRepository contas, CancellationToken ct) =>
+app.MapPost("/transferencias", async (TransferenciaRequest req, ClaimsPrincipal principal, ILancamentoRepository lancamentos, IContaRepository contas, CancellationToken ct) =>
 {
-    var origem = await contas.ObterPorIdAsync(req.ContaOrigemId, ct);
-    var destino = await contas.ObterPorIdAsync(req.ContaDestinoId, ct);
+    var usuarioId = IdDoUsuario(principal);
+    var origem = await contas.ObterPorIdAsync(req.ContaOrigemId, usuarioId, ct);
+    var destino = await contas.ObterPorIdAsync(req.ContaDestinoId, usuarioId, ct);
     if (origem is null || destino is null)
         return Results.BadRequest(new { erro = "Conta de origem ou destino não encontrada." });
 
     var saida = new Lancamento($"Transferência para {destino.Nome}", req.Valor,
-        TipoLancamento.Despesa, Categoria.TransferenciaId, origem.Id, DateTime.UtcNow);
+        TipoLancamento.Despesa, Categoria.TransferenciaId, origem.Id, DateTime.UtcNow, usuarioId);
     var entrada = new Lancamento($"Transferência de {origem.Nome}", req.Valor,
-        TipoLancamento.Receita, Categoria.TransferenciaId, destino.Id, DateTime.UtcNow);
+        TipoLancamento.Receita, Categoria.TransferenciaId, destino.Id, DateTime.UtcNow, usuarioId);
 
     // os dois lançamentos na MESMA transação local (mesmo banco) — não precisa
     // de Saga: atomicidade aqui é do próprio SQL Server, diferente do resgate
@@ -239,25 +245,26 @@ app.MapPost("/transferencias", async (TransferenciaRequest req, ILancamentoRepos
 
 // ----- Recorrências (contas fixas, estilo Mobills) -----
 
-app.MapGet("/recorrencias", async (IRecorrenciaRepository repo, CancellationToken ct) =>
+app.MapGet("/recorrencias", async (ClaimsPrincipal principal, IRecorrenciaRepository repo, CancellationToken ct) =>
 {
-    var lista = await repo.ListarAsync(ct);
+    var lista = await repo.ListarAsync(IdDoUsuario(principal), ct);
     return Results.Ok(lista.Select(ParaRecorrenciaResponse));
 });
 
-app.MapPost("/recorrencias", async (CriarRecorrenciaRequest req, IRecorrenciaRepository repo, IContaRepository contas, CancellationToken ct) =>
+app.MapPost("/recorrencias", async (CriarRecorrenciaRequest req, ClaimsPrincipal principal, IRecorrenciaRepository repo, IContaRepository contas, CancellationToken ct) =>
 {
-    if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
+    var usuarioId = IdDoUsuario(principal);
+    if (await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct) is null)
         return Results.BadRequest(new { erro = "Conta não encontrada." });
 
-    var recorrencia = new LancamentoRecorrente(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.DiaDoMes);
+    var recorrencia = new LancamentoRecorrente(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.DiaDoMes, usuarioId);
     await repo.AdicionarAsync(recorrencia, ct);
     return Results.Created($"/recorrencias/{recorrencia.Id}", ParaRecorrenciaResponse(recorrencia));
 }).AddEndpointFilter<ValidationFilter<CriarRecorrenciaRequest>>();
 
-app.MapPost("/recorrencias/{id:guid}/pausar", async (Guid id, IRecorrenciaRepository repo, CancellationToken ct) =>
+app.MapPost("/recorrencias/{id:guid}/pausar", async (Guid id, ClaimsPrincipal principal, IRecorrenciaRepository repo, CancellationToken ct) =>
 {
-    var recorrencia = await repo.ObterPorIdAsync(id, ct);
+    var recorrencia = await repo.ObterPorIdAsync(id, IdDoUsuario(principal), ct);
     if (recorrencia is null) return Results.NotFound();
 
     recorrencia.Pausar();
@@ -265,9 +272,9 @@ app.MapPost("/recorrencias/{id:guid}/pausar", async (Guid id, IRecorrenciaReposi
     return Results.Ok(ParaRecorrenciaResponse(recorrencia));
 });
 
-app.MapPost("/recorrencias/{id:guid}/reativar", async (Guid id, IRecorrenciaRepository repo, CancellationToken ct) =>
+app.MapPost("/recorrencias/{id:guid}/reativar", async (Guid id, ClaimsPrincipal principal, IRecorrenciaRepository repo, CancellationToken ct) =>
 {
-    var recorrencia = await repo.ObterPorIdAsync(id, ct);
+    var recorrencia = await repo.ObterPorIdAsync(id, IdDoUsuario(principal), ct);
     if (recorrencia is null) return Results.NotFound();
 
     recorrencia.Reativar();
@@ -277,27 +284,28 @@ app.MapPost("/recorrencias/{id:guid}/reativar", async (Guid id, IRecorrenciaRepo
 
 // ----- Objetivos (metas de poupanca, estilo Mobills) -----
 
-app.MapGet("/objetivos", async (IObjetivoRepository repo, CancellationToken ct) =>
+app.MapGet("/objetivos", async (ClaimsPrincipal principal, IObjetivoRepository repo, CancellationToken ct) =>
 {
-    var lista = await repo.ListarAsync(ct);
+    var lista = await repo.ListarAsync(IdDoUsuario(principal), ct);
     return Results.Ok(lista.Select(ParaObjetivoResponse));
 });
 
-app.MapPost("/objetivos", async (CriarObjetivoRequest req, IObjetivoRepository repo, CancellationToken ct) =>
+app.MapPost("/objetivos", async (CriarObjetivoRequest req, ClaimsPrincipal principal, IObjetivoRepository repo, CancellationToken ct) =>
 {
-    var objetivo = new Objetivo(req.Nome, req.ValorAlvo, req.DataAlvo);
+    var objetivo = new Objetivo(req.Nome, req.ValorAlvo, req.DataAlvo, IdDoUsuario(principal));
     await repo.AdicionarAsync(objetivo, ct);
     return Results.Created($"/objetivos/{objetivo.Id}", ParaObjetivoResponse(objetivo));
 }).AddEndpointFilter<ValidationFilter<CriarObjetivoRequest>>();
 
-app.MapPost("/objetivos/{id:guid}/aportes", async (Guid id, AporteRequest req, IObjetivoRepository repo, IContaRepository contas, CancellationToken ct) =>
+app.MapPost("/objetivos/{id:guid}/aportes", async (Guid id, AporteRequest req, ClaimsPrincipal principal, IObjetivoRepository repo, IContaRepository contas, CancellationToken ct) =>
 {
-    var objetivo = await repo.ObterPorIdAsync(id, ct);
+    var usuarioId = IdDoUsuario(principal);
+    var objetivo = await repo.ObterPorIdAsync(id, usuarioId, ct);
     if (objetivo is null)
         return Results.NotFound();
     if (objetivo.Concluido)
         return Results.Conflict(new { erro = $"Objetivo '{objetivo.Nome}' ja foi concluido." });
-    if (await contas.ObterPorIdAsync(req.ContaId, ct) is null)
+    if (await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct) is null)
         return Results.BadRequest(new { erro = "Conta nao encontrada." });
 
     var concluiu = objetivo.Aportar(req.Valor);
@@ -305,7 +313,7 @@ app.MapPost("/objetivos/{id:guid}/aportes", async (Guid id, AporteRequest req, I
     // o aporte vira uma despesa real na conta escolhida (o dinheiro "sai" para a reserva)
     var lancamento = new Lancamento(
         $"Aporte: {objetivo.Nome}", req.Valor, TipoLancamento.Despesa,
-        Categoria.ObjetivosId, req.ContaId, DateTime.UtcNow);
+        Categoria.ObjetivosId, req.ContaId, DateTime.UtcNow, usuarioId);
 
     await repo.RegistrarAporteAsync(objetivo, lancamento, concluiu, ct);
     return Results.Ok(ParaObjetivoResponse(objetivo));
@@ -313,33 +321,35 @@ app.MapPost("/objetivos/{id:guid}/aportes", async (Guid id, AporteRequest req, I
 
 // ----- Categorias -----
 
-app.MapGet("/categorias", async (ICategoriaRepository repo, CancellationToken ct) =>
+app.MapGet("/categorias", async (ClaimsPrincipal principal, ICategoriaRepository repo, CancellationToken ct) =>
 {
-    var categorias = await repo.ListarAsync(ct);
+    var categorias = await repo.ListarAsync(IdDoUsuario(principal), ct);
     return Results.Ok(categorias.Select(c => new CategoriaResponse(c.Id, c.Nome)));
 });
 
-app.MapPost("/categorias", async (CriarCategoriaRequest req, ICategoriaRepository repo, CancellationToken ct) =>
+app.MapPost("/categorias", async (CriarCategoriaRequest req, ClaimsPrincipal principal, ICategoriaRepository repo, CancellationToken ct) =>
 {
-    if (await repo.ExisteComNomeAsync(req.Nome, ct))
+    var usuarioId = IdDoUsuario(principal);
+    if (await repo.ExisteComNomeAsync(req.Nome, usuarioId, ct))
         return Results.Conflict(new { erro = $"Categoria '{req.Nome.Trim()}' já existe." });
 
-    var categoria = new Categoria(req.Nome);
+    var categoria = new Categoria(req.Nome, usuarioId);
     await repo.AdicionarAsync(categoria, ct);
     return Results.Created($"/categorias/{categoria.Id}", new CategoriaResponse(categoria.Id, categoria.Nome));
 }).AddEndpointFilter<ValidationFilter<CriarCategoriaRequest>>();
 
 // ----- Orçamentos (teto de gasto mensal por categoria, estilo Mobills) -----
 
-app.MapGet("/orcamentos", async (IOrcamentoRepository orcamentos, ICategoriaRepository categorias, IRelatorioRepository relatorios, CancellationToken ct) =>
+app.MapGet("/orcamentos", async (ClaimsPrincipal principal, IOrcamentoRepository orcamentos, ICategoriaRepository categorias, IRelatorioRepository relatorios, CancellationToken ct) =>
 {
+    var usuarioId = IdDoUsuario(principal);
     var hoje = DateTime.Today;
     var inicio = new DateTime(hoje.Year, hoje.Month, 1);
     var fim = inicio.AddMonths(1).AddDays(-1);
 
-    var lista = await orcamentos.ListarAsync(ct);
-    var nomes = (await categorias.ListarAsync(ct)).ToDictionary(c => c.Id, c => c.Nome);
-    var gastos = (await relatorios.GastosPorCategoriaAsync(inicio, fim, ct)).ToDictionary(g => g.CategoriaId, g => g.TotalGasto);
+    var lista = await orcamentos.ListarAsync(usuarioId, ct);
+    var nomes = (await categorias.ListarAsync(usuarioId, ct)).ToDictionary(c => c.Id, c => c.Nome);
+    var gastos = (await relatorios.GastosPorCategoriaAsync(inicio, fim, usuarioId, ct)).ToDictionary(g => g.CategoriaId, g => g.TotalGasto);
 
     var status = lista.Select(o =>
     {
@@ -355,15 +365,16 @@ app.MapGet("/orcamentos", async (IOrcamentoRepository orcamentos, ICategoriaRepo
     return Results.Ok(status);
 });
 
-app.MapPut("/orcamentos", async (DefinirOrcamentoRequest req, IOrcamentoRepository orcamentos, ICategoriaRepository categorias, CancellationToken ct) =>
+app.MapPut("/orcamentos", async (DefinirOrcamentoRequest req, ClaimsPrincipal principal, IOrcamentoRepository orcamentos, ICategoriaRepository categorias, CancellationToken ct) =>
 {
-    if (await categorias.ObterPorIdAsync(req.CategoriaId, ct) is null)
+    var usuarioId = IdDoUsuario(principal);
+    if (await categorias.ObterPorIdAsync(req.CategoriaId, usuarioId, ct) is null)
         return Results.NotFound(new { erro = "Categoria não encontrada." });
 
-    var existente = await orcamentos.ObterPorCategoriaAsync(req.CategoriaId, ct);
+    var existente = await orcamentos.ObterPorCategoriaAsync(req.CategoriaId, usuarioId, ct);
     if (existente is null)
     {
-        await orcamentos.AdicionarAsync(new Orcamento(req.CategoriaId, req.ValorLimite), ct);
+        await orcamentos.AdicionarAsync(new Orcamento(req.CategoriaId, req.ValorLimite, usuarioId), ct);
     }
     else
     {
@@ -374,13 +385,14 @@ app.MapPut("/orcamentos", async (DefinirOrcamentoRequest req, IOrcamentoReposito
     return Results.NoContent();
 }).AddEndpointFilter<ValidationFilter<DefinirOrcamentoRequest>>();
 
-app.MapDelete("/orcamentos/{categoriaId:guid}", async (Guid categoriaId, IOrcamentoRepository orcamentos, CancellationToken ct) =>
+app.MapDelete("/orcamentos/{categoriaId:guid}", async (Guid categoriaId, ClaimsPrincipal principal, IOrcamentoRepository orcamentos, CancellationToken ct) =>
 {
-    var existente = await orcamentos.ObterPorCategoriaAsync(categoriaId, ct);
+    var usuarioId = IdDoUsuario(principal);
+    var existente = await orcamentos.ObterPorCategoriaAsync(categoriaId, usuarioId, ct);
     if (existente is null)
         return Results.NotFound();
 
-    await orcamentos.RemoverAsync(existente.Id, ct);
+    await orcamentos.RemoverAsync(existente.Id, usuarioId, ct);
     return Results.NoContent();
 });
 
@@ -388,6 +400,7 @@ app.MapDelete("/orcamentos/{categoriaId:guid}", async (Guid categoriaId, IOrcame
 
 app.MapPost("/importacoes", async (
     HttpRequest request,
+    ClaimsPrincipal principal,
     IImportacaoRepository importacoes,
     IArmazenamentoExtrato armazenamento,
     IFilaImportacoes fila,
@@ -405,7 +418,7 @@ app.MapPost("/importacoes", async (
         ? nome.ToString()
         : "extrato.csv";
 
-    var importacao = new ImportacaoExtrato(nomeArquivo);
+    var importacao = new ImportacaoExtrato(nomeArquivo, IdDoUsuario(principal));
     await armazenamento.SalvarAsync(importacao.ChaveS3, conteudo, ct); // 1. arquivo no S3
     await importacoes.AdicionarAsync(importacao, ct);                  // 2. rastreio no banco
     await fila.EnfileirarAsync(importacao.Id, ct);                     // 3. trabalho na fila
@@ -414,27 +427,27 @@ app.MapPost("/importacoes", async (
     return Results.Accepted($"/importacoes/{importacao.Id}", ParaImportacaoResponse(importacao));
 });
 
-app.MapGet("/importacoes/{id:guid}", async (Guid id, IImportacaoRepository importacoes, CancellationToken ct) =>
+app.MapGet("/importacoes/{id:guid}", async (Guid id, ClaimsPrincipal principal, IImportacaoRepository importacoes, CancellationToken ct) =>
 {
-    var importacao = await importacoes.ObterPorIdAsync(id, ct);
+    var importacao = await importacoes.ObterPorIdAsync(id, IdDoUsuario(principal), ct);
     return importacao is null ? Results.NotFound() : Results.Ok(ParaImportacaoResponse(importacao));
 });
 
 // ----- Relatórios (procedures/views nativas no SQL Server) -----
 
-app.MapGet("/relatorios/gastos-por-categoria", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
-    Results.Ok(await repo.GastosPorCategoriaAsync(inicio, fim, ct)));
+app.MapGet("/relatorios/gastos-por-categoria", async (DateTime inicio, DateTime fim, ClaimsPrincipal principal, IRelatorioRepository repo, CancellationToken ct) =>
+    Results.Ok(await repo.GastosPorCategoriaAsync(inicio, fim, IdDoUsuario(principal), ct)));
 
-app.MapGet("/relatorios/saldo", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
-    Results.Ok(new { Saldo = await repo.SaldoPeriodoAsync(inicio, fim, ct) }));
+app.MapGet("/relatorios/saldo", async (DateTime inicio, DateTime fim, ClaimsPrincipal principal, IRelatorioRepository repo, CancellationToken ct) =>
+    Results.Ok(new { Saldo = await repo.SaldoPeriodoAsync(inicio, fim, IdDoUsuario(principal), ct) }));
 
-app.MapGet("/relatorios/gastos-por-tag", async (DateTime inicio, DateTime fim, IRelatorioRepository repo, CancellationToken ct) =>
-    Results.Ok(await repo.GastosPorTagAsync(inicio, fim, ct)));
+app.MapGet("/relatorios/gastos-por-tag", async (DateTime inicio, DateTime fim, ClaimsPrincipal principal, IRelatorioRepository repo, CancellationToken ct) =>
+    Results.Ok(await repo.GastosPorTagAsync(inicio, fim, IdDoUsuario(principal), ct)));
 
-app.MapGet("/relatorios/evolucao-mensal", async (int? meses, IRelatorioRepository repo, CancellationToken ct) =>
+app.MapGet("/relatorios/evolucao-mensal", async (int? meses, ClaimsPrincipal principal, IRelatorioRepository repo, CancellationToken ct) =>
 {
     var quantidade = Math.Clamp(meses ?? 6, 1, 24);
-    return Results.Ok(await repo.EvolucaoMensalAsync(quantidade, ct));
+    return Results.Ok(await repo.EvolucaoMensalAsync(quantidade, IdDoUsuario(principal), ct));
 });
 
 app.MapHealthChecks("/health").AllowAnonymous();

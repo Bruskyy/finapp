@@ -17,7 +17,7 @@ public class TagTests
     [Fact]
     public void Criar_DeveGuardarNomeNormalizado()
     {
-        var tag = new Tag(" #Férias 2026 ");
+        var tag = new Tag(" #Férias 2026 ", Guid.NewGuid());
 
         Assert.Equal("férias 2026", tag.Nome);
     }
@@ -28,16 +28,17 @@ public class TagTests
     [InlineData("#")]
     public void Criar_ComNomeVazio_DeveLancarExcecao(string invalido)
     {
-        Assert.Throws<ArgumentException>(() => new Tag(invalido));
+        Assert.Throws<ArgumentException>(() => new Tag(invalido, Guid.NewGuid()));
     }
 
     [Fact]
     public void DefinirTags_DeveSubstituirEDeduplitar()
     {
-        var lancamento = new Lancamento("Mercado", 50m, TipoLancamento.Despesa, Guid.NewGuid(), Guid.NewGuid(), DateTime.Today);
-        var viagem = new Tag("viagem");
+        var usuarioId = Guid.NewGuid();
+        var lancamento = new Lancamento("Mercado", 50m, TipoLancamento.Despesa, Guid.NewGuid(), Guid.NewGuid(), DateTime.Today, usuarioId);
+        var viagem = new Tag("viagem", usuarioId);
 
-        lancamento.DefinirTags(new[] { viagem, new Tag("natal") });
+        lancamento.DefinirTags(new[] { viagem, new Tag("natal", usuarioId) });
         Assert.Equal(2, lancamento.Tags.Count);
 
         // redefinir substitui o conjunto; duplicatas por nome sao ignoradas

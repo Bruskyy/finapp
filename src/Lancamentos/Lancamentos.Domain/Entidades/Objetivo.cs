@@ -13,11 +13,12 @@ public class Objetivo
     public DateTime DataAlvo { get; private set; }
     public decimal ValorAcumulado { get; private set; }
     public bool Concluido { get; private set; }
+    public Guid? UsuarioId { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
     private Objetivo() { Nome = null!; }
 
-    public Objetivo(string nome, decimal valorAlvo, DateTime dataAlvo, DateTime? hoje = null)
+    public Objetivo(string nome, decimal valorAlvo, DateTime dataAlvo, Guid usuarioId, DateTime? hoje = null)
     {
         if (string.IsNullOrWhiteSpace(nome))
             throw new ArgumentException("Nome é obrigatório.", nameof(nome));
@@ -32,6 +33,7 @@ public class Objetivo
         DataAlvo = dataAlvo.Date;
         ValorAcumulado = 0;
         Concluido = false;
+        UsuarioId = usuarioId;
         CriadoEm = DateTime.UtcNow;
     }
 

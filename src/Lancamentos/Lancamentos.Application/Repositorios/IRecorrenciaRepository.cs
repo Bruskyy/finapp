@@ -4,9 +4,14 @@ namespace Lancamentos.Application.Repositorios;
 
 public interface IRecorrenciaRepository
 {
-    Task<IReadOnlyList<LancamentoRecorrente>> ListarAsync(CancellationToken ct);
+    Task<IReadOnlyList<LancamentoRecorrente>> ListarAsync(Guid usuarioId, CancellationToken ct);
+
+    /// <summary>Sem filtro de usuário — usada só pelo RecorrenciaWorker, que
+    /// materializa recorrências de TODOS os usuários (não tem contexto de
+    /// requisição HTTP; o dono de cada lançamento gerado vem da própria
+    /// recorrência, não de um usuário "atual").</summary>
     Task<IReadOnlyList<LancamentoRecorrente>> ListarAtivasAsync(CancellationToken ct);
-    Task<LancamentoRecorrente?> ObterPorIdAsync(Guid id, CancellationToken ct);
+    Task<LancamentoRecorrente?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct);
     Task AdicionarAsync(LancamentoRecorrente recorrencia, CancellationToken ct);
     Task AtualizarAsync(LancamentoRecorrente recorrencia, CancellationToken ct);
 

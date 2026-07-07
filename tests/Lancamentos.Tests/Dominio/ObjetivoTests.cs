@@ -5,9 +5,10 @@ namespace Lancamentos.Tests.Dominio;
 public class ObjetivoTests
 {
     private static readonly DateTime Hoje = new(2026, 7, 4);
+    private static readonly Guid UsuarioId = Guid.NewGuid();
 
     private static Objetivo Viagem(decimal alvo = 5000m, DateTime? dataAlvo = null) =>
-        new("Viagem", alvo, dataAlvo ?? new DateTime(2026, 12, 1), Hoje);
+        new("Viagem", alvo, dataAlvo ?? new DateTime(2026, 12, 1), UsuarioId, Hoje);
 
     [Fact]
     public void Criar_ComDadosValidos_DeveComecarZeradoENaoConcluido()
@@ -23,7 +24,7 @@ public class ObjetivoTests
     public void Criar_ComDataAlvoNoPassado_DeveLancarExcecao()
     {
         Assert.Throws<ArgumentException>(() =>
-            new Objetivo("Viagem", 5000m, new DateTime(2026, 7, 3), Hoje));
+            new Objetivo("Viagem", 5000m, new DateTime(2026, 7, 3), UsuarioId, Hoje));
     }
 
     [Theory]
@@ -31,7 +32,7 @@ public class ObjetivoTests
     [InlineData(-100)]
     public void Criar_ComValorAlvoInvalido_DeveLancarExcecao(decimal alvo)
     {
-        Assert.Throws<ArgumentException>(() => new Objetivo("Viagem", alvo, new DateTime(2026, 12, 1), Hoje));
+        Assert.Throws<ArgumentException>(() => new Objetivo("Viagem", alvo, new DateTime(2026, 12, 1), UsuarioId, Hoje));
     }
 
     [Fact]

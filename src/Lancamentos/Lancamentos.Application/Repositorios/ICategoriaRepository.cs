@@ -4,8 +4,9 @@ namespace Lancamentos.Application.Repositorios;
 
 public interface ICategoriaRepository
 {
-    Task<IReadOnlyList<Categoria>> ListarAsync(CancellationToken ct);
-    Task<Categoria?> ObterPorIdAsync(Guid id, CancellationToken ct);
+    /// <summary>Categorias globais (sem dono) + as do usuário — nunca as de outros usuários.</summary>
+    Task<IReadOnlyList<Categoria>> ListarAsync(Guid usuarioId, CancellationToken ct);
+    Task<Categoria?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct);
     Task AdicionarAsync(Categoria categoria, CancellationToken ct);
-    Task<bool> ExisteComNomeAsync(string nome, CancellationToken ct);
+    Task<bool> ExisteComNomeAsync(string nome, Guid usuarioId, CancellationToken ct);
 }

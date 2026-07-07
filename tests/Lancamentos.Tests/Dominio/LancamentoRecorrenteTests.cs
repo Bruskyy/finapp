@@ -4,8 +4,10 @@ namespace Lancamentos.Tests.Dominio;
 
 public class LancamentoRecorrenteTests
 {
+    private static readonly Guid UsuarioId = Guid.NewGuid();
+
     private static LancamentoRecorrente Recorrencia(int diaDoMes = 10) =>
-        new("Aluguel", 1500m, TipoLancamento.Despesa, Guid.NewGuid(), Guid.NewGuid(), diaDoMes);
+        new("Aluguel", 1500m, TipoLancamento.Despesa, Guid.NewGuid(), Guid.NewGuid(), diaDoMes, UsuarioId);
 
     [Fact]
     public void Criar_ComDadosValidos_DevePreencherPropriedadesEComecarAtiva()
@@ -16,6 +18,7 @@ public class LancamentoRecorrenteTests
         Assert.Equal("Aluguel", recorrencia.Descricao);
         Assert.Equal(5, recorrencia.DiaDoMes);
         Assert.True(recorrencia.Ativa);
+        Assert.Equal(UsuarioId, recorrencia.UsuarioId);
     }
 
     [Theory]
@@ -25,7 +28,7 @@ public class LancamentoRecorrenteTests
     public void Criar_ComDiaDoMesInvalido_DeveLancarExcecao(int diaInvalido)
     {
         Assert.Throws<ArgumentException>(() =>
-            new LancamentoRecorrente("Aluguel", 1500m, TipoLancamento.Despesa, Guid.NewGuid(), Guid.NewGuid(), diaInvalido));
+            new LancamentoRecorrente("Aluguel", 1500m, TipoLancamento.Despesa, Guid.NewGuid(), Guid.NewGuid(), diaInvalido, UsuarioId));
     }
 
     [Fact]
@@ -80,6 +83,7 @@ public class LancamentoRecorrenteTests
         Assert.Equal(1500m, lancamento.Valor);
         Assert.Equal(new DateTime(2026, 2, 28), lancamento.Data); // dia 31 vira 28 em fevereiro
         Assert.Equal(recorrencia.Id, lancamento.RecorrenciaId);
+        Assert.Equal(UsuarioId, lancamento.UsuarioId);
     }
 
     [Fact]

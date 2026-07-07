@@ -13,12 +13,13 @@ public class ImportacaoExtrato
     public int LinhasImportadas { get; private set; }
     public int LinhasComErro { get; private set; }
     public string? Erro { get; private set; }
+    public Guid? UsuarioId { get; private set; }
     public DateTime CriadoEm { get; private set; }
     public DateTime? ProcessadoEm { get; private set; }
 
     private ImportacaoExtrato() { NomeArquivo = null!; }
 
-    public ImportacaoExtrato(string nomeArquivo)
+    public ImportacaoExtrato(string nomeArquivo, Guid usuarioId)
     {
         if (string.IsNullOrWhiteSpace(nomeArquivo))
             throw new ArgumentException("Nome do arquivo é obrigatório.", nameof(nomeArquivo));
@@ -26,6 +27,7 @@ public class ImportacaoExtrato
         Id = Guid.NewGuid();
         NomeArquivo = nomeArquivo.Trim();
         Status = StatusImportacao.Pendente;
+        UsuarioId = usuarioId;
         CriadoEm = DateTime.UtcNow;
     }
 

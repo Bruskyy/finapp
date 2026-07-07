@@ -29,6 +29,7 @@ public class LancamentosDbContext : DbContext
             e.Property(x => x.Valor).HasColumnType("decimal(18,2)");
             e.HasIndex(x => x.Data); // consultas por período são o acesso mais comum
             e.HasIndex(x => x.ContaId); // saldo por conta agrupa por ContaId
+            e.HasIndex(x => x.UsuarioId); // todo endpoint de leitura filtra por dono
             e.HasOne<Conta>().WithMany().HasForeignKey(x => x.ContaId);
 
             // N:N com tabela de juncao implicita (LancamentoTags) — skip navigation
@@ -42,7 +43,9 @@ public class LancamentosDbContext : DbContext
             e.ToTable("Tags");
             e.HasKey(x => x.Id);
             e.Property(x => x.Nome).HasMaxLength(60).IsRequired();
-            e.HasIndex(x => x.Nome).IsUnique(); // normalizacao + unicidade evitam duplicatas
+            // unicidade por usuário, não mais global - dois usuários podem ter
+            // cada um a sua tag "#viagem" sem colidir.
+            e.HasIndex(x => new { x.UsuarioId, x.Nome }).IsUnique();
         });
 
         modelBuilder.Entity<Conta>(e =>
@@ -50,7 +53,8 @@ public class LancamentosDbContext : DbContext
             e.ToTable("Contas");
             e.HasKey(x => x.Id);
             e.Property(x => x.Nome).HasMaxLength(100).IsRequired();
-            e.HasIndex(x => x.Nome).IsUnique(); // sem contas duplicadas
+            // idem: unicidade por usuário (dois usuários podem ter "Carteira").
+            e.HasIndex(x => new { x.UsuarioId, x.Nome }).IsUnique();
         });
 
         modelBuilder.Entity<LancamentoRecorrente>(e =>
@@ -59,6 +63,7 @@ public class LancamentosDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Descricao).HasMaxLength(200).IsRequired();
             e.Property(x => x.Valor).HasColumnType("decimal(18,2)");
+            e.HasIndex(x => x.UsuarioId);
             e.HasOne<Categoria>().WithMany().HasForeignKey(x => x.CategoriaId);
             e.HasOne<Conta>().WithMany().HasForeignKey(x => x.ContaId).OnDelete(DeleteBehavior.NoAction);
         });
@@ -70,6 +75,7 @@ public class LancamentosDbContext : DbContext
             e.Property(x => x.Nome).HasMaxLength(200).IsRequired();
             e.Property(x => x.ValorAlvo).HasColumnType("decimal(18,2)");
             e.Property(x => x.ValorAcumulado).HasColumnType("decimal(18,2)");
+            e.HasIndex(x => x.UsuarioId);
         });
 
         modelBuilder.Entity<RecorrenciaExecucao>(e =>
@@ -86,7 +92,10 @@ public class LancamentosDbContext : DbContext
             e.ToTable("Categorias");
             e.HasKey(x => x.Id);
             e.Property(x => x.Nome).HasMaxLength(100).IsRequired();
-            e.HasIndex(x => x.Nome).IsUnique(); // sem categorias duplicadas
+            // unicidade por usuário - NULL (categoria global) não colide entre
+            // si no SQL Server (cada NULL é distinto pra fins de unique index),
+            // então os defaults seedados continuam únicos por si só.
+            e.HasIndex(x => new { x.UsuarioId, x.Nome }).IsUnique();
         });
 
         modelBuilder.Entity<Orcamento>(e =>
@@ -94,7 +103,8 @@ public class LancamentosDbContext : DbContext
             e.ToTable("Orcamentos");
             e.HasKey(x => x.Id);
             e.Property(x => x.ValorLimite).HasColumnType("decimal(18,2)");
-            e.HasIndex(x => x.CategoriaId).IsUnique(); // um teto por categoria
+            // um teto por categoria POR USUÁRIO, não mais global.
+            e.HasIndex(x => new { x.UsuarioId, x.CategoriaId }).IsUnique();
             e.HasOne<Categoria>().WithMany().HasForeignKey(x => x.CategoriaId);
         });
 
@@ -104,6 +114,7 @@ public class LancamentosDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.NomeArquivo).HasMaxLength(200).IsRequired();
             e.Property(x => x.Erro).HasMaxLength(1000);
+            e.HasIndex(x => x.UsuarioId);
             e.Ignore(x => x.ChaveS3);
             e.Ignore(x => x.JaFoiProcessada);
         });

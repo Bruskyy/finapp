@@ -9,11 +9,12 @@ public class Orcamento
     public Guid Id { get; private set; }
     public Guid CategoriaId { get; private set; }
     public decimal ValorLimite { get; private set; }
+    public Guid? UsuarioId { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
     private Orcamento() { }
 
-    public Orcamento(Guid categoriaId, decimal valorLimite)
+    public Orcamento(Guid categoriaId, decimal valorLimite, Guid usuarioId)
     {
         if (valorLimite <= 0)
             throw new ArgumentException("Valor limite deve ser maior que zero.", nameof(valorLimite));
@@ -23,6 +24,7 @@ public class Orcamento
         Id = Guid.NewGuid();
         CategoriaId = categoriaId;
         ValorLimite = valorLimite;
+        UsuarioId = usuarioId;
         CriadoEm = DateTime.UtcNow;
     }
 

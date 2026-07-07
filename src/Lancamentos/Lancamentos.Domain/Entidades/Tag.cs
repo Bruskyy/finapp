@@ -9,10 +9,11 @@ public class Tag
 {
     public Guid Id { get; private set; }
     public string Nome { get; private set; }
+    public Guid? UsuarioId { get; private set; }
 
     private Tag() { Nome = null!; }
 
-    public Tag(string nome)
+    public Tag(string nome, Guid usuarioId)
     {
         var normalizado = Normalizar(nome);
         if (normalizado.Length == 0)
@@ -20,6 +21,7 @@ public class Tag
 
         Id = Guid.NewGuid();
         Nome = normalizado;
+        UsuarioId = usuarioId;
     }
 
     /// <summary>

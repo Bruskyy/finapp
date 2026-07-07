@@ -11,6 +11,13 @@ public class Lancamento
     public DateTime Data { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
+    /// <summary>
+    /// Dono do lançamento. Nullable só pra tolerar registros criados antes da
+    /// autenticação existir (ver README, "Zero trust real") - todo lançamento
+    /// novo, a partir de agora, sempre tem um dono real.
+    /// </summary>
+    public Guid? UsuarioId { get; private set; }
+
     /// <summary>Preenchido quando o lançamento foi materializado por uma conta fixa (badge "recorrente" no app).</summary>
     public Guid? RecorrenciaId { get; private set; }
 
@@ -21,7 +28,7 @@ public class Lancamento
 
     private Lancamento() { Descricao = null!; }
 
-    public Lancamento(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, DateTime data)
+    public Lancamento(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, DateTime data, Guid usuarioId)
     {
         Validar(descricao, valor, contaId);
 
@@ -32,15 +39,30 @@ public class Lancamento
         CategoriaId = categoriaId;
         ContaId = contaId;
         Data = data;
+        UsuarioId = usuarioId;
         CriadoEm = DateTime.UtcNow;
     }
 
-    /// <summary>Factory para lançamentos materializados por uma conta fixa.</summary>
+    /// <summary>Factory para lançamentos materializados por uma conta fixa - o dono vem da
+    /// própria recorrência (nullable pra recorrências legadas sem dono).</summary>
     public static Lancamento CriarDeRecorrencia(
-        string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, DateTime data, Guid recorrenciaId)
+        string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, DateTime data, Guid recorrenciaId, Guid? usuarioId)
     {
-        var lancamento = new Lancamento(descricao, valor, tipo, categoriaId, contaId, data);
-        lancamento.RecorrenciaId = recorrenciaId;
+        Validar(descricao, valor, contaId);
+
+        var lancamento = new Lancamento
+        {
+            Id = Guid.NewGuid(),
+            Descricao = descricao.Trim(),
+            Valor = valor,
+            Tipo = tipo,
+            CategoriaId = categoriaId,
+            ContaId = contaId,
+            Data = data,
+            UsuarioId = usuarioId,
+            CriadoEm = DateTime.UtcNow,
+            RecorrenciaId = recorrenciaId,
+        };
         return lancamento;
     }
 

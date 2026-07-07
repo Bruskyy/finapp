@@ -4,8 +4,8 @@ namespace Lancamentos.Application.Repositorios;
 
 public interface IContaRepository
 {
-    Task<IReadOnlyList<Conta>> ListarAsync(CancellationToken ct);
-    Task<Conta?> ObterPorIdAsync(Guid id, CancellationToken ct);
+    Task<IReadOnlyList<Conta>> ListarAsync(Guid usuarioId, CancellationToken ct);
+    Task<Conta?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct);
     Task AdicionarAsync(Conta conta, CancellationToken ct);
-    Task<bool> ExisteComNomeAsync(string nome, CancellationToken ct);
+    Task<bool> ExisteComNomeAsync(string nome, Guid usuarioId, CancellationToken ct);
 }

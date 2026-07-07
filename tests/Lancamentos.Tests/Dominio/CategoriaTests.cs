@@ -7,10 +7,12 @@ public class CategoriaTests
     [Fact]
     public void Criar_ComNomeValido_DevePreencherPropriedades()
     {
-        var categoria = new Categoria("Alimentação");
+        var usuarioId = Guid.NewGuid();
+        var categoria = new Categoria("Alimentação", usuarioId);
 
         Assert.NotEqual(Guid.Empty, categoria.Id);
         Assert.Equal("Alimentação", categoria.Nome);
+        Assert.Equal(usuarioId, categoria.UsuarioId);
     }
 
     [Theory]
@@ -19,6 +21,6 @@ public class CategoriaTests
     [InlineData(null)]
     public void Criar_ComNomeInvalido_DeveLancarExcecao(string? nomeInvalido)
     {
-        Assert.Throws<ArgumentException>(() => new Categoria(nomeInvalido!));
+        Assert.Throws<ArgumentException>(() => new Categoria(nomeInvalido!, Guid.NewGuid()));
     }
 }
