@@ -13,4 +13,7 @@ public record LancamentoCriadoEvent(
     TipoLancamento Tipo,
     Guid CategoriaId,
     DateTime Data,
-    DateTime OcorreuEm);
+    DateTime OcorreuEm,
+    // Nullable: mensagens publicadas antes da autenticacao existir (ver
+    // README, "Zero trust real") nao tinham dono - novas sempre tem.
+    Guid? UsuarioId = null);

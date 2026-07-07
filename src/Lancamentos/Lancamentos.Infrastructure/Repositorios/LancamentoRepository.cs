@@ -44,7 +44,8 @@ public class LancamentoRepository : ILancamentoRepository
             Tipo: (TipoLancamentoEvento)lancamento.Tipo,
             CategoriaId: lancamento.CategoriaId,
             Data: lancamento.Data,
-            OcorreuEm: DateTime.UtcNow);
+            OcorreuEm: DateTime.UtcNow,
+            UsuarioId: lancamento.UsuarioId);
 
         _db.OutboxMessages.Add(new OutboxMessage(nameof(LancamentoCriadoEvent), JsonSerializer.Serialize(evento)));
     }
