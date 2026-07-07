@@ -327,6 +327,14 @@ Até aqui `Notificacoes.Api` era 100% stateless: os dois consumidores RabbitMQ (
 
 **Verificação:** validado de ponta a ponta contra o Postgres real (não só Testcontainers) — os 200 lançamentos de teste criados em sessões anteriores, que ficaram na fila do RabbitMQ esperando um consumidor, foram processados assim que o serviço subiu com a nova persistência, virando notificações reais e consultáveis. Confirmado manualmente: usuário sem notificações vê lista vazia (isolamento), marcar como lida muda o estado e persiste. 16 testes automatizados novos em `Notificacoes.Tests` (domínio, repositório com Testcontainers, e endpoints via `WebApplicationFactory` cobrindo 401 sem token, 404 pra id de outro usuário, e isolamento na listagem) — 156 testes verdes no total do projeto.
 
+### Central de notificações no Gateway e no app (fase 5, fecha o epic de multi-tenancy)
+
+Última fase do epic: expõe o que a fase 4 persistiu. `Gateway.Api` ganha `notificacoes-route`/`notificacoes-cluster` (porta 5274, policy `RequerAutenticacao`) — mesmo padrão das outras rotas, `PathRemovePrefix: /api` (não `/api/notificacoes`, diferente da rota de Gamificação: os próprios endpoints do serviço já começam com `/notificacoes`, então só o prefixo `/api` precisa sair).
+
+App: tela nova `NotificacoesScreen.tsx` (lista simples, ícone + cor por `TipoNotificacao`, não-lida em destaque com fundo `primariaSuave` e ponto verde — reaproveitando os tokens "Suave" já existentes em `tokens.ts`, sem inventar cor nova). Toque numa notificação não-lida marca como lida de forma otimista (estado muda na hora; desfaz se a chamada falhar) e persiste via `POST /notificacoes/{id}/marcar-lida`. Entrada nova no array `ITENS` de `DrawerContent.tsx`, mesmo padrão de Moedas/Perfil/Configurações — sem reintroduzir ícone solto em header.
+
+**Verificação:** validado no preview web de ponta a ponta com o `usuarioteste` de teste — login, lista carregando as notificações reais (as mesmas geradas pela fase 4 a partir dos 200 lançamentos), toque numa notificação não lida atualizando a UI na hora e persistindo no banco (conferido via API depois: `lida: true`). `dotnet build`/`tsc --noEmit` limpos, 156 testes .NET continuam verdes (mudança no Gateway é só configuração, sem código novo).
+
 ### Navegação: menu lateral (drawer) + tab bar enxuta (Item 2 do backlog de UX)
 
 A tab bar tinha acumulado 6 itens (Dashboard, Orçamentos, Novo, Fixas, Metas, Moedas) — sintoma de "parece ERP". Reestruturado para um `Drawer.Navigator` (`@react-navigation/drawer`) envolvendo uma tab bar enxuta de 4 itens de uso diário (Dashboard, **Planejamento** — tela nova que mescla Orçamentos/Metas num segmented control local, Novo, Moedas); Contas Fixas e Perfil migraram pro menu lateral.

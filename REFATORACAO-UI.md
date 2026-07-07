@@ -171,14 +171,13 @@ entrou no reset — o que ficou de fora, mas vale considerar depois:
   que já existe no Dashboard.
 - **Login biométrico** (`expo-local-authentication`) — feature real (não só
   visual) e gratuita, inspirada no "Use Fingerprint to Access" do kit.
-- **Central de notificações in-app** — inspirada no ícone de sino do kit,
-  que o Cofrin **não tem hoje** (nenhuma tela usa esse ícone). Escopo maior
-  do que parece: o `Notificacoes.Api` atual é só um consumidor stateless
-  (loga e descarta, sem banco) e os eventos que ele consome
-  (`LancamentoCriadoEvent`, `ResgateSolicitadoEvent`) não carregam
-  `UsuarioId` — precisaria de persistência nova (Postgres + EF Core),
-  `UsuarioId` nos eventos (mexe em Lançamentos/Gamificação) e rota no
-  Gateway antes de qualquer UI. Não é só front-end.
+- ~~Central de notificações in-app~~ — **feito**, mas acabou virando um epic
+  de 5 fases em vez de feature de UI (exatamente o escopo maior previsto
+  abaixo): `UsuarioId` de verdade em Lançamentos e Gamificação (antes o app
+  inteiro era single-tenant), persistência nova em `Notificacoes.Api`
+  (Postgres + EF Core), rota no Gateway e só então a tela
+  (`NotificacoesScreen.tsx`, no menu lateral). Ver "Decisões de
+  arquitetura" no README, fases 1 a 5.
 - **PIN de segurança** como camada extra opcional de acesso.
 
 ## Filosofia (guia para qualquer decisão ambígua)
