@@ -13,5 +13,5 @@ public class RegraObjetivoConcluido
     public const int BonusMoedas = 50;
 
     public MovimentoMoedas Calcular(ObjetivoConcluidoEvent evento) =>
-        new(evento.EventId, BonusMoedas, TipoMovimento.Credito, $"Objetivo concluído: {evento.Nome}");
+        new(evento.EventId, BonusMoedas, TipoMovimento.Credito, $"Objetivo concluído: {evento.Nome}", evento.UsuarioId);
 }

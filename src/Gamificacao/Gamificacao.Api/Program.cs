@@ -76,14 +76,14 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/saldo", async (IMovimentoMoedasRepository repo, CancellationToken ct) =>
-    Results.Ok(new { Saldo = await repo.ObterSaldoAsync(ct) }));
+app.MapGet("/saldo", async (ClaimsPrincipal principal, IMovimentoMoedasRepository repo, CancellationToken ct) =>
+    Results.Ok(new { Saldo = await repo.ObterSaldoAsync(IdDoUsuario(principal), ct) }));
 
-app.MapPost("/resgates", async (ResgateRequest req, ResgateService service, CancellationToken ct) =>
+app.MapPost("/resgates", async (ResgateRequest req, ClaimsPrincipal principal, ResgateService service, CancellationToken ct) =>
 {
     try
     {
-        var resgate = await service.SolicitarAsync(req.Quantidade, ct);
+        var resgate = await service.SolicitarAsync(req.Quantidade, IdDoUsuario(principal), ct);
         return Results.Accepted($"/resgates/{resgate.Id}",
             new ResgateResponse(resgate.Id, resgate.Quantidade, resgate.Status.ToString()));
     }
@@ -93,9 +93,9 @@ app.MapPost("/resgates", async (ResgateRequest req, ResgateService service, Canc
     }
 });
 
-app.MapGet("/resgates/{id:guid}", async (Guid id, IResgateRepository repo, CancellationToken ct) =>
+app.MapGet("/resgates/{id:guid}", async (Guid id, ClaimsPrincipal principal, IResgateRepository repo, CancellationToken ct) =>
 {
-    var resgate = await repo.ObterAsync(id, ct);
+    var resgate = await repo.ObterAsync(id, IdDoUsuario(principal), ct);
     return resgate is null
         ? Results.NotFound()
         : Results.Ok(new ResgateResponse(resgate.Id, resgate.Quantidade, resgate.Status.ToString()));

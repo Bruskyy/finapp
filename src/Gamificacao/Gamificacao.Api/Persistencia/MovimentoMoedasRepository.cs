@@ -28,8 +28,9 @@ public class MovimentoMoedasRepository : IMovimentoMoedasRepository
         }
     }
 
-    public async Task<int> ObterSaldoAsync(CancellationToken ct)
+    public async Task<int> ObterSaldoAsync(Guid usuarioId, CancellationToken ct)
         => await _db.Movimentos
             .AsNoTracking()
+            .Where(m => m.UsuarioId == usuarioId)
             .SumAsync(m => m.Tipo == TipoMovimento.Credito ? m.Quantidade : -m.Quantidade, ct);
 }

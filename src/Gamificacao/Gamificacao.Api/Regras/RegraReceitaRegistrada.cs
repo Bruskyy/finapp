@@ -10,5 +10,5 @@ public class RegraReceitaRegistrada : IRegraPontuacao
     public bool Aplica(TipoLancamento tipo) => tipo == TipoLancamento.Receita;
 
     public MovimentoMoedas Calcular(LancamentoCriadoEvent evento) =>
-        new(evento.EventId, MoedasPorReceita, TipoMovimento.Credito, "Receita registrada");
+        new(evento.EventId, MoedasPorReceita, TipoMovimento.Credito, "Receita registrada", evento.UsuarioId);
 }

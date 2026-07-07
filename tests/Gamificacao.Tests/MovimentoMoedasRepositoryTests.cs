@@ -7,6 +7,7 @@ namespace Gamificacao.Tests;
 public class MovimentoMoedasRepositoryTests : IClassFixture<PostgresFixture>
 {
     private readonly PostgresFixture _fixture;
+    private readonly Guid _usuarioId = Guid.NewGuid();
 
     public MovimentoMoedasRepositoryTests(PostgresFixture fixture)
     {
@@ -27,7 +28,7 @@ public class MovimentoMoedasRepositoryTests : IClassFixture<PostgresFixture>
         await using var db = CriarDbContext();
         var repo = new MovimentoMoedasRepository(db);
 
-        var movimento = new MovimentoMoedas(Guid.NewGuid(), 5, TipoMovimento.Credito, "Despesa registrada");
+        var movimento = new MovimentoMoedas(Guid.NewGuid(), 5, TipoMovimento.Credito, "Despesa registrada", _usuarioId);
         var resultado = await repo.RegistrarAsync(movimento, CancellationToken.None);
 
         Assert.True(resultado);
@@ -42,14 +43,14 @@ public class MovimentoMoedasRepositoryTests : IClassFixture<PostgresFixture>
         {
             var repo1 = new MovimentoMoedasRepository(db1);
             var primeiro = await repo1.RegistrarAsync(
-                new MovimentoMoedas(eventId, 5, TipoMovimento.Credito, "Despesa registrada"), CancellationToken.None);
+                new MovimentoMoedas(eventId, 5, TipoMovimento.Credito, "Despesa registrada", _usuarioId), CancellationToken.None);
             Assert.True(primeiro);
         }
 
         await using var db2 = CriarDbContext();
         var repo2 = new MovimentoMoedasRepository(db2);
         var segundo = await repo2.RegistrarAsync(
-            new MovimentoMoedas(eventId, 5, TipoMovimento.Credito, "Despesa registrada"), CancellationToken.None);
+            new MovimentoMoedas(eventId, 5, TipoMovimento.Credito, "Despesa registrada", _usuarioId), CancellationToken.None);
 
         Assert.False(segundo);
     }
@@ -60,13 +61,27 @@ public class MovimentoMoedasRepositoryTests : IClassFixture<PostgresFixture>
         await using var db = CriarDbContext();
         var repo = new MovimentoMoedasRepository(db);
 
-        var saldoAntes = await repo.ObterSaldoAsync(CancellationToken.None);
+        var saldoAntes = await repo.ObterSaldoAsync(_usuarioId, CancellationToken.None);
 
-        await repo.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 10, TipoMovimento.Credito, "x"), CancellationToken.None);
-        await repo.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 3, TipoMovimento.Debito, "y"), CancellationToken.None);
+        await repo.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 10, TipoMovimento.Credito, "x", _usuarioId), CancellationToken.None);
+        await repo.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 3, TipoMovimento.Debito, "y", _usuarioId), CancellationToken.None);
 
-        var saldoDepois = await repo.ObterSaldoAsync(CancellationToken.None);
+        var saldoDepois = await repo.ObterSaldoAsync(_usuarioId, CancellationToken.None);
 
         Assert.Equal(7, saldoDepois - saldoAntes);
+    }
+
+    [Fact]
+    public async Task ObterSaldoAsync_NaoDeveSomarMovimentosDeOutroUsuario()
+    {
+        await using var db = CriarDbContext();
+        var repo = new MovimentoMoedasRepository(db);
+        var outroUsuarioId = Guid.NewGuid();
+
+        await repo.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 100, TipoMovimento.Credito, "credito do outro usuario", outroUsuarioId), CancellationToken.None);
+
+        var saldoMeu = await repo.ObterSaldoAsync(_usuarioId, CancellationToken.None);
+
+        Assert.Equal(0, saldoMeu);
     }
 }
