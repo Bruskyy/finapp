@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using BuildingBlocks.Contracts.Lancamentos;
 using Microsoft.Extensions.Options;
+using Notificacoes.Api.Dominio;
+using Notificacoes.Api.Persistencia;
 using Notificacoes.Api.Provedores;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -21,17 +23,20 @@ public class LancamentoCriadoConsumerService : BackgroundService
     // lancamento.criado quanto lancamento.recorrente.criado
     private const string RoutingKeyEntrada = "lancamento.#";
 
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly RabbitMqOptions _options;
     private readonly RabbitMqConnection _rabbitMq;
     private readonly INotificacaoProvider _provider;
     private readonly ILogger<LancamentoCriadoConsumerService> _logger;
 
     public LancamentoCriadoConsumerService(
+        IServiceScopeFactory scopeFactory,
         IOptions<RabbitMqOptions> options,
         RabbitMqConnection rabbitMq,
         INotificacaoProvider provider,
         ILogger<LancamentoCriadoConsumerService> logger)
     {
+        _scopeFactory = scopeFactory;
         _options = options.Value;
         _rabbitMq = rabbitMq;
         _provider = provider;
@@ -101,6 +106,10 @@ public class LancamentoCriadoConsumerService : BackgroundService
     private async Task ProcessarAsync(string routingKey, byte[] body, CancellationToken ct)
     {
         var json = Encoding.UTF8.GetString(body);
+        using var scope = _scopeFactory.CreateScope();
+        var repositorio = scope.ServiceProvider.GetRequiredService<INotificacaoRepository>();
+
+        Notificacao notificacao;
 
         switch (routingKey)
         {
@@ -108,22 +117,27 @@ public class LancamentoCriadoConsumerService : BackgroundService
                 var criado = JsonSerializer.Deserialize<LancamentoCriadoEvent>(json)
                     ?? throw new InvalidOperationException("Payload de LancamentoCriadoEvent inválido.");
                 await _provider.EnviarAlertaLancamentoAsync(criado.LancamentoId, criado.Valor, ct);
-                _logger.LogInformation(
-                    "Notificação enviada: lançamento {LancamentoId} de {Valor:C} registrado.",
-                    criado.LancamentoId, criado.Valor);
+                notificacao = new Notificacao(
+                    criado.EventId, TipoNotificacao.Lancamento,
+                    $"Lançamento de {criado.Valor:C} registrado.", criado.UsuarioId);
                 break;
 
             case "lancamento.recorrente.criado":
                 var recorrente = JsonSerializer.Deserialize<LancamentoRecorrenteCriadoEvent>(json)
                     ?? throw new InvalidOperationException("Payload de LancamentoRecorrenteCriadoEvent inválido.");
-                _logger.LogInformation(
-                    "Sua conta fixa '{Descricao}' de {Valor:C} foi lançada (competência {Competencia}).",
-                    recorrente.Descricao, recorrente.Valor, recorrente.Competencia);
+                notificacao = new Notificacao(
+                    recorrente.EventId, TipoNotificacao.LancamentoRecorrente,
+                    $"Sua conta fixa '{recorrente.Descricao}' de {recorrente.Valor:C} foi lançada (competência {recorrente.Competencia}).",
+                    recorrente.UsuarioId);
                 break;
 
             default:
                 _logger.LogWarning("Routing key {RoutingKey} sem handler — mensagem descartada.", routingKey);
-                break;
+                return;
         }
+
+        var processado = await repositorio.AdicionarAsync(notificacao, ct);
+        if (!processado)
+            _logger.LogInformation("Evento {EventId} já tinha sido processado - ignorado (idempotência).", notificacao.EventId);
     }
 }

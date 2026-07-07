@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using BuildingBlocks.Contracts.Gamificacao;
 using Microsoft.Extensions.Options;
+using Notificacoes.Api.Dominio;
+using Notificacoes.Api.Persistencia;
 using Notificacoes.Api.Provedores;
 using Polly;
 using Polly.CircuitBreaker;
@@ -15,6 +17,7 @@ public class ResgateSolicitadoConsumerService : BackgroundService
     private const string NomeFila = "notificacoes.resgates";
     private const string RoutingKeyEntrada = "resgate.solicitado";
 
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly RabbitMqOptions _options;
     private readonly RabbitMqConnection _rabbitMq;
     private readonly INotificacaoProvider _provider;
@@ -22,11 +25,13 @@ public class ResgateSolicitadoConsumerService : BackgroundService
     private readonly ResiliencePipeline _pipeline;
 
     public ResgateSolicitadoConsumerService(
+        IServiceScopeFactory scopeFactory,
         IOptions<RabbitMqOptions> options,
         RabbitMqConnection rabbitMq,
         INotificacaoProvider provider,
         ILogger<ResgateSolicitadoConsumerService> logger)
     {
+        _scopeFactory = scopeFactory;
         _options = options.Value;
         _rabbitMq = rabbitMq;
         _provider = provider;
@@ -104,7 +109,10 @@ public class ResgateSolicitadoConsumerService : BackgroundService
             await _pipeline.ExecuteAsync(
                 async token => await _provider.EnviarConfirmacaoResgateAsync(evento.ResgateId, evento.Quantidade, token), ct);
 
-            await PublicarAsync("resgate.confirmado", new ResgateConfirmadoEvent(evento.ResgateId, DateTime.UtcNow), ct);
+            await PublicarAsync("resgate.confirmado", new ResgateConfirmadoEvent(evento.ResgateId, DateTime.UtcNow, evento.UsuarioId), ct);
+            await RegistrarNotificacaoAsync(
+                IdempotenciaHelper.DerivarEventId(evento.ResgateId, "confirmado"), TipoNotificacao.ResgateConfirmado,
+                $"Resgate de {evento.Quantidade} moedas confirmado.", evento.UsuarioId, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -113,8 +121,22 @@ public class ResgateSolicitadoConsumerService : BackgroundService
                 : ex.Message;
 
             _logger.LogWarning("Resgate {ResgateId} não pôde ser confirmado: {Motivo}", evento.ResgateId, motivo);
-            await PublicarAsync("resgate.falhou", new ResgateFalhouEvent(evento.ResgateId, motivo, DateTime.UtcNow), ct);
+            await PublicarAsync("resgate.falhou", new ResgateFalhouEvent(evento.ResgateId, motivo, DateTime.UtcNow, evento.UsuarioId), ct);
+            await RegistrarNotificacaoAsync(
+                IdempotenciaHelper.DerivarEventId(evento.ResgateId, "falhou"), TipoNotificacao.ResgateFalhou,
+                $"Resgate de {evento.Quantidade} moedas não pôde ser confirmado. As moedas foram devolvidas.", evento.UsuarioId, ct);
         }
+    }
+
+    private async Task RegistrarNotificacaoAsync(Guid eventId, TipoNotificacao tipo, string mensagem, Guid? usuarioId, CancellationToken ct)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var repositorio = scope.ServiceProvider.GetRequiredService<INotificacaoRepository>();
+
+        var notificacao = new Notificacao(eventId, tipo, mensagem, usuarioId);
+        var processado = await repositorio.AdicionarAsync(notificacao, ct);
+        if (!processado)
+            _logger.LogInformation("Evento {EventId} já tinha sido processado - ignorado (idempotência).", eventId);
     }
 
     private async Task PublicarAsync<T>(string routingKey, T evento, CancellationToken ct)
