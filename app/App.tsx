@@ -15,6 +15,7 @@ import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
+import NotificacoesScreen from "./src/screens/NotificacoesScreen";
 import NovoLancamentoScreen from "./src/screens/NovoLancamentoScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
@@ -161,6 +162,7 @@ function DrawerPrincipal() {
       <Drawer.Screen name="Início" component={TabsPrincipais} />
       <Drawer.Screen name="Personalizar" component={PersonalizarInicioScreen} />
       <Drawer.Screen name="Moedas" component={MoedasScreen} />
+      <Drawer.Screen name="Notificações" component={NotificacoesScreen} />
       {/* Não some do app - só sai da lista visível do DrawerContent (Ajuste 3
           do ITEM-DRAWER-E-CORES-DE-MARCA.md). Continua navegável via
           navigation.navigate("Fixas") a partir do link contextual em

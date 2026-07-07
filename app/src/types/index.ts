@@ -127,3 +127,18 @@ export interface TokenResponse {
   nome: string;
   email: string;
 }
+
+export enum TipoNotificacao {
+  Lancamento = 1,
+  LancamentoRecorrente = 2,
+  ResgateConfirmado = 3,
+  ResgateFalhou = 4,
+}
+
+export interface Notificacao {
+  id: string;
+  tipo: TipoNotificacao;
+  mensagem: string;
+  lida: boolean;
+  criadoEm: string;
+}

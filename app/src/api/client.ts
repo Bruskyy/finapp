@@ -8,6 +8,7 @@ import {
   GastoPorCategoria,
   Lancamento,
   LoginRequest,
+  Notificacao,
   Objetivo,
   PaginaLancamentos,
   RegistrarRequest,
@@ -260,4 +261,14 @@ export function solicitarResgate(quantidade: number): Promise<Resgate> {
 
 export function obterResgate(id: string): Promise<Resgate> {
   return requisitar(`/api/gamificacao/resgates/${id}`);
+}
+
+// ----- Notificações -----
+
+export function listarNotificacoes(): Promise<Notificacao[]> {
+  return requisitar("/api/notificacoes");
+}
+
+export function marcarNotificacaoLida(id: string): Promise<void> {
+  return requisitar(`/api/notificacoes/${id}/marcar-lida`, { method: "POST" });
 }
