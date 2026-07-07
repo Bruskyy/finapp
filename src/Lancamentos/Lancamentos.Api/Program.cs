@@ -1,10 +1,14 @@
+using System.Security.Claims;
+using System.Text;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.SQS;
 using FluentValidation;
 using Lancamentos.Infrastructure.Persistencia;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Lancamentos.Application.Importacao;
 using Lancamentos.Application.Repositorios;
 using Lancamentos.Infrastructure.Aws;
@@ -75,6 +79,37 @@ builder.Services.AddSingleton<IValidator<CriarRecorrenciaRequest>, CriarRecorren
 builder.Services.AddSingleton<IValidator<CriarObjetivoRequest>, CriarObjetivoRequestValidator>();
 builder.Services.AddSingleton<IValidator<AporteRequest>, AporteRequestValidator>();
 builder.Services.AddSingleton<IValidator<TransferenciaRequest>, TransferenciaRequestValidator>();
+
+// Valida o Bearer token de novo aqui (mesma config do Gateway/Usuarios.Api)
+// em vez de confiar cegamente em quem chamou - zero trust real: fecha a
+// dívida técnica documentada no README (hoje, quem acessa esta porta direto
+// sem passar pelo Gateway não encontra autenticação nenhuma).
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+        };
+    });
+
+// FallbackPolicy exige autenticação em qualquer endpoint por padrão -
+// /health é a única exceção explícita (AllowAnonymous), pra sondas de
+// infraestrutura continuarem funcionando sem token.
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<LancamentosDbContext>();
@@ -402,7 +437,7 @@ app.MapGet("/relatorios/evolucao-mensal", async (int? meses, IRelatorioRepositor
     return Results.Ok(await repo.EvolucaoMensalAsync(quantidade, ct));
 });
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health").AllowAnonymous();
 
 if (app.Environment.IsDevelopment())
 {
@@ -410,6 +445,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.Run();
 
@@ -423,6 +461,9 @@ static RecorrenciaResponse ParaRecorrenciaResponse(LancamentoRecorrente r) =>
 static ObjetivoResponse ParaObjetivoResponse(Objetivo o) =>
     new(o.Id, o.Nome, o.ValorAlvo, o.DataAlvo, o.ValorAcumulado,
         o.PercentualConcluido, o.ValorMensalNecessario(DateTime.Today), o.Concluido);
+
+static Guid IdDoUsuario(ClaimsPrincipal principal) =>
+    Guid.Parse(principal.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)!);
 
 static ImportacaoStatusResponse ParaImportacaoResponse(ImportacaoExtrato i) =>
     new(i.Id, i.NomeArquivo, i.Status.ToString(), i.LinhasImportadas, i.LinhasComErro, i.Erro, i.CriadoEm, i.ProcessadoEm);

@@ -31,9 +31,13 @@ docker compose up -d
 docker exec -it <container_postgres> psql -U finapp -c "CREATE DATABASE usuarios;"
 
 # 1.2 Na primeira vez: configurar a chave de assinatura do JWT (a MESMA chave
-# nos dois projetos — Usuarios emite, Gateway valida)
+# em TODOS os projetos abaixo — Usuarios emite, os outros três validam de
+# novo, cada um por conta própria - zero trust real, não um header
+# "confiado" vindo do Gateway; ver "Decisões de arquitetura")
 dotnet user-secrets set "Jwt:SecretKey" "<qualquer string aleatória de 32+ bytes>" --project src/Usuarios/Usuarios.Api
 dotnet user-secrets set "Jwt:SecretKey" "<a mesma string de cima>" --project src/Gateway/Gateway.Api
+dotnet user-secrets set "Jwt:SecretKey" "<a mesma string de cima>" --project src/Lancamentos/Lancamentos.Api
+dotnet user-secrets set "Jwt:SecretKey" "<a mesma string de cima>" --project src/Gamificacao/Gamificacao.Api
 
 # 2. Rodar cada serviço (um terminal por serviço)
 dotnet run --project src/Lancamentos/Lancamentos.Api   # -> http://localhost:5272
@@ -249,8 +253,18 @@ O app deixou de ser "sem dono" — cada tela com dado financeiro agora exige log
 **Backlog de autenticação (não implementado agora, deliberadamente):**
 - **Refresh token** — hoje o usuário é deslogado a cada 60 minutos e precisa logar de novo manualmente; refresh token adiciona rotação de token e storage server-side, e é uma segunda feature por si só.
 - **Revogação de JWT** (blacklist do claim `jti`) — o claim já existe no token, mas nada o invalida antes da expiração natural.
-- **Zero trust entre serviços** — propagar a validação do Bearer token pra Lançamentos/Gamificação/Notificações, não só confiar no Gateway.
+- ~~Zero trust entre serviços~~ — feito, ver "Zero trust real" abaixo.
 - **Login com Google (OAuth)** — exige criar um app OAuth no Google Cloud Console (passo manual, gratuito); ficou de fora pra manter o escopo em e-mail/senha primeiro.
+
+### Zero trust real: JWT validado de novo em Lançamentos e Gamificação (multi-tenancy, fase 1)
+
+Investigando a central de notificações in-app descobri que a lacuna era maior do que parecia: nenhuma entidade do backend (fora do próprio `Usuarios.Api`) tinha `UsuarioId` — o app inteiro era, na prática, single-tenant (qualquer usuário logado via só o Gateway compartilhava o mesmo conjunto de lançamentos/saldo/moedas). Esta é a primeira de várias fases pra fechar isso de verdade.
+
+**Fase 1 — só o mecanismo, ainda sem `UsuarioId` nos dados:** `Lancamentos.Api` e `Gamificacao.Api` ganharam a mesma configuração `AddAuthentication().AddJwtBearer(...)` que já existia em `Usuarios.Api`/`Gateway.Api` (mesmo issuer/audience/chave, agora em **4** projetos via `dotnet user-secrets`) e um `FallbackPolicy` exigindo usuário autenticado em qualquer endpoint por padrão — `/health` é a única exceção explícita (`AllowAnonymous()`, pra sondas de infraestrutura continuarem funcionando sem token). Cada serviço agora valida o Bearer token **de novo**, criptograficamente, em vez de confiar cegamente em quem o chamou — zero trust de verdade, não um header "de confiança" vindo do Gateway. O YARP já repassava o header `Authorization` sem alteração nenhuma; não precisou mexer no Gateway pra isso funcionar.
+
+**Custo real desta fase:** nenhum teste de `Lancamentos.Tests` usa `WebApplicationFactory` (são todos testes de domínio/repositório, não passam pelo pipeline HTTP — ficaram intactos). Já `Gamificacao.Tests` tem um teste via `WebApplicationFactory` (`ApiResilienciaTests`) que precisou de um helper novo (`TokenDeTeste.cs`) pra montar um JWT válido na mão com a mesma chave fixa de teste — mesmo padrão que `Usuarios.Tests` já usava (chave fixa via `builder.UseSetting`, não depende do `user-secrets` local pra não quebrar no CI).
+
+**Próximas fases (fora deste PR, cada uma seu próprio branch/PR):** `UsuarioId` de verdade em todas as entidades de Lançamentos e Gamificação, com todo endpoint de leitura filtrando pelo usuário logado; persistência real no `Notificacoes.Api` (hoje é 100% stateless); e a tela de notificações no app.
 
 ### Navegação: menu lateral (drawer) + tab bar enxuta (Item 2 do backlog de UX)
 

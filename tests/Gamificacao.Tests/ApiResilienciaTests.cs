@@ -29,9 +29,15 @@ public class ApiResilienciaTests : IClassFixture<PostgresFixture>
                 builder.UseSetting("ConnectionStrings:GamificacaoDb", _fixture.ConnectionString);
                 builder.UseSetting("RabbitMq:HostName", "localhost");
                 builder.UseSetting("RabbitMq:Port", "1"); // porta fechada: conexão sempre recusada
+                // chave fixa só para os testes - não depende do user-secrets local,
+                // senão os testes quebrariam no CI (onde não existe secrets.json).
+                builder.UseSetting("Jwt:SecretKey", TokenDeTeste.SecretKey);
+                builder.UseSetting("Jwt:Issuer", "FinApp");
+                builder.UseSetting("Jwt:Audience", "FinApp.Clientes");
             });
 
         using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {TokenDeTeste.Gerar()}");
 
         // dá tempo dos BackgroundServices tentarem (e falharem) a primeira conexão
         await Task.Delay(TimeSpan.FromSeconds(2));
