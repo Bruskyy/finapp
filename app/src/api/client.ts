@@ -24,6 +24,12 @@ import {
 
 const PORTA_GATEWAY = 5275;
 
+// Aponta pro Gateway deployado (Render, https) sem precisar mexer em
+// código - EXPO_PUBLIC_* é embutido no bundle em tempo de build pelo Expo.
+// Sem essa env var, cai na auto-detecção de host abaixo (fluxo 100% local
+// de sempre, inalterado).
+const GATEWAY_URL_FIXO = process.env.EXPO_PUBLIC_GATEWAY_URL;
+
 // No navegador (web), reaproveita o host que o próprio navegador usou pra
 // abrir a página: é "localhost" no preview da máquina de dev, mas é o IP da
 // máquina quando o app é aberto pelo navegador de um celular na mesma rede
@@ -32,6 +38,8 @@ const PORTA_GATEWAY = 5275;
 // Em dispositivo/emulador via Expo Go, `hostUri` é o IP:porta que o Metro
 // usou pra servir o bundle — se o app carregou, esse IP já é alcançável.
 function resolverGatewayUrl(): string {
+  if (GATEWAY_URL_FIXO) return GATEWAY_URL_FIXO;
+
   if (Platform.OS === "web") {
     const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
     return `http://${host}:${PORTA_GATEWAY}`;

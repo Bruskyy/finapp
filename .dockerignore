@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+**/node_modules/
+app/
+.git/
+.github/
+.expo/
+.claude/
+*.md
+docker-compose.yml
