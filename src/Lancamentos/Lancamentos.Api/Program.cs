@@ -6,6 +6,7 @@ using Amazon.SQS;
 using FluentValidation;
 using Lancamentos.Infrastructure.Persistencia;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -456,6 +457,14 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+// Render (e a maioria dos PaaS gratuitos) termina TLS no proxy dele e
+// repassa a requisição em HTTP puro pro container - sem isso,
+// UseHttpsRedirection() entraria em loop de redirecionamento.
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseHttpsRedirection();
 

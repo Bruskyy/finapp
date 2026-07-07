@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,7 +51,16 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            policy.WithOrigins("http://localhost:8081", "http://localhost:19006")
+            // Origens liberadas fora de Development vêm de config (env var
+            // Cors__OrigensPermitidas, lista separada por vírgula) — assim dá
+            // pra liberar uma origem nova (deploy, Expo Go em outra rede) só
+            // mudando variável de ambiente no painel do serviço, sem redeploy
+            // de código. Fallback: os dois localhost do Expo em dev.
+            var origens = builder.Configuration.GetValue<string>("Cors:OrigensPermitidas")
+                ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                ?? ["http://localhost:8081", "http://localhost:19006"];
+
+            policy.WithOrigins(origens)
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         }
@@ -67,6 +77,16 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+// Render (e a maioria dos PaaS gratuitos) termina TLS no proxy dele e
+// repassa a requisição em HTTP puro pro container, com o header
+// X-Forwarded-Proto indicando que a origem era HTTPS. Sem reconhecer esse
+// header, UseHttpsRedirection() abaixo entraria em loop de redirecionamento
+// (acha que a requisição chegou em HTTP e redireciona de novo pra HTTPS).
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseHttpsRedirection();
 app.UseCors("AppMobileWeb");
