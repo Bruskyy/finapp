@@ -8,9 +8,9 @@ Monorepo com 4 microserviços + gateway, cada um com seu próprio banco (*databa
 
 - **Lancamentos** (core) — SQL Server, Clean Architecture (Api → Application → Domain → Infrastructure). CRUD via EF Core; relatórios via views/procedures/functions nativas.
 - **Gamificacao** — PostgreSQL. Ledger de moedas.
-- **Notificacoes** — consumidor de tópico RabbitMQ.
+- **Notificacoes** — PostgreSQL. Consumidor de tópico RabbitMQ que persiste uma central de notificações por usuário.
 - **Usuarios** — PostgreSQL. Registro/login, hash de senha e emissão de JWT.
-- **Gateway.Api** — YARP, entrada única para o app mobile; único ponto que valida o Bearer token.
+- **Gateway.Api** — YARP, entrada única para o app mobile. Repassa o Bearer token sem alteração; cada serviço downstream valida o token de novo por conta própria (zero trust real — ver "Zero trust real" em Decisões de arquitetura).
 
 `BuildingBlocks.Contracts` contém apenas contratos de eventos (records), sem lógica compartilhada.
 
@@ -26,18 +26,21 @@ Backend em C#/.NET (Minimal APIs, EF Core), autenticação JWT (`Microsoft.AspNe
 # 1. Subir a infraestrutura (SQL Server, Postgres, RabbitMQ, LocalStack)
 docker compose up -d
 
-# 1.1 Na primeira vez: criar a base do serviço de Usuarios (o volume do
-# Postgres já existe, então o script de init do compose não roda de novo)
+# 1.1 Na primeira vez: criar as bases dos serviços de Usuarios e Notificacoes
+# (o volume do Postgres já existe, então o script de init do compose não
+# roda de novo — só a "gamificacao" nasce automática, via POSTGRES_DB)
 docker exec -it <container_postgres> psql -U finapp -c "CREATE DATABASE usuarios;"
+docker exec -it <container_postgres> psql -U finapp -c "CREATE DATABASE notificacoes;"
 
 # 1.2 Na primeira vez: configurar a chave de assinatura do JWT (a MESMA chave
-# em TODOS os projetos abaixo — Usuarios emite, os outros três validam de
+# em TODOS os projetos abaixo — Usuarios emite, os outros quatro validam de
 # novo, cada um por conta própria - zero trust real, não um header
 # "confiado" vindo do Gateway; ver "Decisões de arquitetura")
 dotnet user-secrets set "Jwt:SecretKey" "<qualquer string aleatória de 32+ bytes>" --project src/Usuarios/Usuarios.Api
 dotnet user-secrets set "Jwt:SecretKey" "<a mesma string de cima>" --project src/Gateway/Gateway.Api
 dotnet user-secrets set "Jwt:SecretKey" "<a mesma string de cima>" --project src/Lancamentos/Lancamentos.Api
 dotnet user-secrets set "Jwt:SecretKey" "<a mesma string de cima>" --project src/Gamificacao/Gamificacao.Api
+dotnet user-secrets set "Jwt:SecretKey" "<a mesma string de cima>" --project src/Notificacoes/Notificacoes.Api
 
 # 2. Rodar cada serviço (um terminal por serviço)
 dotnet run --project src/Lancamentos/Lancamentos.Api   # -> http://localhost:5272
@@ -309,6 +312,20 @@ Mesma extensão da fase 2, agora em `Gamificacao.Api`: `MovimentoMoedas` e `Resg
 **Sem backfill, mesmo motivo da fase 2:** a migration (`UsuarioIdEmGamificacao`) só adiciona as colunas como `NULL` com índice — sem tentar recuperar o dono de movimentos/resgates criados antes desta mudança. Ao contrário da fase 2, aqui não há SQL nativo escrito à mão (Postgres, só coluna + índice via EF) — validada direto contra o container Postgres real nesta sessão, sem surpresas.
 
 **Verificação:** 2 testes novos cobrindo isolamento entre usuários (`ObterSaldoAsync_NaoDeveSomarMovimentosDeOutroUsuario`, `ObterAsync_ComUsuarioId_NaoDeveRetornarResgateDeOutroUsuario`) — os 18 testes anteriores de `Gamificacao.Tests` continuam verdes, 20 no total.
+
+### Notificacoes.Api ganha persistência real (fase 4)
+
+Até aqui `Notificacoes.Api` era 100% stateless: os dois consumidores RabbitMQ (`LancamentoCriadoConsumerService`, `ResgateSolicitadoConsumerService`) só logavam e descartavam os eventos — não existia "central de notificações" nenhuma pra consultar depois. Fase 4 dá ao serviço seu próprio banco (`notificacoes`, PostgreSQL — quinto database per service do projeto) e os dois consumidores passam a persistir uma `Notificacao` (Id, EventId, UsuarioId, Tipo, Mensagem, Lida, CriadoEm) em vez de só logar.
+
+**Primeiros endpoints HTTP autenticados do serviço:** até a fase 3, `Notificacoes.Api` não tinha nenhum endpoint além de `/health` — só workers em background. `GET /notificacoes` (lista as 50 mais recentes do usuário logado) e `POST /notificacoes/{id}/marcar-lida` (404 se o id não existir ou não for do usuário do token) são os primeiros, e replicam o mesmo bloco `AddAuthentication().AddJwtBearer(...)` + `FallbackPolicy` da fase 1 — quarto projeto com a mesma chave via `dotnet user-secrets`.
+
+**Idempotência com o mesmo truque do ledger de moedas:** índice único em `EventId` — reentrega da mesma mensagem (RabbitMQ garante *at-least-once*, não *exactly-once*) vira uma segunda tentativa de `INSERT` que falha por violação de unicidade e é tratada como "já processado". `LancamentoCriadoEvent`/`LancamentoRecorrenteCriadoEvent` já trazem `EventId` de fábrica; `ResgateSolicitadoEvent` não tem EventId próprio (é um evento de comando, não de fato consumado), então o `EventId` da notificação é derivado deterministicamente do `ResgateId` + um sufixo (`resgate-id:confirmado` / `resgate-id:falhou`) com o mesmo `IdempotenciaHelper` (MD5) já usado em `Gamificacao.Api` pra compensação — copiado, não compartilhado, por decisão deliberada (ver `BuildingBlocks.Contracts`: só contratos de evento, nunca lógica).
+
+**BackgroundService + DbContext scoped:** os consumidores são `BackgroundService` (singleton), mas `DbContext` é scoped — mesmo padrão já usado em `LancamentoConsumerService` da Gamificação: cada mensagem processada abre um `IServiceScopeFactory.CreateScope()` próprio pra resolver o repositório.
+
+**Sem backfill, mesmo motivo das fases 2/3:** a migration (`CriaTabelaNotificacoes`) cria a tabela do zero — não existe dado histórico pra migrar (o serviço nunca persistiu nada antes). `UsuarioId` continua nullable porque os eventos de lançamento publicados antes da fase 2 não tinham dono.
+
+**Verificação:** validado de ponta a ponta contra o Postgres real (não só Testcontainers) — os 200 lançamentos de teste criados em sessões anteriores, que ficaram na fila do RabbitMQ esperando um consumidor, foram processados assim que o serviço subiu com a nova persistência, virando notificações reais e consultáveis. Confirmado manualmente: usuário sem notificações vê lista vazia (isolamento), marcar como lida muda o estado e persiste. 16 testes automatizados novos em `Notificacoes.Tests` (domínio, repositório com Testcontainers, e endpoints via `WebApplicationFactory` cobrindo 401 sem token, 404 pra id de outro usuário, e isolamento na listagem) — 156 testes verdes no total do projeto.
 
 ### Navegação: menu lateral (drawer) + tab bar enxuta (Item 2 do backlog de UX)
 
