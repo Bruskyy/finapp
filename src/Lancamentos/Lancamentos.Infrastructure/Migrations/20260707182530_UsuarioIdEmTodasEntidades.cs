@@ -129,9 +129,14 @@ namespace Lancamentos.Infrastructure.Migrations
                 filter: "[UsuarioId] IS NOT NULL");
 
             // Views/procedure/function nativas (Etapa 1) recriadas com @UsuarioId -
-            // relatórios agora são por usuário, não mais globais.
+            // relatórios agora são por usuário, não mais globais. DROP e CREATE em
+            // Sql() SEPARADOS: SQL Server exige que CREATE VIEW/PROCEDURE/FUNCTION
+            // seja a única instrução do batch - combinar os dois na mesma chamada
+            // Sql() (um único batch) falha com "'CREATE VIEW' must be the first
+            // statement in a query batch." (só descoberto rodando contra um SQL
+            // Server de verdade, não pega em teste de domínio nem em CI sem banco).
+            migrationBuilder.Sql("DROP VIEW vw_SaldoPorConta;");
             migrationBuilder.Sql(@"
-DROP VIEW vw_SaldoPorConta;
 CREATE VIEW vw_SaldoPorConta AS
 SELECT
     c.Id        AS ContaId,
@@ -143,8 +148,8 @@ LEFT JOIN Lancamentos l ON l.ContaId = c.Id
 GROUP BY c.Id, c.Nome, c.UsuarioId;
 ");
 
+            migrationBuilder.Sql("DROP VIEW vw_ResumoMensal;");
             migrationBuilder.Sql(@"
-DROP VIEW vw_ResumoMensal;
 CREATE VIEW vw_ResumoMensal AS
 SELECT
     YEAR(Data)  AS Ano,
@@ -157,8 +162,8 @@ FROM Lancamentos
 GROUP BY YEAR(Data), MONTH(Data), Tipo, UsuarioId;
 ");
 
+            migrationBuilder.Sql("DROP FUNCTION fn_SaldoPeriodo;");
             migrationBuilder.Sql(@"
-DROP FUNCTION fn_SaldoPeriodo;
 CREATE FUNCTION fn_SaldoPeriodo(@Inicio DATETIME2, @Fim DATETIME2, @UsuarioId UNIQUEIDENTIFIER)
 RETURNS DECIMAL(18,2)
 AS
@@ -171,8 +176,8 @@ BEGIN
 END;
 ");
 
+            migrationBuilder.Sql("DROP PROCEDURE sp_GastosPorCategoria;");
             migrationBuilder.Sql(@"
-DROP PROCEDURE sp_GastosPorCategoria;
 CREATE PROCEDURE sp_GastosPorCategoria
     @Inicio DATETIME2,
     @Fim    DATETIME2,
@@ -193,8 +198,8 @@ BEGIN
 END;
 ");
 
+            migrationBuilder.Sql("DROP PROCEDURE sp_GastosPorTag;");
             migrationBuilder.Sql(@"
-DROP PROCEDURE sp_GastosPorTag;
 CREATE PROCEDURE sp_GastosPorTag
     @Inicio DATETIME2,
     @Fim    DATETIME2,
@@ -220,8 +225,8 @@ END;
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("DROP PROCEDURE sp_GastosPorTag;");
             migrationBuilder.Sql(@"
-DROP PROCEDURE sp_GastosPorTag;
 CREATE PROCEDURE sp_GastosPorTag
     @Inicio DATETIME2,
     @Fim    DATETIME2
@@ -242,8 +247,8 @@ BEGIN
 END;
 ");
 
+            migrationBuilder.Sql("DROP PROCEDURE sp_GastosPorCategoria;");
             migrationBuilder.Sql(@"
-DROP PROCEDURE sp_GastosPorCategoria;
 CREATE PROCEDURE sp_GastosPorCategoria
     @Inicio DATETIME2,
     @Fim    DATETIME2
@@ -263,8 +268,8 @@ BEGIN
 END;
 ");
 
+            migrationBuilder.Sql("DROP FUNCTION fn_SaldoPeriodo;");
             migrationBuilder.Sql(@"
-DROP FUNCTION fn_SaldoPeriodo;
 CREATE FUNCTION fn_SaldoPeriodo(@Inicio DATETIME2, @Fim DATETIME2)
 RETURNS DECIMAL(18,2)
 AS
@@ -277,8 +282,8 @@ BEGIN
 END;
 ");
 
+            migrationBuilder.Sql("DROP VIEW vw_ResumoMensal;");
             migrationBuilder.Sql(@"
-DROP VIEW vw_ResumoMensal;
 CREATE VIEW vw_ResumoMensal AS
 SELECT
     YEAR(Data)  AS Ano,
@@ -290,8 +295,8 @@ FROM Lancamentos
 GROUP BY YEAR(Data), MONTH(Data), Tipo;
 ");
 
+            migrationBuilder.Sql("DROP VIEW vw_SaldoPorConta;");
             migrationBuilder.Sql(@"
-DROP VIEW vw_SaldoPorConta;
 CREATE VIEW vw_SaldoPorConta AS
 SELECT
     c.Id   AS ContaId,
