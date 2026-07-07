@@ -10,5 +10,5 @@ public class RegraDespesaRegistrada : IRegraPontuacao
     public bool Aplica(TipoLancamento tipo) => tipo == TipoLancamento.Despesa;
 
     public MovimentoMoedas Calcular(LancamentoCriadoEvent evento) =>
-        new(evento.EventId, MoedasPorDespesa, TipoMovimento.Credito, "Despesa registrada");
+        new(evento.EventId, MoedasPorDespesa, TipoMovimento.Credito, "Despesa registrada", evento.UsuarioId);
 }

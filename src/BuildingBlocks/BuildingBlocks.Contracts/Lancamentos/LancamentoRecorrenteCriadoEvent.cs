@@ -12,4 +12,5 @@ public record LancamentoRecorrenteCriadoEvent(
     string Descricao,
     decimal Valor,
     string Competencia,
-    DateTime OcorreuEm);
+    DateTime OcorreuEm,
+    Guid? UsuarioId = null);

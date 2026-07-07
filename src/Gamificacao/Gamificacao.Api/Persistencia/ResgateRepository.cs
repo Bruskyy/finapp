@@ -16,6 +16,9 @@ public class ResgateRepository : IResgateRepository
     public Task<Resgate?> ObterAsync(Guid id, CancellationToken ct) =>
         _db.Resgates.FirstOrDefaultAsync(r => r.Id == id, ct);
 
+    public Task<Resgate?> ObterAsync(Guid id, Guid usuarioId, CancellationToken ct) =>
+        _db.Resgates.FirstOrDefaultAsync(r => r.Id == id && r.UsuarioId == usuarioId, ct);
+
     public async Task ConfirmarAsync(Guid resgateId, CancellationToken ct)
     {
         var resgate = await _db.Resgates.FirstOrDefaultAsync(r => r.Id == resgateId, ct);
@@ -36,7 +39,7 @@ public class ResgateRepository : IResgateRepository
 
         var eventIdCompensacao = IdempotenciaHelper.DerivarEventId(resgateId, "compensacao");
         _db.Movimentos.Add(new MovimentoMoedas(
-            eventIdCompensacao, resgate.Quantidade, TipoMovimento.Credito, $"Compensação do resgate {resgateId}"));
+            eventIdCompensacao, resgate.Quantidade, TipoMovimento.Credito, $"Compensação do resgate {resgateId}", resgate.UsuarioId));
 
         try
         {

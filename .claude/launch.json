@@ -8,6 +8,36 @@
       "cwd": "app",
       "port": 8081,
       "autoPort": true
+    },
+    {
+      "name": "lancamentos-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Lancamentos/Lancamentos.Api"],
+      "port": 5272
+    },
+    {
+      "name": "gamificacao-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Gamificacao/Gamificacao.Api"],
+      "port": 5273
+    },
+    {
+      "name": "notificacoes-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Notificacoes/Notificacoes.Api"],
+      "port": 5274
+    },
+    {
+      "name": "gateway-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Gateway/Gateway.Api"],
+      "port": 5275
+    },
+    {
+      "name": "usuarios-api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Usuarios/Usuarios.Api"],
+      "port": 5276
     }
   ]
 }

@@ -8,6 +8,7 @@ namespace Gamificacao.Tests;
 public class ResgateServiceTests : IClassFixture<PostgresFixture>
 {
     private readonly PostgresFixture _fixture;
+    private readonly Guid _usuarioId = Guid.NewGuid();
 
     public ResgateServiceTests(PostgresFixture fixture)
     {
@@ -29,12 +30,12 @@ public class ResgateServiceTests : IClassFixture<PostgresFixture>
         var movimentos = new MovimentoMoedasRepository(db);
         var service = new ResgateService(db, movimentos);
 
-        await movimentos.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 50, TipoMovimento.Credito, "saldo inicial"), CancellationToken.None);
-        var saldoAntes = await movimentos.ObterSaldoAsync(CancellationToken.None);
+        await movimentos.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 50, TipoMovimento.Credito, "saldo inicial", _usuarioId), CancellationToken.None);
+        var saldoAntes = await movimentos.ObterSaldoAsync(_usuarioId, CancellationToken.None);
 
-        var resgate = await service.SolicitarAsync(20, CancellationToken.None);
+        var resgate = await service.SolicitarAsync(20, _usuarioId, CancellationToken.None);
 
-        var saldoDepois = await movimentos.ObterSaldoAsync(CancellationToken.None);
+        var saldoDepois = await movimentos.ObterSaldoAsync(_usuarioId, CancellationToken.None);
 
         Assert.Equal(StatusResgate.Pendente, resgate.Status);
         Assert.Equal(20, resgate.Quantidade);
@@ -48,10 +49,10 @@ public class ResgateServiceTests : IClassFixture<PostgresFixture>
         var movimentos = new MovimentoMoedasRepository(db);
         var service = new ResgateService(db, movimentos);
 
-        var saldoAtual = await movimentos.ObterSaldoAsync(CancellationToken.None);
+        var saldoAtual = await movimentos.ObterSaldoAsync(_usuarioId, CancellationToken.None);
 
         await Assert.ThrowsAsync<SaldoInsuficienteException>(
-            () => service.SolicitarAsync(saldoAtual + 1000, CancellationToken.None));
+            () => service.SolicitarAsync(saldoAtual + 1000, _usuarioId, CancellationToken.None));
     }
 
     [Fact]
@@ -61,9 +62,9 @@ public class ResgateServiceTests : IClassFixture<PostgresFixture>
         var movimentos = new MovimentoMoedasRepository(db);
         var service = new ResgateService(db, movimentos);
 
-        await movimentos.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 100, TipoMovimento.Credito, "saldo inicial"), CancellationToken.None);
+        await movimentos.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), 100, TipoMovimento.Credito, "saldo inicial", _usuarioId), CancellationToken.None);
 
-        var resgate = await service.SolicitarAsync(10, CancellationToken.None);
+        var resgate = await service.SolicitarAsync(10, _usuarioId, CancellationToken.None);
 
         var mensagem = await db.OutboxMessages
             .Where(m => m.Tipo == "ResgateSolicitadoEvent" && m.Payload.Contains(resgate.Id.ToString()))

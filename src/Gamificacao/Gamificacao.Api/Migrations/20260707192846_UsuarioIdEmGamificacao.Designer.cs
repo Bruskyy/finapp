@@ -3,6 +3,7 @@ using System;
 using Gamificacao.Api.Persistencia;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Gamificacao.Api.Migrations
 {
     [DbContext(typeof(GamificacaoDbContext))]
-    partial class GamificacaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260707192846_UsuarioIdEmGamificacao")]
+    partial class UsuarioIdEmGamificacao
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

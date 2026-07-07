@@ -19,12 +19,14 @@ public class GamificacaoDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Motivo).HasMaxLength(200).IsRequired();
             e.HasIndex(x => x.EventId).IsUnique(); // idempotencia: um evento so gera um movimento
+            e.HasIndex(x => x.UsuarioId);
         });
 
         modelBuilder.Entity<Resgate>(e =>
         {
             e.ToTable("Resgates");
             e.HasKey(x => x.Id);
+            e.HasIndex(x => x.UsuarioId);
         });
 
         modelBuilder.Entity<OutboxMessage>(e =>

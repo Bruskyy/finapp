@@ -56,7 +56,8 @@ public class RecorrenciaRepository : IRecorrenciaRepository
             Tipo: (TipoLancamentoEvento)lancamento.Tipo,
             CategoriaId: lancamento.CategoriaId,
             Data: lancamento.Data,
-            OcorreuEm: DateTime.UtcNow);
+            OcorreuEm: DateTime.UtcNow,
+            UsuarioId: lancamento.UsuarioId);
         _db.OutboxMessages.Add(new OutboxMessage(nameof(LancamentoCriadoEvent), JsonSerializer.Serialize(eventoCriado)));
 
         // evento especifico de recorrencia — Notificacoes avisa "sua conta fixa X foi lancada"
@@ -67,7 +68,8 @@ public class RecorrenciaRepository : IRecorrenciaRepository
             Descricao: lancamento.Descricao,
             Valor: lancamento.Valor,
             Competencia: competencia,
-            OcorreuEm: DateTime.UtcNow);
+            OcorreuEm: DateTime.UtcNow,
+            UsuarioId: recorrencia.UsuarioId);
         _db.OutboxMessages.Add(new OutboxMessage(nameof(LancamentoRecorrenteCriadoEvent), JsonSerializer.Serialize(eventoRecorrente)));
 
         try

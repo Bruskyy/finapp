@@ -9,4 +9,5 @@ public record ObjetivoConcluidoEvent(
     Guid ObjetivoId,
     string Nome,
     decimal ValorAlvo,
-    DateTime OcorreuEm);
+    DateTime OcorreuEm,
+    Guid? UsuarioId = null);

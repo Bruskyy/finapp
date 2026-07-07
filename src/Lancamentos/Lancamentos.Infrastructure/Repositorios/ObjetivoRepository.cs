@@ -41,7 +41,8 @@ public class ObjetivoRepository : IObjetivoRepository
             Tipo: (TipoLancamentoEvento)lancamentoAporte.Tipo,
             CategoriaId: lancamentoAporte.CategoriaId,
             Data: lancamentoAporte.Data,
-            OcorreuEm: DateTime.UtcNow);
+            OcorreuEm: DateTime.UtcNow,
+            UsuarioId: lancamentoAporte.UsuarioId);
         _db.OutboxMessages.Add(new OutboxMessage(nameof(LancamentoCriadoEvent), JsonSerializer.Serialize(eventoLancamento)));
 
         if (concluiu)
@@ -51,7 +52,8 @@ public class ObjetivoRepository : IObjetivoRepository
                 ObjetivoId: objetivo.Id,
                 Nome: objetivo.Nome,
                 ValorAlvo: objetivo.ValorAlvo,
-                OcorreuEm: DateTime.UtcNow);
+                OcorreuEm: DateTime.UtcNow,
+                UsuarioId: objetivo.UsuarioId);
             _db.OutboxMessages.Add(new OutboxMessage(nameof(ObjetivoConcluidoEvent), JsonSerializer.Serialize(eventoConcluido)));
         }
 

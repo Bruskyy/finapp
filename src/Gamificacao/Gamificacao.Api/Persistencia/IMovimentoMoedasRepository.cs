@@ -7,5 +7,5 @@ public interface IMovimentoMoedasRepository
     /// <returns>false se o EventId já tinha sido processado (mensagem duplicada) — idempotent consumer</returns>
     Task<bool> RegistrarAsync(MovimentoMoedas movimento, CancellationToken ct);
 
-    Task<int> ObterSaldoAsync(CancellationToken ct);
+    Task<int> ObterSaldoAsync(Guid usuarioId, CancellationToken ct);
 }

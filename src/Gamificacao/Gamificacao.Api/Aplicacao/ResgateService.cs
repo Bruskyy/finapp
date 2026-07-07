@@ -16,19 +16,19 @@ public class ResgateService
         _movimentos = movimentos;
     }
 
-    public async Task<Resgate> SolicitarAsync(int quantidade, CancellationToken ct)
+    public async Task<Resgate> SolicitarAsync(int quantidade, Guid usuarioId, CancellationToken ct)
     {
-        var saldo = await _movimentos.ObterSaldoAsync(ct);
+        var saldo = await _movimentos.ObterSaldoAsync(usuarioId, ct);
         if (quantidade > saldo)
             throw new SaldoInsuficienteException(quantidade, saldo);
 
-        var resgate = new Resgate(quantidade);
+        var resgate = new Resgate(quantidade, usuarioId);
 
         // reserva as moedas debitando imediatamente; se a saga falhar, o consumidor de
         // resultado compensa (credita de volta) - ver ResgateResultadoConsumerService
-        var debito = new MovimentoMoedas(resgate.Id, quantidade, TipoMovimento.Debito, $"Reserva do resgate {resgate.Id}");
+        var debito = new MovimentoMoedas(resgate.Id, quantidade, TipoMovimento.Debito, $"Reserva do resgate {resgate.Id}", usuarioId);
 
-        var evento = new ResgateSolicitadoEvent(resgate.Id, quantidade, DateTime.UtcNow);
+        var evento = new ResgateSolicitadoEvent(resgate.Id, quantidade, DateTime.UtcNow, usuarioId);
         var mensagem = new OutboxMessage(nameof(ResgateSolicitadoEvent), JsonSerializer.Serialize(evento));
 
         _db.Resgates.Add(resgate);

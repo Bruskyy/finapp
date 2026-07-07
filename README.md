@@ -296,6 +296,20 @@ Todas as ~9 entidades de `Lancamentos.Api` (Lançamento, Conta, Objetivo, Orçam
 
 **Verificação:** os 95 testes de `Lancamentos.Tests` (domínio puro, sem banco) passam depois de atualizados — nenhum precisou de infraestrutura nova, só dos construtores/assinaturas novas. **Pendência conhecida:** o SQL das views/procedures/function foi escrito à mão (não gerado pelo EF, que só sabe gerar `CREATE TABLE`/índice) e não pôde ser aplicado contra um SQL Server real nesta sessão (Docker Desktop indisponível na máquina) — validar com `dotnet ef database update` na primeira oportunidade.
 
+**Atualização:** validado depois, contra um SQL Server real — achou (e corrigiu) um bug genuíno de batching do T-SQL: `DROP VIEW`/`CREATE VIEW` (e o equivalente pra procedure/function) não podem estar na mesma *batch* — `CREATE VIEW`/`PROCEDURE`/`FUNCTION` precisa ser o único comando do lote. Como cada chamada a `migrationBuilder.Sql(string)` é exatamente um batch, a migration original (que combinava `DROP X; CREATE X ...` numa única string) falhava com `'CREATE VIEW' must be the first statement in a query batch`. Corrigido separando DROP e CREATE em chamadas `Sql()` distintas para os 5 objetos, em `Up()` e `Down()` (PR dedicado, sem mexer no PR já mergeado da fase 2).
+
+### Isolamento completo de dados em Gamificação (multi-tenancy, fase 3)
+
+Mesma extensão da fase 2, agora em `Gamificacao.Api`: `MovimentoMoedas` e `Resgate` ganharam `Guid? UsuarioId`, e os 3 endpoints (`GET /saldo`, `POST /resgates`, `GET /resgates/{id}`) passaram a extrair o usuário do `ClaimsPrincipal` e filtrar por ele — `ObterSaldoAsync` soma só os movimentos do usuário logado, e `GET /resgates/{id}` devolve 404 pra quem tenta ver o resgate de outra pessoa (em vez de vazar o dado de qualquer id válido).
+
+**De onde vem o dono de um movimento de moedas:** o crédito/débito não nasce de uma chamada HTTP direta — nasce do consumo assíncrono de eventos (`LancamentoCriadoEvent`, `ObjetivoConcluidoEvent`) publicados pelo Lançamentos via RabbitMQ. Por isso a fase 3 dependia da fase 2 já estar mergeada: só depois que `Lancamento`/`Objetivo` passaram a ter dono é que esses eventos puderam ganhar um campo `Guid? UsuarioId = null` (nullable e com default, pra não quebrar a desserialização de mensagens antigas já enfileiradas antes dessa mudança) — e as 3 classes de `Regras/` (Strategy) passaram a repassar `evento.UsuarioId` pro `MovimentoMoedas` que constroem.
+
+**`Resgate.UsuarioId` é obrigatório na criação, diferente de `MovimentoMoedas`:** todo resgate nasce de uma chamada HTTP autenticada (`POST /resgates`), então o construtor exige um `Guid usuarioId` de verdade — sem default nulo. Já `MovimentoMoedas` aceita `Guid?` porque também é construído a partir de eventos desserializados (potencialmente antigos, sem dono).
+
+**Sem backfill, mesmo motivo da fase 2:** a migration (`UsuarioIdEmGamificacao`) só adiciona as colunas como `NULL` com índice — sem tentar recuperar o dono de movimentos/resgates criados antes desta mudança. Ao contrário da fase 2, aqui não há SQL nativo escrito à mão (Postgres, só coluna + índice via EF) — validada direto contra o container Postgres real nesta sessão, sem surpresas.
+
+**Verificação:** 2 testes novos cobrindo isolamento entre usuários (`ObterSaldoAsync_NaoDeveSomarMovimentosDeOutroUsuario`, `ObterAsync_ComUsuarioId_NaoDeveRetornarResgateDeOutroUsuario`) — os 18 testes anteriores de `Gamificacao.Tests` continuam verdes, 20 no total.
+
 ### Navegação: menu lateral (drawer) + tab bar enxuta (Item 2 do backlog de UX)
 
 A tab bar tinha acumulado 6 itens (Dashboard, Orçamentos, Novo, Fixas, Metas, Moedas) — sintoma de "parece ERP". Reestruturado para um `Drawer.Navigator` (`@react-navigation/drawer`) envolvendo uma tab bar enxuta de 4 itens de uso diário (Dashboard, **Planejamento** — tela nova que mescla Orçamentos/Metas num segmented control local, Novo, Moedas); Contas Fixas e Perfil migraram pro menu lateral.

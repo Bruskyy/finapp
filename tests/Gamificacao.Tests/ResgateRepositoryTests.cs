@@ -8,6 +8,7 @@ namespace Gamificacao.Tests;
 public class ResgateRepositoryTests : IClassFixture<PostgresFixture>
 {
     private readonly PostgresFixture _fixture;
+    private readonly Guid _usuarioId = Guid.NewGuid();
 
     public ResgateRepositoryTests(PostgresFixture fixture)
     {
@@ -28,8 +29,8 @@ public class ResgateRepositoryTests : IClassFixture<PostgresFixture>
         var movimentos = new MovimentoMoedasRepository(db);
         var service = new ResgateService(db, movimentos);
 
-        await movimentos.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), quantidade + 100, TipoMovimento.Credito, "saldo inicial"), CancellationToken.None);
-        var resgate = await service.SolicitarAsync(quantidade, CancellationToken.None);
+        await movimentos.RegistrarAsync(new MovimentoMoedas(Guid.NewGuid(), quantidade + 100, TipoMovimento.Credito, "saldo inicial", _usuarioId), CancellationToken.None);
+        var resgate = await service.SolicitarAsync(quantidade, _usuarioId, CancellationToken.None);
         return resgate.Id;
     }
 
@@ -69,13 +70,13 @@ public class ResgateRepositoryTests : IClassFixture<PostgresFixture>
 
         await using var dbSaldo = CriarDbContext();
         var movimentos = new MovimentoMoedasRepository(dbSaldo);
-        var saldoAntes = await movimentos.ObterSaldoAsync(CancellationToken.None);
+        var saldoAntes = await movimentos.ObterSaldoAsync(_usuarioId, CancellationToken.None);
 
         await using var db = CriarDbContext();
         var repo = new ResgateRepository(db);
         await repo.CompensarAsync(resgateId, CancellationToken.None);
 
-        var saldoDepois = await movimentos.ObterSaldoAsync(CancellationToken.None);
+        var saldoDepois = await movimentos.ObterSaldoAsync(_usuarioId, CancellationToken.None);
         var resgate = await repo.ObterAsync(resgateId, CancellationToken.None);
 
         Assert.Equal(StatusResgate.Compensado, resgate!.Status);
@@ -89,7 +90,7 @@ public class ResgateRepositoryTests : IClassFixture<PostgresFixture>
 
         await using var dbSaldo = CriarDbContext();
         var movimentos = new MovimentoMoedasRepository(dbSaldo);
-        var saldoAntes = await movimentos.ObterSaldoAsync(CancellationToken.None);
+        var saldoAntes = await movimentos.ObterSaldoAsync(_usuarioId, CancellationToken.None);
 
         await using (var db1 = CriarDbContext())
         {
@@ -103,7 +104,22 @@ public class ResgateRepositoryTests : IClassFixture<PostgresFixture>
             await repo2.CompensarAsync(resgateId, CancellationToken.None); // idempotente
         }
 
-        var saldoDepois = await movimentos.ObterSaldoAsync(CancellationToken.None);
+        var saldoDepois = await movimentos.ObterSaldoAsync(_usuarioId, CancellationToken.None);
         Assert.Equal(15, saldoDepois - saldoAntes);
+    }
+
+    [Fact]
+    public async Task ObterAsync_ComUsuarioId_NaoDeveRetornarResgateDeOutroUsuario()
+    {
+        var resgateId = await CriarResgatePendenteAsync(10);
+
+        await using var db = CriarDbContext();
+        var repo = new ResgateRepository(db);
+
+        var resgateDoDono = await repo.ObterAsync(resgateId, _usuarioId, CancellationToken.None);
+        var resgateDeOutro = await repo.ObterAsync(resgateId, Guid.NewGuid(), CancellationToken.None);
+
+        Assert.NotNull(resgateDoDono);
+        Assert.Null(resgateDeOutro);
     }
 }
