@@ -49,8 +49,8 @@ public class LancamentoRepository : ILancamentoRepository
         _db.OutboxMessages.Add(new OutboxMessage(nameof(LancamentoCriadoEvent), JsonSerializer.Serialize(evento)));
     }
 
-    public async Task<Lancamento?> ObterPorIdAsync(Guid id, CancellationToken ct)
-        => await _db.Lancamentos.Include(x => x.Tags).FirstOrDefaultAsync(x => x.Id == id, ct);
+    public async Task<Lancamento?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct)
+        => await _db.Lancamentos.Include(x => x.Tags).FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == usuarioId, ct);
 
     public async Task<PaginaLancamentos> ListarAsync(FiltroLancamentos filtro, CancellationToken ct)
     {
@@ -81,7 +81,7 @@ public class LancamentoRepository : ILancamentoRepository
     /// </summary>
     public static IQueryable<Lancamento> AplicarFiltros(IQueryable<Lancamento> query, FiltroLancamentos filtro)
     {
-        query = query.Where(x => x.Data >= filtro.Inicio && x.Data <= filtro.Fim);
+        query = query.Where(x => x.Data >= filtro.Inicio && x.Data <= filtro.Fim && x.UsuarioId == filtro.UsuarioId);
 
         if (filtro.CategoriaId is { } categoriaId)
             query = query.Where(x => x.CategoriaId == categoriaId);
@@ -107,9 +107,9 @@ public class LancamentoRepository : ILancamentoRepository
         await _db.SaveChangesAsync(ct); // entidade ja rastreada via ObterPorIdAsync
     }
 
-    public async Task<bool> RemoverAsync(Guid id, CancellationToken ct)
+    public async Task<bool> RemoverAsync(Guid id, Guid usuarioId, CancellationToken ct)
     {
-        var removidos = await _db.Lancamentos.Where(x => x.Id == id).ExecuteDeleteAsync(ct);
+        var removidos = await _db.Lancamentos.Where(x => x.Id == id && x.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
         return removidos > 0;
     }
 

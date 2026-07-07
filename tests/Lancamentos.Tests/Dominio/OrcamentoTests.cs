@@ -8,12 +8,14 @@ public class OrcamentoTests
     public void Criar_ComDadosValidos_DevePreencherPropriedades()
     {
         var categoriaId = Guid.NewGuid();
+        var usuarioId = Guid.NewGuid();
 
-        var orcamento = new Orcamento(categoriaId, 500m);
+        var orcamento = new Orcamento(categoriaId, 500m, usuarioId);
 
         Assert.NotEqual(Guid.Empty, orcamento.Id);
         Assert.Equal(categoriaId, orcamento.CategoriaId);
         Assert.Equal(500m, orcamento.ValorLimite);
+        Assert.Equal(usuarioId, orcamento.UsuarioId);
     }
 
     [Theory]
@@ -21,7 +23,7 @@ public class OrcamentoTests
     [InlineData(-100)]
     public void Criar_ComLimiteInvalido_DeveLancarExcecao(decimal limiteInvalido)
     {
-        var ex = Assert.Throws<ArgumentException>(() => new Orcamento(Guid.NewGuid(), limiteInvalido));
+        var ex = Assert.Throws<ArgumentException>(() => new Orcamento(Guid.NewGuid(), limiteInvalido, Guid.NewGuid()));
 
         Assert.Equal("valorLimite", ex.ParamName);
     }
@@ -29,7 +31,7 @@ public class OrcamentoTests
     [Fact]
     public void Criar_SemCategoria_DeveLancarExcecao()
     {
-        var ex = Assert.Throws<ArgumentException>(() => new Orcamento(Guid.Empty, 500m));
+        var ex = Assert.Throws<ArgumentException>(() => new Orcamento(Guid.Empty, 500m, Guid.NewGuid()));
 
         Assert.Equal("categoriaId", ex.ParamName);
     }
@@ -37,7 +39,7 @@ public class OrcamentoTests
     [Fact]
     public void AlterarLimite_ComValorValido_DeveAtualizar()
     {
-        var orcamento = new Orcamento(Guid.NewGuid(), 500m);
+        var orcamento = new Orcamento(Guid.NewGuid(), 500m, Guid.NewGuid());
 
         orcamento.AlterarLimite(800m);
 
@@ -49,7 +51,7 @@ public class OrcamentoTests
     [InlineData(-1)]
     public void AlterarLimite_ComValorInvalido_DeveLancarExcecao(decimal limiteInvalido)
     {
-        var orcamento = new Orcamento(Guid.NewGuid(), 500m);
+        var orcamento = new Orcamento(Guid.NewGuid(), 500m, Guid.NewGuid());
 
         Assert.Throws<ArgumentException>(() => orcamento.AlterarLimite(limiteInvalido));
         Assert.Equal(500m, orcamento.ValorLimite);

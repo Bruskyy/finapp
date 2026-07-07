@@ -14,14 +14,15 @@ public class ContaRepository : IContaRepository
         _db = db;
     }
 
-    public async Task<IReadOnlyList<Conta>> ListarAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<Conta>> ListarAsync(Guid usuarioId, CancellationToken ct)
         => await _db.Contas
             .AsNoTracking()
+            .Where(x => x.UsuarioId == usuarioId)
             .OrderBy(x => x.Nome)
             .ToListAsync(ct);
 
-    public async Task<Conta?> ObterPorIdAsync(Guid id, CancellationToken ct)
-        => await _db.Contas.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public async Task<Conta?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct)
+        => await _db.Contas.FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == usuarioId, ct);
 
     public async Task AdicionarAsync(Conta conta, CancellationToken ct)
     {
@@ -29,6 +30,6 @@ public class ContaRepository : IContaRepository
         await _db.SaveChangesAsync(ct);
     }
 
-    public async Task<bool> ExisteComNomeAsync(string nome, CancellationToken ct)
-        => await _db.Contas.AnyAsync(x => x.Nome == nome.Trim(), ct);
+    public async Task<bool> ExisteComNomeAsync(string nome, Guid usuarioId, CancellationToken ct)
+        => await _db.Contas.AnyAsync(x => x.Nome == nome.Trim() && x.UsuarioId == usuarioId, ct);
 }

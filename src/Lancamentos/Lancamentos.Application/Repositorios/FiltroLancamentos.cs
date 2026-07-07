@@ -10,6 +10,7 @@ namespace Lancamentos.Application.Repositorios;
 public record FiltroLancamentos(
     DateTime Inicio,
     DateTime Fim,
+    Guid UsuarioId,
     Guid? CategoriaId = null,
     Guid? ContaId = null,
     TipoLancamento? Tipo = null,

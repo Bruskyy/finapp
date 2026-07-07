@@ -14,14 +14,21 @@ public class Categoria
     public Guid Id { get; private set; }
     public string Nome { get; private set; }
 
+    /// <summary>
+    /// Null = categoria global (os ~12 defaults seedados por migration,
+    /// visíveis pra todo mundo). Categorias criadas via API sempre têm dono.
+    /// </summary>
+    public Guid? UsuarioId { get; private set; }
+
     private Categoria() { Nome = null!; }
 
-    public Categoria(string nome)
+    public Categoria(string nome, Guid usuarioId)
     {
         if (string.IsNullOrWhiteSpace(nome))
             throw new ArgumentException("Nome é obrigatório.", nameof(nome));
 
         Id = Guid.NewGuid();
         Nome = nome.Trim();
+        UsuarioId = usuarioId;
     }
 }

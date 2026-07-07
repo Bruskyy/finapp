@@ -13,6 +13,7 @@ public class LancamentoRecorrente
     public TipoLancamento Tipo { get; private set; }
     public Guid CategoriaId { get; private set; }
     public Guid ContaId { get; private set; }
+    public Guid? UsuarioId { get; private set; }
 
     /// <summary>Dia do mês do vencimento (1–31; em meses mais curtos vale o último dia).</summary>
     public int DiaDoMes { get; private set; }
@@ -22,7 +23,7 @@ public class LancamentoRecorrente
 
     private LancamentoRecorrente() { Descricao = null!; }
 
-    public LancamentoRecorrente(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, int diaDoMes)
+    public LancamentoRecorrente(string descricao, decimal valor, TipoLancamento tipo, Guid categoriaId, Guid contaId, int diaDoMes, Guid usuarioId)
     {
         if (valor <= 0)
             throw new ArgumentException("Valor deve ser maior que zero.", nameof(valor));
@@ -40,6 +41,7 @@ public class LancamentoRecorrente
         CategoriaId = categoriaId;
         ContaId = contaId;
         DiaDoMes = diaDoMes;
+        UsuarioId = usuarioId;
         Ativa = true;
         CriadoEm = DateTime.UtcNow;
     }
@@ -69,6 +71,6 @@ public class LancamentoRecorrente
     {
         var dia = DiaEfetivoEm(referencia.Year, referencia.Month);
         var data = new DateTime(referencia.Year, referencia.Month, dia);
-        return Lancamento.CriarDeRecorrencia(Descricao, Valor, Tipo, CategoriaId, ContaId, data, Id);
+        return Lancamento.CriarDeRecorrencia(Descricao, Valor, Tipo, CategoriaId, ContaId, data, Id, UsuarioId);
     }
 }

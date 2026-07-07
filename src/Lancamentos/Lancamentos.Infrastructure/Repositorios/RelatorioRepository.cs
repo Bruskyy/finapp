@@ -13,27 +13,27 @@ public class RelatorioRepository : IRelatorioRepository
         _db = db;
     }
 
-    public async Task<IReadOnlyList<GastoPorCategoria>> GastosPorCategoriaAsync(DateTime inicio, DateTime fim, CancellationToken ct)
+    public async Task<IReadOnlyList<GastoPorCategoria>> GastosPorCategoriaAsync(DateTime inicio, DateTime fim, Guid usuarioId, CancellationToken ct)
         => await _db.Database
-            .SqlQuery<GastoPorCategoria>($"EXEC sp_GastosPorCategoria @Inicio={inicio}, @Fim={fim}")
+            .SqlQuery<GastoPorCategoria>($"EXEC sp_GastosPorCategoria @Inicio={inicio}, @Fim={fim}, @UsuarioId={usuarioId}")
             .ToListAsync(ct);
 
-    public async Task<decimal> SaldoPeriodoAsync(DateTime inicio, DateTime fim, CancellationToken ct)
+    public async Task<decimal> SaldoPeriodoAsync(DateTime inicio, DateTime fim, Guid usuarioId, CancellationToken ct)
         => await _db.Database
-            .SqlQuery<decimal>($"SELECT dbo.fn_SaldoPeriodo({inicio}, {fim}) AS Value")
+            .SqlQuery<decimal>($"SELECT dbo.fn_SaldoPeriodo({inicio}, {fim}, {usuarioId}) AS Value")
             .SingleAsync(ct);
 
-    public async Task<IReadOnlyList<SaldoPorConta>> SaldosPorContaAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<SaldoPorConta>> SaldosPorContaAsync(Guid usuarioId, CancellationToken ct)
         => await _db.Database
-            .SqlQuery<SaldoPorConta>($"SELECT ContaId, Conta, Saldo FROM vw_SaldoPorConta")
+            .SqlQuery<SaldoPorConta>($"SELECT ContaId, Conta, Saldo FROM vw_SaldoPorConta WHERE UsuarioId = {usuarioId}")
             .ToListAsync(ct);
 
-    public async Task<IReadOnlyList<GastoPorTag>> GastosPorTagAsync(DateTime inicio, DateTime fim, CancellationToken ct)
+    public async Task<IReadOnlyList<GastoPorTag>> GastosPorTagAsync(DateTime inicio, DateTime fim, Guid usuarioId, CancellationToken ct)
         => await _db.Database
-            .SqlQuery<GastoPorTag>($"EXEC sp_GastosPorTag @Inicio={inicio}, @Fim={fim}")
+            .SqlQuery<GastoPorTag>($"EXEC sp_GastosPorTag @Inicio={inicio}, @Fim={fim}, @UsuarioId={usuarioId}")
             .ToListAsync(ct);
 
-    public async Task<IReadOnlyList<EvolucaoMensalPonto>> EvolucaoMensalAsync(int meses, CancellationToken ct)
+    public async Task<IReadOnlyList<EvolucaoMensalPonto>> EvolucaoMensalAsync(int meses, Guid usuarioId, CancellationToken ct)
     {
         // corte no proprio SQL: só os últimos N meses da view (Ano*12+Mes é
         // comparável linearmente; parâmetros interpolados viram SqlParameter)
@@ -44,7 +44,7 @@ public class RelatorioRepository : IRelatorioRepository
             .SqlQuery<ResumoMensal>($@"
 SELECT Ano, Mes, Tipo, QuantidadeLancamentos, ValorTotal
 FROM vw_ResumoMensal
-WHERE Ano * 12 + Mes >= {corte}")
+WHERE Ano * 12 + Mes >= {corte} AND UsuarioId = {usuarioId}")
             .ToListAsync(ct);
 
         // pivô Tipo (1=Receita, 2=Despesa) -> colunas, em memória (poucas linhas)

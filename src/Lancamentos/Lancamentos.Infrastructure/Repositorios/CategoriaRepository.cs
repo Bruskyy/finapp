@@ -14,14 +14,15 @@ public class CategoriaRepository : ICategoriaRepository
         _db = db;
     }
 
-    public async Task<IReadOnlyList<Categoria>> ListarAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<Categoria>> ListarAsync(Guid usuarioId, CancellationToken ct)
         => await _db.Categorias
             .AsNoTracking()
+            .Where(x => x.UsuarioId == null || x.UsuarioId == usuarioId)
             .OrderBy(x => x.Nome)
             .ToListAsync(ct);
 
-    public async Task<Categoria?> ObterPorIdAsync(Guid id, CancellationToken ct)
-        => await _db.Categorias.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public async Task<Categoria?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct)
+        => await _db.Categorias.FirstOrDefaultAsync(x => x.Id == id && (x.UsuarioId == null || x.UsuarioId == usuarioId), ct);
 
     public async Task AdicionarAsync(Categoria categoria, CancellationToken ct)
     {
@@ -29,6 +30,6 @@ public class CategoriaRepository : ICategoriaRepository
         await _db.SaveChangesAsync(ct);
     }
 
-    public async Task<bool> ExisteComNomeAsync(string nome, CancellationToken ct)
-        => await _db.Categorias.AnyAsync(x => x.Nome == nome.Trim(), ct);
+    public async Task<bool> ExisteComNomeAsync(string nome, Guid usuarioId, CancellationToken ct)
+        => await _db.Categorias.AnyAsync(x => x.Nome == nome.Trim() && (x.UsuarioId == null || x.UsuarioId == usuarioId), ct);
 }

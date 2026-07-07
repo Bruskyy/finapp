@@ -18,11 +18,11 @@ public class ObjetivoRepository : IObjetivoRepository
         _db = db;
     }
 
-    public async Task<IReadOnlyList<Objetivo>> ListarAsync(CancellationToken ct)
-        => await _db.Objetivos.AsNoTracking().OrderBy(x => x.DataAlvo).ToListAsync(ct);
+    public async Task<IReadOnlyList<Objetivo>> ListarAsync(Guid usuarioId, CancellationToken ct)
+        => await _db.Objetivos.AsNoTracking().Where(x => x.UsuarioId == usuarioId).OrderBy(x => x.DataAlvo).ToListAsync(ct);
 
-    public async Task<Objetivo?> ObterPorIdAsync(Guid id, CancellationToken ct)
-        => await _db.Objetivos.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public async Task<Objetivo?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct)
+        => await _db.Objetivos.FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == usuarioId, ct);
 
     public async Task AdicionarAsync(Objetivo objetivo, CancellationToken ct)
     {

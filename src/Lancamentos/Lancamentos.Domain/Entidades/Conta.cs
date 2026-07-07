@@ -15,17 +15,19 @@ public class Conta
 
     public Guid Id { get; private set; }
     public string Nome { get; private set; }
+    public Guid? UsuarioId { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
     private Conta() { Nome = null!; }
 
-    public Conta(string nome)
+    public Conta(string nome, Guid usuarioId)
     {
         if (string.IsNullOrWhiteSpace(nome))
             throw new ArgumentException("Nome é obrigatório.", nameof(nome));
 
         Id = Guid.NewGuid();
         Nome = nome.Trim();
+        UsuarioId = usuarioId;
         CriadoEm = DateTime.UtcNow;
     }
 }

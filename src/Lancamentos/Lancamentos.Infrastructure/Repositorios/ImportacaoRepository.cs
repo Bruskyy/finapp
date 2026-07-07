@@ -23,6 +23,9 @@ public class ImportacaoRepository : IImportacaoRepository
     public async Task<ImportacaoExtrato?> ObterPorIdAsync(Guid id, CancellationToken ct)
         => await _db.Importacoes.FirstOrDefaultAsync(x => x.Id == id, ct);
 
+    public async Task<ImportacaoExtrato?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct)
+        => await _db.Importacoes.FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == usuarioId, ct);
+
     public async Task AtualizarAsync(ImportacaoExtrato importacao, CancellationToken ct)
     {
         await _db.SaveChangesAsync(ct); // entidade ja rastreada via ObterPorIdAsync

@@ -14,10 +14,10 @@ public class TagRepository : ITagRepository
         _db = db;
     }
 
-    public async Task<IReadOnlyList<Tag>> ListarAsync(CancellationToken ct)
-        => await _db.Tags.AsNoTracking().OrderBy(x => x.Nome).ToListAsync(ct);
+    public async Task<IReadOnlyList<Tag>> ListarAsync(Guid usuarioId, CancellationToken ct)
+        => await _db.Tags.AsNoTracking().Where(x => x.UsuarioId == usuarioId).OrderBy(x => x.Nome).ToListAsync(ct);
 
-    public async Task<IReadOnlyList<Tag>> ObterOuCriarAsync(IEnumerable<string> nomes, CancellationToken ct)
+    public async Task<IReadOnlyList<Tag>> ObterOuCriarAsync(IEnumerable<string> nomes, Guid usuarioId, CancellationToken ct)
     {
         var normalizados = nomes
             .Select(Tag.Normalizar)
@@ -30,12 +30,12 @@ public class TagRepository : ITagRepository
 
         // tags rastreadas (nao AsNoTracking): vao ser associadas ao lancamento
         var existentes = await _db.Tags
-            .Where(t => normalizados.Contains(t.Nome))
+            .Where(t => normalizados.Contains(t.Nome) && t.UsuarioId == usuarioId)
             .ToListAsync(ct);
 
         var novas = normalizados
             .Except(existentes.Select(t => t.Nome))
-            .Select(n => new Tag(n))
+            .Select(n => new Tag(n, usuarioId))
             .ToList();
 
         _db.Tags.AddRange(novas); // salvas junto com o lancamento (mesma transacao)

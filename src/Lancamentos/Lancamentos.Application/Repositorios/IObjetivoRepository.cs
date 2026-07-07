@@ -4,8 +4,8 @@ namespace Lancamentos.Application.Repositorios;
 
 public interface IObjetivoRepository
 {
-    Task<IReadOnlyList<Objetivo>> ListarAsync(CancellationToken ct);
-    Task<Objetivo?> ObterPorIdAsync(Guid id, CancellationToken ct);
+    Task<IReadOnlyList<Objetivo>> ListarAsync(Guid usuarioId, CancellationToken ct);
+    Task<Objetivo?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct);
     Task AdicionarAsync(Objetivo objetivo, CancellationToken ct);
 
     /// <summary>

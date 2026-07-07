@@ -49,6 +49,20 @@ dotnet run --project src/Gateway/Gateway.Api            # -> http://localhost:52
 
 O app mobile fala só com o Gateway (`http://localhost:5275/api/...`) — ver as seções "Gateway.Api com YARP" e "Autenticação real" abaixo. Todas as rotas exigem login (`POST /api/usuarios/registrar` ou `/login`), exceto as duas de login/registro em si.
 
+**1.3 Opcional: reivindicar lançamentos/contas/etc. criados antes da autenticação existir** (ver "Isolamento completo de dados em Lançamentos"). Depois de logar, pegue seu `UsuarioId` em `GET /api/usuarios/me` e rode (ajustando o nome do container SQL Server):
+
+```bash
+docker exec -it <container_sqlserver> /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'FinApp@Dev123' -C -Q "
+UPDATE Lancamentos SET UsuarioId = '<seu-UsuarioId>' WHERE UsuarioId IS NULL;
+UPDATE Contas       SET UsuarioId = '<seu-UsuarioId>' WHERE UsuarioId IS NULL;
+UPDATE Objetivos    SET UsuarioId = '<seu-UsuarioId>' WHERE UsuarioId IS NULL;
+UPDATE Orcamentos   SET UsuarioId = '<seu-UsuarioId>' WHERE UsuarioId IS NULL;
+UPDATE Recorrencias SET UsuarioId = '<seu-UsuarioId>' WHERE UsuarioId IS NULL;
+UPDATE Tags         SET UsuarioId = '<seu-UsuarioId>' WHERE UsuarioId IS NULL;
+UPDATE Importacoes  SET UsuarioId = '<seu-UsuarioId>' WHERE UsuarioId IS NULL;
+"
+```
+
 ```bash
 # 3. Rodar o app (com os 5 serviços acima já no ar)
 cd app
@@ -265,6 +279,22 @@ Investigando a central de notificações in-app descobri que a lacuna era maior 
 **Custo real desta fase:** nenhum teste de `Lancamentos.Tests` usa `WebApplicationFactory` (são todos testes de domínio/repositório, não passam pelo pipeline HTTP — ficaram intactos). Já `Gamificacao.Tests` tem um teste via `WebApplicationFactory` (`ApiResilienciaTests`) que precisou de um helper novo (`TokenDeTeste.cs`) pra montar um JWT válido na mão com a mesma chave fixa de teste — mesmo padrão que `Usuarios.Tests` já usava (chave fixa via `builder.UseSetting`, não depende do `user-secrets` local pra não quebrar no CI).
 
 **Próximas fases (fora deste PR, cada uma seu próprio branch/PR):** `UsuarioId` de verdade em todas as entidades de Lançamentos e Gamificação, com todo endpoint de leitura filtrando pelo usuário logado; persistência real no `Notificacoes.Api` (hoje é 100% stateless); e a tela de notificações no app.
+
+### Isolamento completo de dados em Lançamentos (multi-tenancy, fase 2)
+
+Todas as ~9 entidades de `Lancamentos.Api` (Lançamento, Conta, Objetivo, Orçamento, Recorrência, Tag, Importação e — de forma híbrida — Categoria) ganharam `Guid? UsuarioId`, e os ~20 endpoints do serviço passaram a extrair o usuário do `ClaimsPrincipal` (mesmo helper `IdDoUsuario` da Fase 1) pra estampar o dono em toda criação e filtrar toda leitura/atualização/remoção por ele.
+
+**Categorias são híbridas, de propósito:** os ~12 defaults seedados por migration continuam com `UsuarioId = NULL` ("categoria global", visível pra todo mundo); categorias criadas via `POST /categorias` daqui pra frente ganham dono. `GET /categorias` devolve `UsuarioId IS NULL OR UsuarioId = @atual` — mistura defaults com as pessoais, sem vazar as de outros usuários.
+
+**Unicidade deixou de ser global:** os índices únicos de `Contas.Nome`, `Categorias.Nome` e `Tags.Nome` (antes um único valor pra todo o app) viraram compostos `(UsuarioId, Nome)` — dois usuários agora podem, cada um, ter sua própria conta "Carteira" sem colidir. Mesma lógica pra `Orcamentos`: "um teto por categoria" virou "um teto por categoria por usuário" `(UsuarioId, CategoriaId)`.
+
+**Backfill: decisão deliberada de NÃO fazer.** `Lancamentos.Api` usa SQL Server; `Usuarios.Api` usa PostgreSQL — bancos diferentes, sem join possível numa migration automática entre "quem é o usuário" e "quais linhas são dele". A migration (`UsuarioIdEmTodasEntidades`) adiciona as colunas como `NULL` sem tentar preencher; registros anteriores à autenticação ficam invisíveis nas consultas (que agora filtram por dono) até serem reivindicados manualmente com um `UPDATE` documentado (ver seção "Como rodar localmente" — pendência, não bloqueia nada).
+
+**Efeito colateral corrigido:** o importador de extrato CSV (Etapa 6) sempre jogava os lançamentos importados na `Conta.CarteiraPadraoId` — a conta global seedada originalmente. Como contas agora são por usuário, isso deixaria de fazer sentido (o lançamento importado ficaria "órfão" nos relatórios por conta de quem importou). `ImportacaoExtratoWorker` passou a garantir (find-or-create) uma "Carteira" própria do usuário que fez a importação.
+
+**Views/procedures/function nativas (Etapa 1) recriadas com `@UsuarioId`:** `vw_SaldoPorConta`, `vw_ResumoMensal`, `fn_SaldoPeriodo`, `sp_GastosPorCategoria` e `sp_GastosPorTag` — mesmo padrão de SQL nativo já auditado, agora todos filtrando por usuário.
+
+**Verificação:** os 95 testes de `Lancamentos.Tests` (domínio puro, sem banco) passam depois de atualizados — nenhum precisou de infraestrutura nova, só dos construtores/assinaturas novas. **Pendência conhecida:** o SQL das views/procedures/function foi escrito à mão (não gerado pelo EF, que só sabe gerar `CREATE TABLE`/índice) e não pôde ser aplicado contra um SQL Server real nesta sessão (Docker Desktop indisponível na máquina) — validar com `dotnet ef database update` na primeira oportunidade.
 
 ### Navegação: menu lateral (drawer) + tab bar enxuta (Item 2 do backlog de UX)
 

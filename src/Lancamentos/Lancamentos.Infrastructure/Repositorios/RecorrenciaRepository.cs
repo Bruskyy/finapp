@@ -23,14 +23,14 @@ public class RecorrenciaRepository : IRecorrenciaRepository
         _db = db;
     }
 
-    public async Task<IReadOnlyList<LancamentoRecorrente>> ListarAsync(CancellationToken ct)
-        => await _db.Recorrencias.AsNoTracking().OrderBy(x => x.DiaDoMes).ToListAsync(ct);
+    public async Task<IReadOnlyList<LancamentoRecorrente>> ListarAsync(Guid usuarioId, CancellationToken ct)
+        => await _db.Recorrencias.AsNoTracking().Where(x => x.UsuarioId == usuarioId).OrderBy(x => x.DiaDoMes).ToListAsync(ct);
 
     public async Task<IReadOnlyList<LancamentoRecorrente>> ListarAtivasAsync(CancellationToken ct)
         => await _db.Recorrencias.AsNoTracking().Where(x => x.Ativa).ToListAsync(ct);
 
-    public async Task<LancamentoRecorrente?> ObterPorIdAsync(Guid id, CancellationToken ct)
-        => await _db.Recorrencias.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public async Task<LancamentoRecorrente?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct)
+        => await _db.Recorrencias.FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == usuarioId, ct);
 
     public async Task AdicionarAsync(LancamentoRecorrente recorrencia, CancellationToken ct)
     {

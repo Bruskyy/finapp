@@ -15,24 +15,25 @@ public class FiltroLancamentosTests
     private static readonly Guid Transporte = Guid.NewGuid();
     private static readonly Guid Carteira = Guid.NewGuid();
     private static readonly Guid Banco = Guid.NewGuid();
+    private static readonly Guid UsuarioId = Guid.NewGuid();
 
     private static List<Lancamento> Cenario()
     {
-        var mercado = new Lancamento("Mercado do mês", 200m, TipoLancamento.Despesa, Alimentacao, Carteira, new DateTime(2026, 7, 2));
-        mercado.DefinirTags(new[] { new Tag("promoção") });
+        var mercado = new Lancamento("Mercado do mês", 200m, TipoLancamento.Despesa, Alimentacao, Carteira, new DateTime(2026, 7, 2), UsuarioId);
+        mercado.DefinirTags(new[] { new Tag("promoção", UsuarioId) });
 
-        var uber = new Lancamento("Uber centro", 25m, TipoLancamento.Despesa, Transporte, Banco, new DateTime(2026, 7, 3));
+        var uber = new Lancamento("Uber centro", 25m, TipoLancamento.Despesa, Transporte, Banco, new DateTime(2026, 7, 3), UsuarioId);
 
-        var salario = new Lancamento("Salário", 5000m, TipoLancamento.Receita, Alimentacao, Banco, new DateTime(2026, 7, 5));
+        var salario = new Lancamento("Salário", 5000m, TipoLancamento.Receita, Alimentacao, Banco, new DateTime(2026, 7, 5), UsuarioId);
 
-        var antigo = new Lancamento("Mercado antigo", 90m, TipoLancamento.Despesa, Alimentacao, Carteira, new DateTime(2026, 6, 10));
+        var antigo = new Lancamento("Mercado antigo", 90m, TipoLancamento.Despesa, Alimentacao, Carteira, new DateTime(2026, 6, 10), UsuarioId);
 
         return new List<Lancamento> { mercado, uber, salario, antigo };
     }
 
     private static FiltroLancamentos Julho(Guid? categoriaId = null, Guid? contaId = null,
         TipoLancamento? tipo = null, string? texto = null, IReadOnlyList<string>? tags = null) =>
-        new(new DateTime(2026, 7, 1), new DateTime(2026, 7, 31), categoriaId, contaId, tipo, texto, tags);
+        new(new DateTime(2026, 7, 1), new DateTime(2026, 7, 31), UsuarioId, categoriaId, contaId, tipo, texto, tags);
 
     private static List<Lancamento> Filtrar(FiltroLancamentos filtro) =>
         LancamentoRepository.AplicarFiltros(Cenario().AsQueryable(), filtro).ToList();
@@ -86,7 +87,7 @@ public class FiltroLancamentosTests
     [Fact]
     public void Paginacao_DeveSanearSkipETake()
     {
-        var filtro = new FiltroLancamentos(DateTime.MinValue, DateTime.MaxValue, Skip: -5, Take: 9999);
+        var filtro = new FiltroLancamentos(DateTime.MinValue, DateTime.MaxValue, UsuarioId, Skip: -5, Take: 9999);
 
         var (skip, take) = filtro.Paginacao;
 
