@@ -69,6 +69,7 @@ builder.Services.AddScoped<IArmazenamentoExtrato, ArmazenamentoExtratoS3>();
 builder.Services.AddScoped<IFilaImportacoes, FilaImportacoesSqs>();
 builder.Services.AddScoped<IImportacaoRepository, ImportacaoRepository>();
 builder.Services.AddHostedService<ImportacaoExtratoWorker>();
+builder.Services.AddHostedService<ImportacaoOutboxPublisherService>();
 
 // Validators são stateless — singleton evita recriar a cada request.
 builder.Services.AddSingleton<IValidator<CriarLancamentoRequest>, CriarLancamentoRequestValidator>();
@@ -407,7 +408,6 @@ app.MapPost("/importacoes", async (
     ClaimsPrincipal principal,
     IImportacaoRepository importacoes,
     IArmazenamentoExtrato armazenamento,
-    IFilaImportacoes fila,
     CancellationToken ct) =>
 {
     using var leitor = new StreamReader(request.Body);
@@ -424,8 +424,11 @@ app.MapPost("/importacoes", async (
 
     var importacao = new ImportacaoExtrato(nomeArquivo, IdDoUsuario(principal));
     await armazenamento.SalvarAsync(importacao.ChaveS3, conteudo, ct); // 1. arquivo no S3
-    await importacoes.AdicionarAsync(importacao, ct);                  // 2. rastreio no banco
-    await fila.EnfileirarAsync(importacao.Id, ct);                     // 3. trabalho na fila
+    // 2. rastreio no banco + comando de enfileirar, atômicos (outbox pattern
+    // - ver ImportacaoRepository.AdicionarAsync). ImportacaoOutboxPublisherService
+    // publica no SQS de fato, de forma assíncrona e com retry se o SQS
+    // estiver indisponível agora - o endpoint não fala mais com o SQS direto.
+    await importacoes.AdicionarAsync(importacao, ct);
 
     // 202 Accepted + Location: async request-reply — o cliente acompanha por polling
     return Results.Accepted($"/importacoes/{importacao.Id}", ParaImportacaoResponse(importacao));

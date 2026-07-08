@@ -160,7 +160,7 @@ Revisão de funcionalidades no serviço de Lançamentos pra aproximar o app do M
 
 ### Importação de extrato CSV assíncrona com S3 + SQS via LocalStack (Etapa 6)
 
-Fluxo: `POST /importacoes` (corpo = CSV) → sobe o arquivo pro **S3** (bucket `finapp-extratos`) → grava o rastreio na tabela `Importacoes` (status `Pendente`) → enfileira o id no **SQS** (`finapp-importacoes`) → responde **202 Accepted** com `Location`. Um `BackgroundService` (`ImportacaoExtratoWorker`) consome a fila com *long polling*, baixa o CSV do S3, parseia (`ExtratoCsvParser`, lógica pura e testável), cria os lançamentos **num único `SaveChanges`** (importação atômica, com os eventos de outbox na mesma transação — cada linha importada gera moedas) e atualiza o status pra `Concluida`/`Falhou`. O cliente acompanha por `GET /importacoes/{id}`.
+Fluxo: `POST /importacoes` (corpo = CSV) → sobe o arquivo pro **S3** (bucket `finapp-extratos`) → grava o rastreio na tabela `Importacoes` **e o comando de enfileirar na outbox, no mesmo `SaveChanges`** (status `Pendente`) → responde **202 Accepted** com `Location`. Um segundo `BackgroundService` (`ImportacaoOutboxPublisherService`) lê essa outbox e só então fala com o **SQS** (`finapp-importacoes`) de verdade — ver "Outbox estendida pro SQS" abaixo. Do outro lado, `ImportacaoExtratoWorker` consome a fila com *long polling*, baixa o CSV do S3, parseia (`ExtratoCsvParser`, lógica pura e testável), cria os lançamentos **num único `SaveChanges`** (importação atômica, com os eventos de outbox na mesma transação — cada linha importada gera moedas) e atualiza o status pra `Concluida`/`Falhou`. O cliente acompanha por `GET /importacoes/{id}`.
 
 **Conceitos de entrevista neste fluxo:**
 - **Async request-reply**: 202 + polling em vez de segurar a conexão — o mesmo padrão da saga de resgate, agora com fila AWS.
@@ -177,9 +177,19 @@ Data;Descricao;Valor;Tipo;Categoria
 02/07/2026;Freela site;1.200,00;Receita;Salário
 ```
 
-**Trade-off conhecido:** o `POST` faz S3 → banco → SQS em três passos sem transação distribuída; se o SQS falhar depois do insert, a importação fica `Pendente` órfã. A solução canônica seria estender o outbox pra publicação no SQS — documentado como evolução, não implementado pra manter o escopo.
-
 **LocalStack**: imagem fixada em `localstack/localstack:4` (community) — a tag `latest` passou a exigir `LOCALSTACK_AUTH_TOKEN` (licença Pro) e o container morria no boot. S3+SQS na edição community são gratuitos, dentro da restrição de custo zero.
+
+### Outbox estendida pro canal SQS (fecha o trade-off da importação de CSV)
+
+O trade-off documentado desde a Etapa 6 (*"o `POST` faz S3 → banco → SQS em três passos sem transação distribuída; se o SQS falhar depois do insert, a importação fica `Pendente` órfã"*) está fechado. `OutboxMessage` ganhou uma coluna `Canal` (`RabbitMq` ou `Sqs`, default `RabbitMq` — todas as linhas existentes continuam exatamente como estavam, zero mudança de comportamento pra elas). `ImportacaoRepository.AdicionarAsync` agora grava a `ImportacaoExtrato` **e** uma linha de outbox (`Tipo = "ImportacaoEnfileirar"`, `Payload` = o Guid da importação, `Canal = Sqs`) no mesmo `SaveChanges` — atômico por construção, mesma garantia que já existia pros eventos do RabbitMQ.
+
+Um segundo publicador, `ImportacaoOutboxPublisherService` (mesmo esqueleto de `PeriodicTimer` a cada 5s que `OutboxPublisherService` já usa pro RabbitMQ, só que fala com `IFilaImportacoes`/SQS em vez de um canal AMQP), lê só as linhas `Canal == Sqs` pendentes e as publica de verdade. Cada publicador filtra estritamente o próprio canal (`Where(x => x.Canal == ...)`) — sem essa distinção, o publicador do RabbitMQ tentaria "publicar" o comando de SQS como se fosse um evento de domínio desconhecido, e vice-versa.
+
+**Por que dois publicadores em vez de generalizar num só:** os dois canais têm formato de payload e biblioteca cliente completamente diferentes (JSON de evento de domínio + `RabbitMQ.Client` vs. Guid cru + `IAmazonSQS`) — uma abstração comum aqui só esconderia a diferença real sem simplificar nada. **Conceito de entrevista:** outbox pattern generalizado pra múltiplos canais de publicação via uma coluna discriminadora, não só "outbox = fila de mensageria" — o mesmo mecanismo de garantia de entrega (grava junto, publica depois, marca como processado) serve pra qualquer efeito colateral externo que precise ser atômico com uma escrita de banco, não só publicação em message broker.
+
+O endpoint `POST /importacoes` não fala mais com o SQS: antes fazia S3 → banco → SQS (three-passo síncrono, o SQS podia falhar deixando a importação órfã); agora faz S3 → banco (que já garante o enfileiramento futuro via outbox) e responde 202 imediatamente — o SQS de fato só é tocado pelo publicador, de forma assíncrona, com retry automático a cada ciclo se estiver indisponível no momento do POST.
+
+**Validado manualmente ponta a ponta** contra o LocalStack real: `POST /importacoes` → linha na outbox com `Canal = Sqs` → publicador pega a linha (~2,5s depois, dentro do ciclo de 5s) → mensagem no SQS → `ImportacaoExtratoWorker` processa → status `Concluida`. 2 testes novos em `Lancamentos.Tests` (`ImportacaoRepositoryTests`, via `Testcontainers.MsSql`) cobrindo a atomicidade e o isolamento entre canais — 166 testes verdes no total.
 
 ### Resiliência dos consumers RabbitMQ + Health Checks (Item 0 do backlog)
 

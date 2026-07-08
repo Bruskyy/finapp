@@ -1,5 +1,6 @@
 using System.Text;
 using BuildingBlocks.Contracts.Lancamentos;
+using Lancamentos.Infrastructure.Outbox;
 using Lancamentos.Infrastructure.Persistencia;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,7 +54,7 @@ public class OutboxPublisherService : BackgroundService
         var db = scope.ServiceProvider.GetRequiredService<LancamentosDbContext>();
 
         var pendentes = await db.OutboxMessages
-            .Where(x => x.ProcessadoEm == null)
+            .Where(x => x.ProcessadoEm == null && x.Canal == CanalOutbox.RabbitMq)
             .OrderBy(x => x.CriadoEm)
             .Take(20)
             .ToListAsync(ct);
