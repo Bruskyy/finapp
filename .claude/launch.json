@@ -10,6 +10,14 @@
       "autoPort": true
     },
     {
+      "name": "expo-go",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--lan"],
+      "cwd": "app",
+      "port": 8081,
+      "autoPort": true
+    },
+    {
       "name": "lancamentos-api",
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "src/Lancamentos/Lancamentos.Api"],
