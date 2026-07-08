@@ -146,7 +146,7 @@ public class LancamentosDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Tipo).HasMaxLength(200).IsRequired();
             e.Property(x => x.Payload).IsRequired();
-            e.HasIndex(x => x.ProcessadoEm); // o publicador consulta por pendentes (ProcessadoEm IS NULL)
+            e.HasIndex(x => new { x.Canal, x.ProcessadoEm }); // cada publicador consulta pendentes do próprio canal
         });
     }
 }
