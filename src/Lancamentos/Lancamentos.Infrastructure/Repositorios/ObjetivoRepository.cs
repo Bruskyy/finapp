@@ -30,6 +30,12 @@ public class ObjetivoRepository : IObjetivoRepository
         await _db.SaveChangesAsync(ct);
     }
 
+    public async Task<bool> RemoverAsync(Guid id, Guid usuarioId, CancellationToken ct)
+    {
+        var removidos = await _db.Objetivos.Where(x => x.Id == id && x.UsuarioId == usuarioId).ExecuteDeleteAsync(ct);
+        return removidos > 0;
+    }
+
     public async Task RegistrarAporteAsync(Objetivo objetivo, Lancamento lancamentoAporte, bool concluiu, CancellationToken ct)
     {
         _db.Lancamentos.Add(lancamentoAporte);

@@ -2,13 +2,14 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { aportarObjetivo, criarObjetivo, listarContas, listarObjetivos } from "../api/client";
+import { aportarObjetivo, criarObjetivo, excluirObjetivo, listarContas, listarObjetivos } from "../api/client";
 import BarraDeProgresso from "../componentes/BarraDeProgresso";
 import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
 import EstadoVazio from "../componentes/EstadoVazio";
 import Input from "../componentes/Input";
+import { confirmar } from "../confirmar";
 import { cor, espaco, fonte, formatarMoeda } from "../tema";
 import { Conta, Objetivo } from "../types";
 
@@ -69,6 +70,18 @@ export default function ObjetivosScreen() {
       setErro(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {
       setSalvando(false);
+    }
+  }
+
+  async function excluir(objetivo: Objetivo) {
+    const ok = await confirmar("Excluir meta", `"${objetivo.nome}" será removida.`);
+    if (!ok) return;
+
+    try {
+      await excluirObjetivo(objetivo.id);
+      setObjetivos((lista) => lista.filter((o) => o.id !== objetivo.id));
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro ao excluir.");
     }
   }
 
@@ -154,6 +167,14 @@ export default function ObjetivosScreen() {
               <Text style={estilos.valores}>
                 {formatarMoeda(item.valorAcumulado)} / {formatarMoeda(item.valorAlvo)}
               </Text>
+              <Pressable
+                onPress={() => excluir(item)}
+                hitSlop={8}
+                style={estilos.botaoExcluir}
+                accessibilityLabel={`Excluir ${item.nome}`}
+              >
+                <Ionicons name="trash-outline" size={18} color={cor.cinza500} />
+              </Pressable>
             </View>
 
             <BarraDeProgresso percentual={item.percentualConcluido} />
@@ -241,9 +262,10 @@ const estilos = StyleSheet.create({
   // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
   listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xxxl + espaco.xl },
   cartaoObjetivo: { marginBottom: espaco.md },
-  linhaTitulo: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.sm, gap: espaco.sm },
+  linhaTitulo: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: espaco.sm, gap: espaco.sm },
   nomeObjetivo: { ...fonte.tituloCard, color: cor.cinza900, flex: 1 },
   valores: { fontSize: 13, color: cor.cinza500 },
+  botaoExcluir: { padding: espaco.xs },
   dica: { fontSize: 12, color: cor.cinza500, marginTop: espaco.sm },
 
   blocoAporte: { marginTop: espaco.md },

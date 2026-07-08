@@ -320,6 +320,9 @@ app.MapPost("/objetivos/{id:guid}/aportes", async (Guid id, AporteRequest req, C
     return Results.Ok(ParaObjetivoResponse(objetivo));
 }).AddEndpointFilter<ValidationFilter<AporteRequest>>();
 
+app.MapDelete("/objetivos/{id:guid}", async (Guid id, ClaimsPrincipal principal, IObjetivoRepository repo, CancellationToken ct) =>
+    await repo.RemoverAsync(id, IdDoUsuario(principal), ct) ? Results.NoContent() : Results.NotFound());
+
 // ----- Categorias -----
 
 app.MapGet("/categorias", async (ClaimsPrincipal principal, ICategoriaRepository repo, CancellationToken ct) =>

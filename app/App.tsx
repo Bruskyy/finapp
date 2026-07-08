@@ -151,10 +151,20 @@ function DrawerPrincipal() {
   return (
     <Drawer.Navigator
       screenOptions={{
-        // Sem header: o ícone+nome de tela ali em cima não tinha nenhum
-        // botão funcional (o hambúrguer foi removido no Ajuste 1, o gatilho
-        // do drawer é só o item "Mais" da tab bar) - só ocupava espaço.
-        headerShown: false,
+        // Header mínimo (só o ícone de abrir/fechar o menu, sem título -
+        // cada tela já tem o próprio título interno) em todas as telas,
+        // EXCETO "Início" (abaixo, via options próprio) - lá o gatilho pra
+        // abrir o menu já é o item "Mais" da tab bar, um header aqui seria
+        // redundante (Ajuste 1). Nas outras 6 telas do Drawer (Moedas,
+        // Notificações, Perfil, Configurações, Personalizar, Fixas) NÃO
+        // existe tab bar nenhuma - sem esse header, abrir uma dessas telas
+        // virava um beco sem saída (nenhum jeito de voltar ou reabrir o
+        // menu a não ser dando F5).
+        headerShown: true,
+        headerTitle: "",
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: cor.fundoTela },
+        headerTintColor: cor.cinza900,
         // "right" no nativo (ergonomia: mesmo lado do gatilho "Mais" na tab
         // bar, thumb zone). No web cai pra "left" (padrão da lib) porque
         // drawerPosition="right" tem um bug aberto e não corrigido no
@@ -175,7 +185,7 @@ function DrawerPrincipal() {
       }}
       drawerContent={(props) => <DrawerContent {...props} />}
     >
-      <Drawer.Screen name="Início" component={TabsPrincipais} />
+      <Drawer.Screen name="Início" component={TabsPrincipais} options={{ headerShown: false }} />
       <Drawer.Screen name="Personalizar" component={PersonalizarInicioScreen} />
       <Drawer.Screen name="Moedas" component={MoedasScreen} />
       <Drawer.Screen name="Notificações" component={NotificacoesScreen} />
