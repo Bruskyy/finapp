@@ -35,20 +35,20 @@ public class AuthService
 {
     private readonly IUsuarioRepository _repositorio;
     private readonly IPasswordHasher<Usuario> _hasher;
-    private readonly JwtTokenGenerator _jwtGenerator;
+    private readonly RefreshTokenService _refreshTokens;
     private readonly IGoogleIdTokenValidator _googleValidator;
     private readonly string _googleClientId;
 
     public AuthService(
         IUsuarioRepository repositorio,
         IPasswordHasher<Usuario> hasher,
-        JwtTokenGenerator jwtGenerator,
+        RefreshTokenService refreshTokens,
         IGoogleIdTokenValidator googleValidator,
         IConfiguration configuracao)
     {
         _repositorio = repositorio;
         _hasher = hasher;
-        _jwtGenerator = jwtGenerator;
+        _refreshTokens = refreshTokens;
         _googleValidator = googleValidator;
         _googleClientId = configuracao["Google:ClientId"]
             ?? throw new InvalidOperationException("Configuração 'Google:ClientId' ausente.");
@@ -72,7 +72,8 @@ public class AuthService
         if (!sucesso)
             throw new EmailJaExisteException();
 
-        return new TokenResponse(_jwtGenerator.GerarToken(usuario), usuario.Nome, usuario.Email);
+        var tokens = await _refreshTokens.GerarParAsync(usuario, ct);
+        return new TokenResponse(tokens.AccessToken, tokens.RefreshToken, usuario.Nome, usuario.Email);
     }
 
     public async Task<TokenResponse> LoginAsync(string email, string senha, CancellationToken ct)
@@ -88,7 +89,8 @@ public class AuthService
         if (resultado == PasswordVerificationResult.Failed)
             throw new CredenciaisInvalidasException();
 
-        return new TokenResponse(_jwtGenerator.GerarToken(usuario), usuario.Nome, usuario.Email);
+        var tokens = await _refreshTokens.GerarParAsync(usuario, ct);
+        return new TokenResponse(tokens.AccessToken, tokens.RefreshToken, usuario.Nome, usuario.Email);
     }
 
     public async Task<TokenResponse> LoginComGoogleAsync(string idToken, CancellationToken ct)
@@ -117,7 +119,8 @@ public class AuthService
             await _repositorio.AdicionarAsync(usuario, ct);
         }
 
-        return new TokenResponse(_jwtGenerator.GerarToken(usuario), usuario.Nome, usuario.Email);
+        var tokens = await _refreshTokens.GerarParAsync(usuario, ct);
+        return new TokenResponse(tokens.AccessToken, tokens.RefreshToken, usuario.Nome, usuario.Email);
     }
 
     public async Task<UsuarioResponse> AtualizarPerfilAsync(Guid usuarioId, string novoNome, CancellationToken ct)

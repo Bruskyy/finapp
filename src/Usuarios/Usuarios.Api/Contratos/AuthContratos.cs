@@ -4,7 +4,11 @@ public record RegistrarRequest(string Nome, string Email, string Senha);
 
 public record LoginRequest(string Email, string Senha);
 
-public record TokenResponse(string Token, string Nome, string Email);
+public record TokenResponse(string Token, string RefreshToken, string Nome, string Email);
+
+public record RenovarTokenRequest(string RefreshToken);
+
+public record RenovarTokenResponse(string Token, string RefreshToken);
 
 public record UsuarioResponse(Guid Id, string Nome, string Email, DateTime CriadoEm);
 

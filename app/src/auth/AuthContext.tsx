@@ -1,13 +1,23 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import {
+  definirCallbacksDeRenovacao,
+  definirRefreshToken,
   definirToken,
   login as apiLogin,
   loginComGoogle as apiLoginComGoogle,
+  logoutRemoto,
   obterUsuarioLogado,
   registrar as apiRegistrar,
 } from "../api/client";
 import { Usuario } from "../types";
-import { obterToken, removerToken, salvarToken } from "./armazenamentoToken";
+import {
+  obterRefreshToken,
+  obterToken,
+  removerRefreshToken,
+  removerToken,
+  salvarRefreshToken,
+  salvarToken,
+} from "./armazenamentoToken";
 
 type StatusAuth = "carregando" | "autenticado" | "nao-autenticado";
 
@@ -28,33 +38,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<StatusAuth>("carregando");
   const [usuario, setUsuario] = useState<Usuario | null>(null);
 
-  // Restaura a sessão salva no boot do app: se existir um token, valida
-  // contra GET /me (garante que não está expirado/revogado) antes de deixar
-  // o usuário entrar direto nas telas autenticadas.
+  async function limparSessao() {
+    await Promise.all([removerToken(), removerRefreshToken()]);
+    definirToken(null);
+    definirRefreshToken(null);
+    setUsuario(null);
+    setStatus("nao-autenticado");
+  }
+
+  async function logout() {
+    const refreshToken = await obterRefreshToken();
+    if (refreshToken) {
+      // Best-effort: mesmo se a chamada falhar (ex: sem rede), a sessão
+      // local é limpa do mesmo jeito - o refresh token, se não conseguimos
+      // revogar agora, expira sozinho no prazo normal dele.
+      await logoutRemoto(refreshToken).catch(() => {});
+    }
+    await limparSessao();
+  }
+
+  // client.ts não tem acesso ao SecureStore - registra aqui os callbacks
+  // que ele chama quando renova os tokens sozinho (sucesso: persiste o
+  // novo par; falha definitiva - refresh token expirado/revogado/reuso
+  // detectado: força o mesmo logout de sempre).
+  useEffect(() => {
+    definirCallbacksDeRenovacao(
+      (token, refreshToken) => {
+        salvarToken(token);
+        salvarRefreshToken(refreshToken);
+      },
+      () => {
+        limparSessao();
+      }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Restaura a sessão salva no boot do app: se existirem os dois tokens,
+  // valida contra GET /me (garante que o access token não está expirado
+  // OU que dá pra renovar - a renovação automática de requisitar() cobre
+  // esse caso) antes de deixar o usuário entrar direto nas telas
+  // autenticadas.
   useEffect(() => {
     (async () => {
-      const tokenSalvo = await obterToken();
-      if (!tokenSalvo) {
+      const [tokenSalvo, refreshSalvo] = await Promise.all([obterToken(), obterRefreshToken()]);
+      if (!tokenSalvo || !refreshSalvo) {
         setStatus("nao-autenticado");
         return;
       }
 
       definirToken(tokenSalvo);
+      definirRefreshToken(refreshSalvo);
       try {
         const usuarioAtual = await obterUsuarioLogado();
         setUsuario(usuarioAtual);
         setStatus("autenticado");
       } catch {
-        await removerToken();
-        definirToken(null);
-        setStatus("nao-autenticado");
+        await limparSessao();
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function autenticarComToken(token: string) {
-    await salvarToken(token);
+  async function autenticarComToken(token: string, refreshToken: string) {
+    await Promise.all([salvarToken(token), salvarRefreshToken(refreshToken)]);
     definirToken(token);
+    definirRefreshToken(refreshToken);
     const usuarioAtual = await obterUsuarioLogado();
     setUsuario(usuarioAtual);
     setStatus("autenticado");
@@ -62,26 +111,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, senha: string) {
     const resposta = await apiLogin({ email, senha });
-    await autenticarComToken(resposta.token);
+    await autenticarComToken(resposta.token, resposta.refreshToken);
   }
 
   async function loginComGoogle(idToken: string) {
     const resposta = await apiLoginComGoogle(idToken);
-    await autenticarComToken(resposta.token);
+    await autenticarComToken(resposta.token, resposta.refreshToken);
   }
 
   async function registrar(nome: string, email: string, senha: string) {
     const resposta = await apiRegistrar({ nome, email, senha });
-    await autenticarComToken(resposta.token);
-  }
-
-  async function logout() {
-    // JWT é stateless - não há sessão no servidor pra invalidar, então
-    // "sair" é só o cliente esquecer o token que guardou.
-    await removerToken();
-    definirToken(null);
-    setUsuario(null);
-    setStatus("nao-autenticado");
+    await autenticarComToken(resposta.token, resposta.refreshToken);
   }
 
   return (

@@ -46,3 +46,11 @@ public class LoginGoogleRequestValidator : AbstractValidator<LoginGoogleRequest>
         RuleFor(x => x.IdToken).NotEmpty();
     }
 }
+
+public class RenovarTokenRequestValidator : AbstractValidator<RenovarTokenRequest>
+{
+    public RenovarTokenRequestValidator()
+    {
+        RuleFor(x => x.RefreshToken).NotEmpty();
+    }
+}

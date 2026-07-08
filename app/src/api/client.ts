@@ -12,6 +12,7 @@ import {
   Objetivo,
   PaginaLancamentos,
   RegistrarRequest,
+  RenovarTokenResponse,
   Tag,
   OrcamentoStatus,
   Recorrencia,
@@ -59,23 +60,105 @@ function resolverGatewayUrl(): string {
 const GATEWAY_URL = resolverGatewayUrl();
 
 // "Token holder" fora do React: client.ts é um módulo de funções puras sem
-// acesso a Context, então o AuthContext chama definirToken() sempre que o
-// token muda (login, restauração no boot, logout) e requisitar() só lê essa
-// variável - evita reescrever as ~20 funções exportadas deste arquivo.
+// acesso a Context, então o AuthContext chama definirToken()/
+// definirRefreshToken() sempre que os tokens mudam (login, restauração no
+// boot, logout) e requisitar() só lê essas variáveis - evita reescrever as
+// ~20 funções exportadas deste arquivo.
 let tokenAtual: string | null = null;
+let refreshTokenAtual: string | null = null;
 
 export function definirToken(token: string | null): void {
   tokenAtual = token;
 }
 
-async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (tokenAtual) headers.Authorization = `Bearer ${tokenAtual}`;
+export function definirRefreshToken(token: string | null): void {
+  refreshTokenAtual = token;
+}
 
-  const resposta = await fetch(`${GATEWAY_URL}${caminho}`, {
-    headers,
-    ...init,
-  });
+// client.ts não tem acesso ao SecureStore (isso é responsabilidade do
+// AuthContext/armazenamentoToken.ts) - então quando renova os tokens
+// sozinho (ver renovarTokens abaixo) avisa a camada de auth via esses
+// callbacks pra persistir o novo par ou forçar logout se a renovação
+// falhar de vez (refresh token expirado/revogado/reuso detectado).
+let aoRenovarTokens: ((token: string, refreshToken: string) => void) | null = null;
+let aoRenovacaoFalhar: (() => void) | null = null;
+
+export function definirCallbacksDeRenovacao(
+  onRenovar: (token: string, refreshToken: string) => void,
+  onFalhar: () => void
+): void {
+  aoRenovarTokens = onRenovar;
+  aoRenovacaoFalhar = onFalhar;
+}
+
+// Rotas que não devem disparar a renovação automática: login/registrar
+// podem devolver 401 por credenciais erradas (nada a ver com token
+// expirado), e /refresh/logout já são chamados fora de requisitar() ou
+// nunca devolvem 401 - incluídos aqui só como defesa extra contra loop.
+const CAMINHOS_SEM_RENOVACAO = new Set([
+  "/api/usuarios/login",
+  "/api/usuarios/registrar",
+  "/api/usuarios/login-google",
+  "/api/usuarios/refresh",
+  "/api/usuarios/logout",
+]);
+
+// Evita que N chamadas em paralelo que tomam 401 ao mesmo tempo (ex: várias
+// telas recarregando dados quando o app volta de segundo plano) disparem N
+// renovações simultâneas - só a primeira chama /refresh de verdade, as
+// outras esperam essa mesma Promise (padrão "single-flight").
+let renovacaoEmAndamento: Promise<boolean> | null = null;
+
+async function renovarTokens(): Promise<boolean> {
+  if (!refreshTokenAtual) return false;
+
+  if (!renovacaoEmAndamento) {
+    renovacaoEmAndamento = (async () => {
+      try {
+        const resposta = await fetch(`${GATEWAY_URL}/api/usuarios/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken: refreshTokenAtual }),
+        });
+        if (!resposta.ok) return false;
+
+        const dados: RenovarTokenResponse = await resposta.json();
+        tokenAtual = dados.token;
+        refreshTokenAtual = dados.refreshToken;
+        aoRenovarTokens?.(dados.token, dados.refreshToken);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        renovacaoEmAndamento = null;
+      }
+    })();
+  }
+
+  return renovacaoEmAndamento;
+}
+
+async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
+  const executar = () => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (tokenAtual) headers.Authorization = `Bearer ${tokenAtual}`;
+    return fetch(`${GATEWAY_URL}${caminho}`, { headers, ...init });
+  };
+
+  let resposta = await executar();
+
+  // Access token expirado (dura só 15 min - ver README, "Autenticação
+  // real"): tenta renovar uma vez e repete a chamada original com o token
+  // novo. Só se aplica a chamada que já ia autenticada; se a renovação
+  // falhar, avisa o AuthContext (força logout) e segue pro erro normal.
+  if (resposta.status === 401 && tokenAtual && !CAMINHOS_SEM_RENOVACAO.has(caminho)) {
+    const renovou = await renovarTokens();
+    if (renovou) {
+      resposta = await executar();
+    } else {
+      aoRenovacaoFalhar?.();
+    }
+  }
 
   if (!resposta.ok) {
     const corpo = await resposta.text().catch(() => "");
@@ -97,6 +180,11 @@ export function login(dto: LoginRequest): Promise<TokenResponse> {
 
 export function loginComGoogle(idToken: string): Promise<TokenResponse> {
   return requisitar("/api/usuarios/login-google", { method: "POST", body: JSON.stringify({ idToken }) });
+}
+
+/** Revoga o refresh token no servidor - chamado no logout explícito do usuário. */
+export function logoutRemoto(refreshToken: string): Promise<void> {
+  return requisitar("/api/usuarios/logout", { method: "POST", body: JSON.stringify({ refreshToken }) });
 }
 
 export function obterUsuarioLogado(): Promise<Usuario> {
