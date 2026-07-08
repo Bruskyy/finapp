@@ -37,7 +37,7 @@ efeito de "desbloquear" o próximo item (ex: o mentor determinístico da Onda
 
 ## Onda 1 — Engajamento barato (zero infra nova, reaproveita dados existentes)
 
-### 1. Onboarding inteligente
+### 1. Onboarding inteligente — ✅ feito, ver README ("Onboarding inteligente e a primeira escrita cross-service síncrona")
 **O que é nos apps de referência:** Mobills/Organizze pedem só e-mail/senha;
 nenhum personaliza a primeira experiência.
 **Proposta:** telas de perfil no cadastro (momento de vida, maior objetivo,
@@ -47,6 +47,10 @@ do "maior objetivo"), card de destaque no Dashboard nomeado com o objetivo
 escolhido ("Sua Reserva", "Seu Notebook" em vez de "Meta em destaque"
 genérico).
 **Esforço:** M. **Custo:** R$0 — só schema novo (`Usuario.Perfil`) + telas.
+**Nota de escopo:** a "sugestão de categorias" ficou de fora desta rodada
+— sem endpoint pra criar categoria global e as 7 categorias globais já
+existentes cobrem a maioria dos casos, o valor de reordenar por perfil
+era incerto. Continua como pendência menor em aberto.
 **Nota técnica:** perfil pode virar `enum`/tabela de referência; nenhuma
 integração externa.
 

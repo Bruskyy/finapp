@@ -1,32 +1,24 @@
 import { StyleSheet, Text, View } from "react-native";
-import { cor, espaco, fonte, formatarMoeda } from "../tema";
+import { espaco, cor, formatarMoeda } from "../tema";
 import { Objetivo } from "../types";
 import BarraDeProgresso from "./BarraDeProgresso";
 
-/** Mostra a meta mais perto de ser concluída — motivação rápida no Dashboard. */
-export default function MetaDestaque({ objetivos }: { objetivos: Objetivo[] }) {
-  const emAndamento = objetivos.filter((o) => !o.concluido);
-  if (emAndamento.length === 0) return null;
-
-  const destaque = [...emAndamento].sort((a, b) => b.percentualConcluido - a.percentualConcluido)[0];
-
+/**
+ * Valores + progresso da meta em destaque. O nome já aparece no título do
+ * card em DashboardScreen.tsx (que também decide QUAL meta é a destaque -
+ * mais perto de ser concluída), então este componente não repete o nome.
+ */
+export default function MetaDestaque({ destaque }: { destaque: Objetivo }) {
   return (
     <View>
-      <View style={estilos.linhaTitulo}>
-        <Text style={estilos.nome} numberOfLines={1}>
-          {destaque.nome}
-        </Text>
-        <Text style={estilos.valores}>
-          {formatarMoeda(destaque.valorAcumulado)} / {formatarMoeda(destaque.valorAlvo)}
-        </Text>
-      </View>
+      <Text style={estilos.valores}>
+        {formatarMoeda(destaque.valorAcumulado)} / {formatarMoeda(destaque.valorAlvo)}
+      </Text>
       <BarraDeProgresso percentual={destaque.percentualConcluido} />
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  linhaTitulo: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.sm, gap: espaco.sm },
-  nome: { ...fonte.tituloCard, color: cor.cinza900, flex: 1 },
-  valores: { fontSize: 13, color: cor.cinza500 },
+  valores: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.sm },
 });

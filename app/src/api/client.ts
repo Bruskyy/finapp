@@ -11,6 +11,7 @@ import {
   Notificacao,
   Objetivo,
   PaginaLancamentos,
+  PerfilOnboardingRequest,
   RegistrarRequest,
   RenovarTokenResponse,
   Tag,
@@ -200,6 +201,14 @@ export function trocarSenha(senhaAtual: string, novaSenha: string): Promise<void
     method: "PUT",
     body: JSON.stringify({ senhaAtual, novaSenha }),
   });
+}
+
+export function salvarPerfilOnboarding(dto: PerfilOnboardingRequest): Promise<Usuario> {
+  return requisitar("/api/usuarios/perfil-onboarding", { method: "PUT", body: JSON.stringify(dto) });
+}
+
+export function pularPerfilOnboarding(): Promise<Usuario> {
+  return requisitar("/api/usuarios/perfil-onboarding/pular", { method: "POST" });
 }
 
 // ----- Lançamentos -----
