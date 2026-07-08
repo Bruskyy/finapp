@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Segredos/URLs reais de deploy (Etapa 7) - nunca versionar
+DEPLOY-SECRETS.local.md
+
 # User-specific files
 *.rsuser
 *.suo
