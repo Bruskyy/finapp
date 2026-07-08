@@ -431,3 +431,41 @@ Três novos tokens em `tokens.ts`: `cor.marcaFundo` (`#0B0B0D`), `cor.marcaDoura
 **O que não mudou (intocado de propósito):** botões de ação primária continuam azuis, verde/vermelho de receita/despesa nas listas de lançamentos e nos orçamentos, ícones/cores de categoria — nenhum desses foi tocado.
 
 **Nota sobre verificação visual:** a ferramenta de screenshot do preview apresentou instabilidade recorrente durante esta sessão (mesmo com o servidor saudável e sem erros no console) — a verificação desta mudança foi feita via inspeção de estilo computado (`getComputedStyle`/`getBoundingClientRect`, confirmando cores exatas em hex e posicionamento correto dos elementos) em vez de capturas de tela pixel-a-pixel. Recomendado conferir visualmente no preview quando conveniente.
+
+### Deploy gratuito: Render + Azure SQL + Neon + CloudAMQP (Etapa 7)
+
+**Por que não "Render/Fly" como o backlog original previa:** Fly.io parou de oferecer free tier pra contas novas em 2024 — hoje exige cartão de crédito só pra criar conta, sem free allowance nenhum. Ficou só Render pro compute.
+
+**Uma peça de cada tipo de recurso, cada uma no provedor que sobrou de graça pra ela:**
+- **Compute (os 5 serviços .NET)** — Render, Web Services via Docker (Render não tem runtime nativo de .NET, só Docker). Free tier de verdade, sem cartão, mas **sem disco persistente** e os serviços **hibernam após 15 minutos sem tráfego** (cold start de ~30-60s na primeira requisição depois disso — trade-off aceito e conhecido, não é bug).
+- **PostgreSQL (Gamificacao, Notificacoes, Usuarios)** — Neon, um projeto separado por serviço (mantém a isolação *database per service* que já existia localmente, onde cada um tinha seu próprio banco dentro do mesmo Postgres do Docker Compose). Sem cartão.
+- **SQL Server (Lancamentos)** — este foi o ponto sem solução gratuita "de verdade": não existe hoje hospedagem gerenciada de SQL Server sem exigir cartão de crédito no cadastro (nem rodar o `mssql-server-linux` num container do Render funcionaria — o free tier não tem disco persistente, o banco seria apagado a cada hibernação). Optado por **Azure SQL Database** (tier serverless, free offer) — cartão cadastrado na conta Azure, mas sem sair do plano gratuito.
+- **RabbitMQ** — CloudAMQP, plano Little Lemur (instância compartilhada). Sem cartão.
+
+**Toda a configuração de produção vem de variáveis de ambiente**, sem nenhum `appsettings.Production.json` — os 5 serviços já liam `Jwt:SecretKey`/`ConnectionStrings:*`/`RabbitMq:*` assim desde as fases anteriores (zero trust, database per service). Os nomes de env var seguem a convenção padrão do ASP.NET Core (`Section__Chave`, dois underscores por nível), por exemplo `ConnectionStrings__LancamentosDb`, `Jwt__SecretKey`, `RabbitMq__VirtualHost`. Valores reais (connection strings, senha do login SQL, credenciais da CloudAMQP) **não estão neste repositório** — ficam num arquivo local (`DEPLOY-SECRETS.local.md`, no `.gitignore`) só pra referência de quem já tem acesso aos provedores.
+
+**Dois bugs reais encontrados só ao testar contra o ambiente de nuvem de verdade** (nenhum dos dois aparecia rodando local — ambos viraram PR próprio, testados e mergeados):
+
+1. **RabbitMQ sem suporte a virtual host/TLS**: `RabbitMqOptions` (nos 3 serviços que publicam/consomem eventos) só sabia falar com um broker sem autenticação forte, no vhost padrão `/` — exatamente o RabbitMQ local do Docker Compose. Provedores gerenciados de RabbitMQ usam TLS e um vhost próprio por instância (normalmente igual ao usuário). Faltavam duas propriedades (`VirtualHost`, `UsarTls`) nos 3 `RabbitMqOptions` e nos 5 pontos que constroem `ConnectionFactory` — sem isso, a conexão falharia ou vazaria pro vhost errado.
+2. **Rotas do Gateway (YARP) só existiam em `appsettings.Development.json`**, que não carrega em produção. O Gateway deployado subia normal e `/health` respondia 200 (ele nem depende do YARP) — mas toda chamada de API dava 404, porque nenhuma rota estava registrada (só os destinos dos clusters chegavam via env var). Fix: as 16 rotas — que não mudam entre ambientes, só os destinos dos clusters mudam — migraram pro `appsettings.json` base, que carrega em qualquer ambiente.
+
+**Sem versão web publicada, por decisão deliberada** — o app mobile (via Expo Go/preview local) é o foco desta etapa; a versão web vai virar um dashboard separado no futuro, então não faz sentido publicar um build estático agora. `app/src/api/client.ts` ganhou um override opcional (`EXPO_PUBLIC_GATEWAY_URL`) pra apontar o app pro backend deployado sem mexer em código, útil pra testar o fluxo completo contra o ambiente real a partir do celular.
+
+**Verificação:** validado de ponta a ponta contra as URLs reais do Render (não só localmente) — registro, login, `/me`, criar conta (grava no Azure SQL), listar categorias, saldo de moedas (lê do Neon) e notificações (lê do Neon), todos respondendo corretamente através do Gateway. `dotnet build`/`dotnet test` (156 verdes) e `docker build` de cada um dos 5 serviços conferidos antes de depender do Render pra achar erro de build.
+
+## Arquitetura AWS/Azure
+
+Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
+
+| Neste projeto | AWS | Azure |
+|---|---|---|
+| Render (compute, 5 serviços .NET em containers) | Elastic Beanstalk / App Runner / ECS Fargate | App Service (contêiner) / Container Apps |
+| Azure SQL Database (Lancamentos) | RDS for SQL Server | Azure SQL Database (já é o mesmo produto, aqui no tier free) |
+| Neon (Gamificacao/Notificacoes/Usuarios, PostgreSQL) | RDS for PostgreSQL / Aurora PostgreSQL | Azure Database for PostgreSQL |
+| CloudAMQP (RabbitMQ gerenciado) | Amazon MQ (motor RabbitMQ) | Azure Service Bus (conceito equivalente; motor diferente, é AMQP mas não é RabbitMQ) |
+| LocalStack (S3 + SQS, só localmente — ver Etapa 6) | S3 + SQS reais | Azure Blob Storage + Azure Queue Storage |
+| GitHub Actions (CI) | CodeBuild/CodePipeline | Azure Pipelines |
+| YARP no Gateway.Api | API Gateway (Amazon API Gateway) | Azure API Management / Application Gateway |
+| `dotnet user-secrets` (dev) / env vars (prod) | Secrets Manager / Parameter Store | Azure Key Vault |
+
+**Por que não migrar de vez pra AWS/Azure "de verdade":** custo. Os equivalentes gerenciados acima têm tier gratuito bem mais curto (12 meses, não "sempre") ou nenhum tier gratuito genuíno — incompatível com a restrição de custo R$0 do projeto. A tabela documenta a equivalência conceitual (o que se discutiria numa entrevista técnica), não uma migração planejada.
