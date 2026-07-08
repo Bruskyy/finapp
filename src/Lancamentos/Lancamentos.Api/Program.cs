@@ -457,6 +457,9 @@ app.MapGet("/relatorios/evolucao-mensal", async (int? meses, ClaimsPrincipal pri
     return Results.Ok(await repo.EvolucaoMensalAsync(quantidade, IdDoUsuario(principal), ct));
 });
 
+app.MapGet("/relatorios/marcos", async (ClaimsPrincipal principal, IRelatorioRepository repo, CancellationToken ct) =>
+    Results.Ok(await repo.MarcosAsync(IdDoUsuario(principal), ct)));
+
 app.MapHealthChecks("/health").AllowAnonymous();
 
 if (app.Environment.IsDevelopment())

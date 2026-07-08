@@ -61,6 +61,27 @@ public class ObjetivoTests
     }
 
     [Fact]
+    public void Aportar_AtingindoOAlvo_DeveRegistrarConcluidoEm()
+    {
+        var objetivo = Viagem(alvo: 1000m);
+
+        Assert.Null(objetivo.ConcluidoEm);
+        objetivo.Aportar(1000m);
+
+        Assert.NotNull(objetivo.ConcluidoEm);
+    }
+
+    [Fact]
+    public void Aportar_AbaixoDoAlvo_NaoDeveRegistrarConcluidoEm()
+    {
+        var objetivo = Viagem(alvo: 1000m);
+
+        objetivo.Aportar(400m);
+
+        Assert.Null(objetivo.ConcluidoEm);
+    }
+
+    [Fact]
     public void Aportar_DepoisDeConcluido_DeveLancarExcecao()
     {
         var objetivo = Viagem(alvo: 100m);

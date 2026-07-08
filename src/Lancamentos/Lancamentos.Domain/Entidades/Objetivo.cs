@@ -13,6 +13,10 @@ public class Objetivo
     public DateTime DataAlvo { get; private set; }
     public decimal ValorAcumulado { get; private set; }
     public bool Concluido { get; private set; }
+    // Nulo até o aporte que concluiu a meta (ver Aportar) - metas
+    // concluídas antes desta coluna existir ficam sem essa data, sem
+    // backfill possível (a informação nunca foi registrada).
+    public DateTime? ConcluidoEm { get; private set; }
     public Guid? UsuarioId { get; private set; }
     public DateTime CriadoEm { get; private set; }
 
@@ -50,6 +54,7 @@ public class Objetivo
         if (ValorAcumulado >= ValorAlvo)
         {
             Concluido = true;
+            ConcluidoEm = DateTime.UtcNow;
             return true;
         }
 

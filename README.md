@@ -503,6 +503,14 @@ Primeiro item do backlog de produto (fora do escopo original de preparação de 
 
 **Bug real encontrado testando manualmente (race condition):** a primeira versão chamava `atualizarUsuario()` (que dispara a navegação pro Dashboard) **antes** de `criarObjetivo()` terminar — o Dashboard montava e buscava `GET /objetivos` antes do `POST /objetivos` ter sido processado, mostrando a lista vazia mesmo com a criação tendo funcionado (confirmado via rede: o `POST /objetivos` retornava 201, mas o `GET /objetivos` seguinte, alguns milissegundos depois, ainda não via a nova linha). Fix: inverter a ordem — criar o objetivo (ou falhar tentando, sem bloquear) **antes** de atualizar o usuário no `AuthContext`. Só foi possível achar isso testando o fluxo real ponta a ponta no preview, não em teste automatizado — reforça por que a checklist de verificação manual deste projeto sempre inclui o fluxo completo, não só as chamadas isoladas.
 
+### Linha do tempo de marcos financeiros (BACKLOG-PRODUTO.md, Onda 1, item 2)
+
+Segundo item do backlog de produto. Nova seção "Sua jornada" em `PerfilScreen.tsx`: lista cronológica de marcos (primeiro lançamento, primeira meta criada, primeira meta concluída, primeiro orçamento definido, conta criada) + "X dias de jornada no Cofrin". **Sem tabela nova** — cada marco é a primeira ocorrência (`MIN`/`OrderBy().Take(1)`) de uma entidade que já existe, exposta por um único endpoint novo, `GET /relatorios/marcos` (`RelatorioRepository.MarcosAsync`, LINQ simples — diferente das agregações pesadas do resto de `RelatorioRepository`, que usam view/procedure nativa; um `MIN` trivial por usuário não justifica SQL nativo, mesmo padrão dos outros repositórios do serviço).
+
+**Lacuna de schema encontrada:** `Objetivo` tinha `Concluido` (bool) mas nenhuma data de conclusão — impossível saber *quando* uma meta foi concluída. Adicionada `ConcluidoEm` (nullable, setada dentro de `Aportar()` no momento em que `Concluido` vira `true`). **Sem backfill:** metas concluídas antes desta coluna existir ficam com `ConcluidoEm = null` pra sempre — a informação nunca foi registrada, não tem como reconstruir. O marco "primeira meta concluída" só aparece pra conclusões que aconteceram depois deste deploy — trade-off documentado, mesmo padrão já usado em outras entidades do projeto (fases de multi-tenancy, notificações).
+
+`usuario.criadoEm` (já carregado no boot via `GET /me`, sem chamada nova) e os marcos de `Lancamentos.Api` são combinados no cliente — mesmo padrão de `DashboardScreen.tsx` de misturar dado de múltiplos microserviços numa única tela, mas aqui só leitura, sem a complexidade de escrita cross-service do item anterior.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

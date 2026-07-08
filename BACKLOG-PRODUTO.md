@@ -54,7 +54,7 @@ era incerto. Continua como pendência menor em aberto.
 **Nota técnica:** perfil pode virar `enum`/tabela de referência; nenhuma
 integração externa.
 
-### 2. Linha do tempo de marcos
+### 2. Linha do tempo de marcos — ✅ feito, ver README ("Linha do tempo de marcos financeiros")
 **O que é nos apps de referência:** nenhum tem isso — é diferenciação real,
 não paridade.
 **Proposta:** tela em Perfil listando marcos derivados de eventos que já
