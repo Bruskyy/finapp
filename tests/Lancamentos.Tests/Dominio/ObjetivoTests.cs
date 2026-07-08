@@ -132,4 +132,56 @@ public class ObjetivoTests
 
         Assert.Equal(0, objetivo.ValorMensalNecessario(Hoje));
     }
+
+    // PrevisaoConclusaoEm depende de CriadoEm, que o construtor sempre seta
+    // como DateTime.UtcNow real (não o parâmetro "hoje", usado só pra
+    // validar que a data-alvo está no futuro) - por isso estes testes usam
+    // DateTime.UtcNow como referência, não a constante Hoje fixa do resto
+    // do arquivo.
+
+    [Fact]
+    public void PrevisaoConclusaoEm_SemAportes_DeveRetornarNull()
+    {
+        var objetivo = Viagem();
+
+        Assert.Null(objetivo.PrevisaoConclusaoEm(DateTime.UtcNow.AddDays(10)));
+    }
+
+    [Fact]
+    public void PrevisaoConclusaoEm_ObjetivoConcluido_DeveRetornarDataDaConclusao()
+    {
+        var objetivo = Viagem(alvo: 100m);
+        objetivo.Aportar(100m);
+
+        Assert.Equal(objetivo.ConcluidoEm, objetivo.PrevisaoConclusaoEm(DateTime.UtcNow.AddDays(5)));
+    }
+
+    [Fact]
+    public void PrevisaoConclusaoEm_ComRitmoAtual_DeveProjetarPelaTaxaMediaDesdeACriacao()
+    {
+        // acumulou 1000 em ~10 dias -> ritmo de 3000/mês (normalizado pra
+        // mês de 30 dias); falta 4000 -> 4000/3000 = 1,333... mês -> 40 dias
+        var objetivo = Viagem(alvo: 5000m);
+        objetivo.Aportar(1000m);
+        var hoje = DateTime.UtcNow.AddDays(10);
+
+        var previsao = objetivo.PrevisaoConclusaoEm(hoje);
+
+        Assert.Equal(hoje.Date.AddDays(40), previsao!.Value.Date);
+    }
+
+    [Fact]
+    public void PrevisaoConclusaoEm_RitmoAtualMaisRapidoQueOPrazo_DeveAdiantar()
+    {
+        // meta com prazo em 2026-12-01 (fixado em Hoje=2026-07-04, ~5 meses);
+        // aportou metade do valor em só 5 dias reais -> ritmo bem acima do
+        // necessário -> previsão de conclusão vem antes da data-alvo.
+        var objetivo = Viagem(alvo: 1000m, dataAlvo: new DateTime(2026, 12, 1));
+        objetivo.Aportar(500m);
+        var hoje = DateTime.UtcNow.AddDays(5);
+
+        var previsao = objetivo.PrevisaoConclusaoEm(hoje);
+
+        Assert.True(previsao < objetivo.DataAlvo);
+    }
 }

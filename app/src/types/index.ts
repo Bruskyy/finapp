@@ -82,6 +82,7 @@ export interface Objetivo {
   percentualConcluido: number;
   valorMensalNecessario: number;
   concluido: boolean;
+  previsaoConclusaoEm: string | null;
 }
 
 export interface GastoPorCategoria {

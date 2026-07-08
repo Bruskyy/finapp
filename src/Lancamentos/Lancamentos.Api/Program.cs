@@ -491,7 +491,8 @@ static RecorrenciaResponse ParaRecorrenciaResponse(LancamentoRecorrente r) =>
 
 static ObjetivoResponse ParaObjetivoResponse(Objetivo o) =>
     new(o.Id, o.Nome, o.ValorAlvo, o.DataAlvo, o.ValorAcumulado,
-        o.PercentualConcluido, o.ValorMensalNecessario(DateTime.Today), o.Concluido);
+        o.PercentualConcluido, o.ValorMensalNecessario(DateTime.Today), o.Concluido,
+        o.PrevisaoConclusaoEm(DateTime.Today));
 
 static Guid IdDoUsuario(ClaimsPrincipal principal) =>
     Guid.Parse(principal.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)!);

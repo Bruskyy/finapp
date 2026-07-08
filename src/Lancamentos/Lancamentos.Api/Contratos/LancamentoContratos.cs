@@ -60,4 +60,5 @@ public record ObjetivoResponse(
     decimal ValorAcumulado,
     decimal PercentualConcluido,
     decimal ValorMensalNecessario,
-    bool Concluido);
+    bool Concluido,
+    DateTime? PrevisaoConclusaoEm);

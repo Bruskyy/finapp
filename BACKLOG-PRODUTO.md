@@ -65,7 +65,7 @@ concluída, primeiro orçamento definido, "X dias desde que você começou").
 uma query agregada, não precisa persistir "marcos" como conceito próprio
 no primeiro corte).
 
-### 3. "Seu Futuro" — projeções determinísticas
+### 3. "Seu Futuro" — projeções determinísticas — ✅ feito, ver README ("Seu Futuro — projeção determinística de conclusão da meta")
 **O que é nos apps de referência:** Mobills tem previsão de fatura; nenhum
 projeta "quando você vai atingir sua meta no ritmo atual" de forma
 proativa no Dashboard.
