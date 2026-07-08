@@ -8,7 +8,7 @@ import { createDrawerNavigator } from "@react-navigation/drawer";
 import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from "react-native";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
 import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
@@ -155,7 +155,23 @@ function DrawerPrincipal() {
         // botão funcional (o hambúrguer foi removido no Ajuste 1, o gatilho
         // do drawer é só o item "Mais" da tab bar) - só ocupava espaço.
         headerShown: false,
-        drawerPosition: "right",
+        // "right" no nativo (ergonomia: mesmo lado do gatilho "Mais" na tab
+        // bar, thumb zone). No web cai pra "left" (padrão da lib) porque
+        // drawerPosition="right" tem um bug aberto e não corrigido no
+        // @react-navigation/drawer especificamente no web (github.com/
+        // react-navigation/react-navigation issue #12511: a medição de
+        // largura da tela não acompanha corretamente o layout real,
+        // deixando o drawer mal posicionado/visível fora de hora) -
+        // reproduzido de verdade num celular real rodando o build de
+        // produção. "left" não tem esse bug.
+        drawerPosition: Platform.OS === "web" ? "left" : "right",
+        // Mesma causa: força overlay sempre, sem depender da decisão
+        // automática "front" x "permanent" que o @react-navigation/drawer
+        // faz via useWindowDimensions - no web essa medição também saiu
+        // errada, fazendo o app inteiro renderizar encolhido com o drawer
+        // ocupando um painel lateral fixo (comportamento pensado pra
+        // tablet/desktop, nunca usado neste app).
+        drawerType: "front",
       }}
       drawerContent={(props) => <DrawerContent {...props} />}
     >
