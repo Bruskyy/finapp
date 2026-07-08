@@ -1,3 +1,10 @@
+> **Status: concluído.** Todos os itens deste backlog (0 a 7) foram
+> implementados e documentados no README, em "Decisões de arquitetura". Pra
+> ideias novas de produto, ver `BACKLOG-PRODUTO.md` — nasceu com uma régua
+> diferente (valor de produto, não só cobertura de requisito de vaga) e
+> revisita explicitamente algumas exclusões feitas aqui (Open Finance,
+> cartão de crédito).
+
 # BACKLOG — Funcionalidades inspiradas no Mobills (adaptadas ao finapp)
 
 > Para o Claude Code: leia junto com o CLAUDE.md e o RESUMO.md. Este backlog
