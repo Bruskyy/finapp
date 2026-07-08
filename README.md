@@ -511,6 +511,16 @@ Segundo item do backlog de produto. Nova seção "Sua jornada" em `PerfilScreen.
 
 `usuario.criadoEm` (já carregado no boot via `GET /me`, sem chamada nova) e os marcos de `Lancamentos.Api` são combinados no cliente — mesmo padrão de `DashboardScreen.tsx` de misturar dado de múltiplos microserviços numa única tela, mas aqui só leitura, sem a complexidade de escrita cross-service do item anterior.
 
+### "Seu Futuro" — projeção determinística de conclusão da meta (BACKLOG-PRODUTO.md, Onda 1, item 3)
+
+Terceiro item do backlog de produto. O card de meta em destaque do Dashboard ganha uma linha tipo *"No ritmo atual, sua meta fica pronta N dias antes/depois do prazo"* — pura matemática em cima de dado que a própria entidade `Objetivo` já tem, **zero IA** (o próprio nome do item no backlog já avisa disso).
+
+**Dois cálculos diferentes, propositalmente separados:** `Objetivo.ValorMensalNecessario` (já existia) é **normativo** — quanto o usuário *precisaria* guardar por mês pra bater o prazo que ele definiu. O novo `Objetivo.PrevisaoConclusaoEm` é **descritivo** — dado o ritmo *real* de aportes desde a criação da meta (`ValorAcumulado` dividido pelos dias decorridos, normalizado pra um mês de 30 dias), quando a meta *de fato* fica pronta se nada mudar. A diferença entre os dois é o "adianta/atrasa" mostrado no card — comparar a previsão com `DataAlvo`.
+
+**Bug de precisão real, achado pelos testes (não só teoria):** a primeira versão convertia a divisão pra `double` antes de arredondar pra cima o número de dias (`Math.Ceiling`). Em casos como "acumulou 1000 de uma meta de 5000 em 10 dias" (ritmo = 3000/mês, faltam 4000 → exatamente 40 dias), a dízima periódica de `4000/3000` sobrevivia à conversão pra `double` como algo tipo `39,999999999999996`, e o `Ceiling` arredondava pra **41** dias em vez de 40 — um dia de erro sistemático nessa classe de conta exata. Fix: manter tudo em `decimal` (que não sofre desse erro de representação binária pra frações decimais simples) e arredondar explicitamente antes do `Ceiling`, absorvendo qualquer ruído residual de precisão. Sem os testes de domínio cobrindo esse caso específico, esse bug teria ido pra produção — reforça o valor de testar o valor exato calculado, não só "não lança exceção".
+
+**Sem endpoint novo:** `ObjetivoResponse` ganha só mais um campo (`PrevisaoConclusaoEm`, nullable — `null` enquanto não há nenhum aporte, já que não dá pra estimar ritmo sem pelo menos um dado ponto). `GET /objetivos` (já existente, já usado no Dashboard) passa a devolver isso de graça.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

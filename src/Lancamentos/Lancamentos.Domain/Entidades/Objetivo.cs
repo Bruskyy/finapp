@@ -83,4 +83,35 @@ public class Objetivo
 
         return Math.Round(falta / mesesRestantes, 2);
     }
+
+    /// <summary>
+    /// Projeção de quando a meta fica pronta no RITMO ATUAL de aportes
+    /// (taxa média desde a criação) — diferente de
+    /// <see cref="ValorMensalNecessario"/>, que calcula quanto FALTARIA
+    /// guardar por mês pra bater o prazo definido. É essa diferença entre
+    /// "ritmo necessário" (normativo) e "ritmo real projetado" (descritivo)
+    /// que dá o "adianta/atrasa" mostrado no app. Null se ainda não há
+    /// ritmo pra projetar (nenhum aporte feito).
+    /// </summary>
+    public DateTime? PrevisaoConclusaoEm(DateTime hoje)
+    {
+        if (Concluido)
+            return ConcluidoEm;
+        if (ValorAcumulado <= 0)
+            return null;
+
+        var diasDecorridos = Math.Max(1, (hoje.Date - CriadoEm.Date).Days);
+        var ritmoMensal = ValorAcumulado / diasDecorridos * 30;
+        if (ritmoMensal <= 0)
+            return null;
+
+        var falta = ValorAlvo - ValorAcumulado;
+        // Arredonda antes do Ceiling: a divisão decimal de "falta/ritmoMensal"
+        // frequentemente não fecha num número exato de dias (ex: 4000/3000*30
+        // vira 39,999999999999999999999999996... por causa da dízima
+        // periódica truncada em 4/3) - sem esse arredondamento, o Ceiling
+        // arredondaria pra cima indevidamente e a previsão saía um dia adiantada.
+        var diasRestantes = Math.Round(falta / ritmoMensal * 30, 6);
+        return hoje.Date.AddDays((double)Math.Ceiling(diasRestantes));
+    }
 }
