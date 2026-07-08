@@ -7,6 +7,7 @@ public interface IObjetivoRepository
     Task<IReadOnlyList<Objetivo>> ListarAsync(Guid usuarioId, CancellationToken ct);
     Task<Objetivo?> ObterPorIdAsync(Guid id, Guid usuarioId, CancellationToken ct);
     Task AdicionarAsync(Objetivo objetivo, CancellationToken ct);
+    Task<bool> RemoverAsync(Guid id, Guid usuarioId, CancellationToken ct);
 
     /// <summary>
     /// Persiste um aporte: objetivo atualizado + lançamento de despesa "Aporte"

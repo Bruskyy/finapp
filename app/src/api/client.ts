@@ -240,6 +240,10 @@ export function aportarObjetivo(id: string, valor: number, contaId: string): Pro
   });
 }
 
+export function excluirObjetivo(id: string): Promise<void> {
+  return requisitar(`/api/objetivos/${id}`, { method: "DELETE" });
+}
+
 // ----- Relatórios -----
 
 export function obterSaldoFinanceiro(inicio: string, fim: string): Promise<{ saldo: number }> {

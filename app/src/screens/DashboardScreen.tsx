@@ -1,31 +1,23 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  excluirLancamento,
-  listarCategorias,
   listarLancamentos,
   listarObjetivos,
   listarOrcamentos,
   listarSaldosPorConta,
-  listarTags,
   obterEvolucaoMensal,
   obterGastosPorCategoria,
   obterSaldoFinanceiro,
   obterSaldoMoedas,
 } from "../api/client";
 import Card from "../componentes/Card";
-import Chip from "../componentes/Chip";
-import EstadoVazio from "../componentes/EstadoVazio";
 import GraficoGastosPorCategoria from "../componentes/GraficoGastosPorCategoria";
 import GraficoEvolucaoMensal from "../componentes/GraficoEvolucaoMensal";
-import Input from "../componentes/Input";
-import ItemLancamento from "../componentes/ItemLancamento";
 import MetaDestaque from "../componentes/MetaDestaque";
 import ResumoOrcamentos from "../componentes/ResumoOrcamentos";
 import { fimDoMes, inicioDoMes } from "../constants";
-import { confirmar } from "../confirmar";
 import { cor, espaco, fonte, formatarMoeda, raio } from "../tema";
 import {
   EvolucaoMensalPonto,
@@ -42,64 +34,50 @@ export default function DashboardScreen() {
   const [saldo, setSaldo] = useState<number | null>(null);
   const [moedas, setMoedas] = useState<number | null>(null);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
-  const [nomesCategorias, setNomesCategorias] = useState<Record<string, string>>({});
   const [saldosContas, setSaldosContas] = useState<SaldoPorConta[]>([]);
   const [gastosCategoria, setGastosCategoria] = useState<GastoPorCategoria[]>([]);
   const [evolucao, setEvolucao] = useState<EvolucaoMensalPonto[]>([]);
   const [orcamentos, setOrcamentos] = useState<OrcamentoStatus[]>([]);
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
-  const [tagsDisponiveis, setTagsDisponiveis] = useState<string[]>([]);
-  const [tagFiltro, setTagFiltro] = useState<string | null>(null);
-  const [textoBusca, setTextoBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [preferencias, setPreferencias] = useState<Preferencias | null>(null);
 
-  const carregar = useCallback(async (tag?: string | null, texto?: string) => {
+  const carregar = useCallback(async () => {
     setErro(null);
     try {
       const inicio = inicioDoMes();
       const fim = fimDoMes();
-      const filtros = {
-        tags: tag ? [tag] : undefined,
-        texto: texto && texto.trim().length > 0 ? texto.trim() : undefined,
-      };
       const [
         resSaldo,
         resMoedas,
         resLancamentos,
-        resCategorias,
         resSaldosContas,
         resGastos,
         resEvolucao,
         resOrcamentos,
         resObjetivos,
-        resTags,
         resPreferencias,
       ] = await Promise.all([
         obterSaldoFinanceiro(inicio, fim),
         obterSaldoMoedas(),
-        listarLancamentos(inicio, fim, filtros),
-        listarCategorias(),
+        listarLancamentos(inicio, fim),
         listarSaldosPorConta(),
         obterGastosPorCategoria(inicio, fim),
         obterEvolucaoMensal(6),
         listarOrcamentos(),
         listarObjetivos(),
-        listarTags(),
         obterPreferencias(),
       ]);
       setSaldo(resSaldo.saldo);
       setMoedas(resMoedas.saldo);
       setLancamentos(resLancamentos.itens);
-      setNomesCategorias(Object.fromEntries(resCategorias.map((c) => [c.id, c.nome])));
       setSaldosContas(resSaldosContas);
       // transferências entre contas não são gasto real — fora do gráfico
       setGastosCategoria(resGastos.filter((g) => g.categoria !== "Transferência"));
       setEvolucao(resEvolucao);
       setOrcamentos(resOrcamentos);
       setObjetivos(resObjetivos);
-      setTagsDisponiveis(resTags.map((t) => t.nome));
       setPreferencias(resPreferencias);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar dados.");
@@ -108,38 +86,11 @@ export default function DashboardScreen() {
     }
   }, []);
 
-  function alternarFiltroTag(tag: string) {
-    const nova = tagFiltro === tag ? null : tag;
-    setTagFiltro(nova);
-    carregar(nova, textoBusca);
-  }
-
-  function buscarPorTexto(texto: string) {
-    setTextoBusca(texto);
-    carregar(tagFiltro, texto);
-  }
-
   useFocusEffect(
     useCallback(() => {
-      carregar(tagFiltro, textoBusca);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      carregar();
     }, [carregar])
   );
-
-  async function excluir(item: Lancamento) {
-    const ok = await confirmar(
-      "Excluir lançamento",
-      `"${item.descricao}" (${formatarMoeda(item.valor)}) será removido.`
-    );
-    if (!ok) return;
-
-    try {
-      await excluirLancamento(item.id);
-      carregar(tagFiltro, textoBusca);
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Erro ao excluir.");
-    }
-  }
 
   if (carregando) {
     return (
@@ -201,95 +152,55 @@ export default function DashboardScreen() {
 
       {erro && <Text style={estilos.erro}>{erro}</Text>}
 
-      <FlatList
-        data={lancamentos}
-        keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={() => carregar(tagFiltro, textoBusca)} />}
-        ListHeaderComponent={
-          <View>
-            {saldosContas.length > 1 && (
-              <Card estiloExtra={estilos.cartaoSecao}>
-                <Text style={estilos.tituloSecao}>Contas</Text>
-                {saldosContas.map((c) => (
-                  <View key={c.contaId} style={estilos.linhaConta}>
-                    <View style={estilos.nomeConta}>
-                      <Ionicons name="wallet-outline" size={16} color={cor.cinza500} />
-                      <Text style={estilos.textoConta}>{c.conta}</Text>
-                    </View>
-                    <Text style={[estilos.saldoConta, c.saldo < 0 && { color: cor.vermelho }]}>
-                      {formatarMoeda(c.saldo)}
-                    </Text>
-                  </View>
-                ))}
-              </Card>
-            )}
-
-            {widgets?.graficoCategorias && gastosCategoria.length > 0 && (
-              <Card estiloExtra={estilos.cartaoSecao}>
-                <Text style={estilos.tituloSecao}>Gastos por categoria (mês)</Text>
-                <GraficoGastosPorCategoria dados={gastosCategoria} />
-              </Card>
-            )}
-
-            {evolucao.length > 1 && (
-              <Card estiloExtra={estilos.cartaoSecao}>
-                <Text style={estilos.tituloSecao}>Últimos meses</Text>
-                <GraficoEvolucaoMensal dados={evolucao} />
-              </Card>
-            )}
-
-            {widgets?.resumoOrcamentos && orcamentos.length > 0 && (
-              <Card estiloExtra={estilos.cartaoSecao}>
-                <Text style={estilos.tituloSecao}>Orçamentos do mês</Text>
-                <ResumoOrcamentos orcamentos={orcamentos} />
-              </Card>
-            )}
-
-            {widgets?.metasDestaque && objetivos.some((o) => !o.concluido) && (
-              <Card estiloExtra={estilos.cartaoSecao}>
-                <Text style={estilos.tituloSecao}>Meta em destaque</Text>
-                <MetaDestaque objetivos={objetivos} />
-              </Card>
-            )}
-
-            <Text style={estilos.tituloSecao}>Lançamentos recentes</Text>
-            <Input
-              placeholder="Buscar na descrição..."
-              value={textoBusca}
-              onChangeText={buscarPorTexto}
-            />
-            {tagsDisponiveis.length > 0 && (
-              <View style={estilos.filtroTags}>
-                {tagsDisponiveis.map((tag) => (
-                  <Chip
-                    key={tag}
-                    texto={`#${tag}`}
-                    selecionado={tagFiltro === tag}
-                    onPress={() => alternarFiltroTag(tag)}
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-        }
-        renderItem={({ item }) => (
-          <ItemLancamento
-            descricao={item.descricao}
-            valor={item.valor}
-            tipo={item.tipo}
-            categoria={nomesCategorias[item.categoriaId] ?? "Outros"}
-            data={item.data}
-            tags={item.tags}
-            recorrente={!!item.recorrenciaId}
-            onExcluir={() => excluir(item)}
-          />
-        )}
-        ItemSeparatorComponent={() => <View style={estilos.separador} />}
-        ListEmptyComponent={
-          <EstadoVazio mascote mensagem="Nenhum lançamento neste mês ainda. Registre sua primeira despesa!" />
-        }
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={false} onRefresh={carregar} />}
         contentContainerStyle={estilos.listaConteudo}
-      />
+      >
+        {saldosContas.length > 1 && (
+          <Card estiloExtra={estilos.cartaoSecao}>
+            <Text style={estilos.tituloSecao}>Contas</Text>
+            {saldosContas.map((c) => (
+              <View key={c.contaId} style={estilos.linhaConta}>
+                <View style={estilos.nomeConta}>
+                  <Ionicons name="wallet-outline" size={16} color={cor.cinza500} />
+                  <Text style={estilos.textoConta}>{c.conta}</Text>
+                </View>
+                <Text style={[estilos.saldoConta, c.saldo < 0 && { color: cor.vermelho }]}>
+                  {formatarMoeda(c.saldo)}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        )}
+
+        {widgets?.graficoCategorias && gastosCategoria.length > 0 && (
+          <Card estiloExtra={estilos.cartaoSecao}>
+            <Text style={estilos.tituloSecao}>Gastos por categoria (mês)</Text>
+            <GraficoGastosPorCategoria dados={gastosCategoria} />
+          </Card>
+        )}
+
+        {evolucao.length > 1 && (
+          <Card estiloExtra={estilos.cartaoSecao}>
+            <Text style={estilos.tituloSecao}>Últimos meses</Text>
+            <GraficoEvolucaoMensal dados={evolucao} />
+          </Card>
+        )}
+
+        {widgets?.resumoOrcamentos && orcamentos.length > 0 && (
+          <Card estiloExtra={estilos.cartaoSecao}>
+            <Text style={estilos.tituloSecao}>Orçamentos do mês</Text>
+            <ResumoOrcamentos orcamentos={orcamentos} />
+          </Card>
+        )}
+
+        {widgets?.metasDestaque && objetivos.some((o) => !o.concluido) && (
+          <Card estiloExtra={estilos.cartaoSecao}>
+            <Text style={estilos.tituloSecao}>Meta em destaque</Text>
+            <MetaDestaque objetivos={objetivos} />
+          </Card>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -336,8 +247,6 @@ const estilos = StyleSheet.create({
   cartaoSecao: { marginBottom: espaco.lg },
   tituloSecao: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
 
-  filtroTags: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.sm },
-  separador: { height: espaco.sm },
   // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
   listaConteudo: { paddingBottom: espaco.xxxl + espaco.xl },
 
