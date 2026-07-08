@@ -63,8 +63,11 @@ public class LancamentoConsumerService : BackgroundService
             HostName = _options.HostName,
             Port = _options.Port,
             UserName = _options.UserName,
-            Password = _options.Password
+            Password = _options.Password,
+            VirtualHost = _options.VirtualHost,
         };
+        if (_options.UsarTls)
+            factory.Ssl = new SslOption { Enabled = true, ServerName = _options.HostName };
 
         await using var conexao = await factory.CreateConnectionAsync(stoppingToken);
         await using var canal = await conexao.CreateChannelAsync(cancellationToken: stoppingToken);
