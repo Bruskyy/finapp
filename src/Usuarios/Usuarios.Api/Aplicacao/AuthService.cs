@@ -132,7 +132,33 @@ public class AuthService
         usuario.AtualizarNome(novoNome);
         await _repositorio.AtualizarAsync(usuario, ct);
 
-        return new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm);
+        return new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm, usuario.OnboardingConcluido);
+    }
+
+    public async Task<UsuarioResponse> DefinirPerfilOnboardingAsync(Guid usuarioId, PerfilOnboardingRequest req, CancellationToken ct)
+    {
+        var usuario = await _repositorio.ObterPorIdAsync(usuarioId, ct);
+        if (usuario is null)
+            throw new UsuarioNaoEncontradoException();
+
+        usuario.DefinirPerfilOnboarding(
+            req.MomentoDeVida, req.MaiorObjetivo, req.NomeObjetivoPersonalizado,
+            req.ValorMensalDesejado, req.ValorAlvoObjetivo, req.MaiorDificuldade);
+        await _repositorio.AtualizarAsync(usuario, ct);
+
+        return new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm, usuario.OnboardingConcluido);
+    }
+
+    public async Task<UsuarioResponse> PularOnboardingAsync(Guid usuarioId, CancellationToken ct)
+    {
+        var usuario = await _repositorio.ObterPorIdAsync(usuarioId, ct);
+        if (usuario is null)
+            throw new UsuarioNaoEncontradoException();
+
+        usuario.PularOnboarding();
+        await _repositorio.AtualizarAsync(usuario, ct);
+
+        return new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm, usuario.OnboardingConcluido);
     }
 
     public async Task TrocarSenhaAsync(Guid usuarioId, string senhaAtual, string novaSenha, CancellationToken ct)

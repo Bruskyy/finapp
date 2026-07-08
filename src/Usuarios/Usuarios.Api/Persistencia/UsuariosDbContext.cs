@@ -20,6 +20,9 @@ public class UsuariosDbContext : DbContext
             e.Property(x => x.Email).HasMaxLength(200).IsRequired();
             e.Property(x => x.SenhaHash); // nulo para contas Google (ver Usuario.CriarComGoogle)
             e.HasIndex(x => x.Email).IsUnique();
+            e.Property(x => x.NomeObjetivoPersonalizado).HasMaxLength(200);
+            e.Property(x => x.ValorMensalDesejado).HasColumnType("decimal(18,2)");
+            e.Property(x => x.ValorAlvoObjetivo).HasColumnType("decimal(18,2)");
         });
 
         modelBuilder.Entity<RefreshToken>(e =>

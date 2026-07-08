@@ -33,6 +33,7 @@ builder.Services.AddSingleton<IValidator<AtualizarPerfilRequest>, AtualizarPerfi
 builder.Services.AddSingleton<IValidator<TrocarSenhaRequest>, TrocarSenhaRequestValidator>();
 builder.Services.AddSingleton<IValidator<LoginGoogleRequest>, LoginGoogleRequestValidator>();
 builder.Services.AddSingleton<IValidator<RenovarTokenRequest>, RenovarTokenRequestValidator>();
+builder.Services.AddSingleton<IValidator<PerfilOnboardingRequest>, PerfilOnboardingRequestValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -143,7 +144,7 @@ app.MapGet("/me", async (ClaimsPrincipal principal, IUsuarioRepository repo, Can
     var usuario = await repo.ObterPorIdAsync(id, ct);
     return usuario is null
         ? Results.NotFound()
-        : Results.Ok(new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm));
+        : Results.Ok(new UsuarioResponse(usuario.Id, usuario.Nome, usuario.Email, usuario.CriadoEm, usuario.OnboardingConcluido));
 }).RequireAuthorization();
 
 app.MapPut("/perfil", async (AtualizarPerfilRequest req, ClaimsPrincipal principal, AuthService auth, CancellationToken ct) =>
@@ -174,6 +175,30 @@ app.MapPut("/senha", async (TrocarSenhaRequest req, ClaimsPrincipal principal, A
         return Results.NotFound();
     }
 }).RequireAuthorization().AddEndpointFilter<ValidationFilter<TrocarSenhaRequest>>();
+
+app.MapPut("/perfil-onboarding", async (PerfilOnboardingRequest req, ClaimsPrincipal principal, AuthService auth, CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await auth.DefinirPerfilOnboardingAsync(IdDoUsuario(principal), req, ct));
+    }
+    catch (UsuarioNaoEncontradoException)
+    {
+        return Results.NotFound();
+    }
+}).RequireAuthorization().AddEndpointFilter<ValidationFilter<PerfilOnboardingRequest>>();
+
+app.MapPost("/perfil-onboarding/pular", async (ClaimsPrincipal principal, AuthService auth, CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await auth.PularOnboardingAsync(IdDoUsuario(principal), ct));
+    }
+    catch (UsuarioNaoEncontradoException)
+    {
+        return Results.NotFound();
+    }
+}).RequireAuthorization();
 
 app.MapHealthChecks("/health");
 

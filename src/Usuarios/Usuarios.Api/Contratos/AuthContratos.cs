@@ -1,3 +1,5 @@
+using Usuarios.Api.Dominio;
+
 namespace Usuarios.Api.Contratos;
 
 public record RegistrarRequest(string Nome, string Email, string Senha);
@@ -10,7 +12,15 @@ public record RenovarTokenRequest(string RefreshToken);
 
 public record RenovarTokenResponse(string Token, string RefreshToken);
 
-public record UsuarioResponse(Guid Id, string Nome, string Email, DateTime CriadoEm);
+public record UsuarioResponse(Guid Id, string Nome, string Email, DateTime CriadoEm, bool OnboardingConcluido);
+
+public record PerfilOnboardingRequest(
+    MomentoDeVida MomentoDeVida,
+    MaiorObjetivo MaiorObjetivo,
+    string? NomeObjetivoPersonalizado,
+    decimal ValorMensalDesejado,
+    decimal ValorAlvoObjetivo,
+    MaiorDificuldade MaiorDificuldade);
 
 public record AtualizarPerfilRequest(string Nome);
 
