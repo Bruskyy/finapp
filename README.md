@@ -271,7 +271,7 @@ O app deixou de ser "sem dono" — cada tela com dado financeiro agora exige log
 - **Refresh token** — hoje o usuário é deslogado a cada 60 minutos e precisa logar de novo manualmente; refresh token adiciona rotação de token e storage server-side, e é uma segunda feature por si só.
 - **Revogação de JWT** (blacklist do claim `jti`) — o claim já existe no token, mas nada o invalida antes da expiração natural.
 - ~~Zero trust entre serviços~~ — feito, ver "Zero trust real" abaixo.
-- **Login com Google (OAuth)** — exige criar um app OAuth no Google Cloud Console (passo manual, gratuito); ficou de fora pra manter o escopo em e-mail/senha primeiro.
+- ~~Login com Google (OAuth)~~ — feito (ver "Deploy gratuito", client ID configurado via env var no Render/Vercel); `useGoogleAuth.ts` no app + `POST /usuarios/login-google` no backend.
 
 ### Zero trust real: JWT validado de novo em Lançamentos e Gamificação (multi-tenancy, fase 1)
 
@@ -456,6 +456,20 @@ Três novos tokens em `tokens.ts`: `cor.marcaFundo` (`#0B0B0D`), `cor.marcaDoura
 **Terceiro bug real, desta vez só visível num celular físico:** o app carregou no Vercel só que com o layout inteiro encolhido numa caixa pequena e o menu lateral aparecendo como painel fixo ao lado (nunca sobrepondo a tela) — sobrava um monte de espaço em branco. Causa: `@react-navigation/drawer` tem um [bug aberto e não corrigido](https://github.com/react-navigation/react-navigation/issues/12511) específico de `drawerPosition="right"` no web, onde a biblioteca mede errado a largura real da tela (confirmado: `window.innerWidth` divergindo da largura real do `body` depois de um resize). Fix: `drawerType: "front"` fixo (nunca deixa a lib decidir sozinha entre overlay e painel fixo) e `drawerPosition` cai pra `"left"` só no web (`Platform.OS === "web"`) — no nativo continua `"right"`, onde não tem esse bug e a ergonomia de "mesmo lado do gatilho na tab bar" faz sentido.
 
 **Verificação:** validado de ponta a ponta contra as URLs reais do Render (não só localmente) — registro, login, `/me`, criar conta (grava no Azure SQL), listar categorias, saldo de moedas (lê do Neon) e notificações (lê do Neon), todos respondendo corretamente através do Gateway. `dotnet build`/`dotnet test` (156 verdes) e `docker build` de cada um dos 5 serviços conferidos antes de depender do Render pra achar erro de build. O bug do drawer foi confirmado corrigido pelo próprio Vitor num celular real, depois do deploy no Vercel.
+
+### Ajustes de UX pós-deploy + Testcontainers chega em Lançamentos
+
+Três ajustes pequenos de navegação, direto do uso real do app já deployado:
+
+1. **Dashboard perde a lista de lançamentos recentes** — ficou redundante depois que a aba Transações passou a cobrir o mesmo caso de uso; o Dashboard volta a ser só os cards de resumo (saldo, gastos por categoria, evolução mensal, objetivos).
+2. **Exclusão de metas em Planejamento** — `DELETE /objetivos/{id}` no backend (mesmo padrão de `ExecuteDeleteAsync` já usado em `LancamentoRepository`/`OrcamentoRepository`) + botão de excluir com confirmação (`confirmar()`, o helper cross-platform já usado na exclusão de lançamento).
+3. **Menu "Mais" sem volta** — as 6 telas do Drawer fora de "Início" (Moedas, Notificações, Perfil, Configurações, Personalizar, Fixas) não tinham tab bar nem header (`headerShown: false` era global), então entrar numa delas era beco sem saída — só um F5 recuperava a navegação. Fix: header mínimo (só o botão de abrir/fechar o menu, título vazio pra não duplicar o título que cada tela já renderiza no corpo) em todas as telas do Drawer, exceto "Início" (que mantém sem header — o gatilho ali já é o item "Mais" da tab bar).
+
+**Lacuna descoberta ao testar a exclusão de meta:** `Lancamentos.Tests` não tinha nenhum teste de repositório/integração — só testes de domínio puro (entidades, validators, parser de CSV). `ExecuteDeleteAsync` nunca tinha sido validado contra um SQL Server de verdade em nenhum repositório do serviço. Fechado com `Testcontainers.MsSql` (mesmo padrão de `PostgresFixture` já usado em `Gamificacao.Tests`/`Usuarios.Tests`, agora com `MsSqlBuilder` + `Database.MigrateAsync()`): `ObjetivoRepositoryTests` cobre exclusão pelo dono, tentativa de exclusão por outro usuário (deve falhar silenciosamente, retornando `false` — mesmo contrato do endpoint) e exclusão de id inexistente. Isso fecha, pro serviço mais antigo do projeto, o requisito "Testcontainers (integração)" que já valia pros outros três.
+
+**Custo aceito:** um container SQL Server é mais pesado que o Postgres usado nos outros testes (~10-15s de boot mesmo com a imagem já em cache local) — o teste de repositório de Objetivo sozinho passou de "instantâneo" pra ~12s de wall time. Aceitável: é a primeira (e por ora única) suíte de integração do serviço, chamada só quando necessário, não substitui os 95 testes de domínio que continuam rápidos.
+
+**Total atual: 159 testes verdes** (98 Lancamentos — 95 domínio + 3 integração, 20 Gamificação, 25 Usuários, 16 Notificações).
 
 ## Arquitetura AWS/Azure
 
