@@ -1,5 +1,6 @@
 using FluentValidation;
 using Usuarios.Api.Contratos;
+using Usuarios.Api.Dominio;
 
 namespace Usuarios.Api.Validacao;
 
@@ -52,5 +53,21 @@ public class RenovarTokenRequestValidator : AbstractValidator<RenovarTokenReques
     public RenovarTokenRequestValidator()
     {
         RuleFor(x => x.RefreshToken).NotEmpty();
+    }
+}
+
+public class PerfilOnboardingRequestValidator : AbstractValidator<PerfilOnboardingRequest>
+{
+    public PerfilOnboardingRequestValidator()
+    {
+        RuleFor(x => x.MomentoDeVida).IsInEnum();
+        RuleFor(x => x.MaiorObjetivo).IsInEnum();
+        RuleFor(x => x.MaiorDificuldade).IsInEnum();
+        RuleFor(x => x.ValorMensalDesejado).GreaterThan(0);
+        RuleFor(x => x.ValorAlvoObjetivo).GreaterThan(0);
+        RuleFor(x => x.NomeObjetivoPersonalizado)
+            .NotEmpty()
+            .WithMessage("Nome do objetivo é obrigatório quando o objetivo é 'Outro'.")
+            .When(x => x.MaiorObjetivo == MaiorObjetivo.Outro);
     }
 }

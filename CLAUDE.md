@@ -86,7 +86,7 @@ pedido específico.
 - ✅ LocalStack RESOLVIDO (03/07/2026): a tag `latest` passou a exigir `LOCALSTACK_AUTH_TOKEN` (licença Pro) e o container morria no boot; imagem fixada em `localstack/localstack:4` (community, s3+sqs gratuitos)
 - Connection string de Lançamentos em `appsettings.Development.json` (senha local descartável; documentar no README que produção usaria secrets)
 - Pacote `Microsoft.OpenApi` FIXADO em versão `2.*` — a 3.x quebra o source generator do ASP.NET (já aconteceu). Não atualizar para 3.x
-- Testes: 166 verdes no total (100 Lancamentos — 95 domínio + 5 integração com Testcontainers.MsSql, 20 Gamificacao com Testcontainers, 16 Notificacoes com Testcontainers, 30 Usuarios com Testcontainers — 25 + 5 de refresh token)
+- Testes: 173 verdes no total (100 Lancamentos — 95 domínio + 5 integração com Testcontainers.MsSql, 20 Gamificacao com Testcontainers, 16 Notificacoes com Testcontainers, 37 Usuarios com Testcontainers — 25 + 5 de refresh token + 7 de perfil de onboarding)
 - Portas dos serviços padronizadas nos `launchSettings.json` conforme README: Lancamentos 5272, Gamificacao 5273, Notificacoes 5274, Gateway 5275, Usuarios 5276
 - Chave de assinatura do JWT (`Jwt:SecretKey`) via `dotnet user-secrets` em `Usuarios.Api` e `Gateway.Api` — MESMA chave nos dois, nunca em `appsettings.Development.json` (que está no git). Sem isso os dois serviços não sobem/validam token corretamente
 
