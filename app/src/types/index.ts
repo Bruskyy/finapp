@@ -124,8 +124,14 @@ export interface LoginRequest {
 
 export interface TokenResponse {
   token: string;
+  refreshToken: string;
   nome: string;
   email: string;
+}
+
+export interface RenovarTokenResponse {
+  token: string;
+  refreshToken: string;
 }
 
 export enum TipoNotificacao {

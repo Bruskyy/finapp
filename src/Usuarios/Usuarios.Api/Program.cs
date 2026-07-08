@@ -19,9 +19,11 @@ builder.Services.AddDbContext<UsuariosDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("UsuariosDb")));
 
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddSingleton<JwtTokenGenerator>();
 builder.Services.AddSingleton<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
+builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AuthService>();
 
 // Validators são stateless — singleton evita recriar a cada request.
@@ -30,6 +32,7 @@ builder.Services.AddSingleton<IValidator<LoginRequest>, LoginRequestValidator>()
 builder.Services.AddSingleton<IValidator<AtualizarPerfilRequest>, AtualizarPerfilRequestValidator>();
 builder.Services.AddSingleton<IValidator<TrocarSenhaRequest>, TrocarSenhaRequestValidator>();
 builder.Services.AddSingleton<IValidator<LoginGoogleRequest>, LoginGoogleRequestValidator>();
+builder.Services.AddSingleton<IValidator<RenovarTokenRequest>, RenovarTokenRequestValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -114,6 +117,25 @@ app.MapPost("/login-google", async (LoginGoogleRequest req, AuthService auth, Ca
         return Results.Unauthorized();
     }
 }).AddEndpointFilter<ValidationFilter<LoginGoogleRequest>>();
+
+app.MapPost("/refresh", async (RenovarTokenRequest req, RefreshTokenService refreshTokens, CancellationToken ct) =>
+{
+    try
+    {
+        var tokens = await refreshTokens.RenovarAsync(req.RefreshToken, ct);
+        return Results.Ok(new RenovarTokenResponse(tokens.AccessToken, tokens.RefreshToken));
+    }
+    catch (Exception ex) when (ex is RefreshTokenInvalidoException or RefreshTokenReutilizadoException)
+    {
+        return Results.Unauthorized();
+    }
+}).AddEndpointFilter<ValidationFilter<RenovarTokenRequest>>();
+
+app.MapPost("/logout", async (RenovarTokenRequest req, RefreshTokenService refreshTokens, CancellationToken ct) =>
+{
+    await refreshTokens.RevogarAsync(req.RefreshToken, ct);
+    return Results.NoContent();
+}).AddEndpointFilter<ValidationFilter<RenovarTokenRequest>>();
 
 app.MapGet("/me", async (ClaimsPrincipal principal, IUsuarioRepository repo, CancellationToken ct) =>
 {

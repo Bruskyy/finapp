@@ -50,6 +50,7 @@ public class AuthEndpointsTests : IClassFixture<PostgresFixture>
             builder.UseSetting("Jwt:Issuer", "FinApp");
             builder.UseSetting("Jwt:Audience", "FinApp.Clientes");
             builder.UseSetting("Jwt:ExpiracaoMinutos", "60");
+            builder.UseSetting("Jwt:RefreshExpiracaoDias", "30");
             // AuthService exige a config presente no construtor - valor fake,
             // suficiente pros testes que não passam pelo fluxo real do Google.
             builder.UseSetting("Google:ClientId", "teste.apps.googleusercontent.com");
@@ -99,6 +100,7 @@ public class AuthEndpointsTests : IClassFixture<PostgresFixture>
         Assert.Equal(HttpStatusCode.OK, resposta.StatusCode);
         var corpo = await resposta.Content.ReadFromJsonAsync<TokenResponse>();
         Assert.False(string.IsNullOrWhiteSpace(corpo!.Token));
+        Assert.False(string.IsNullOrWhiteSpace(corpo.RefreshToken));
     }
 
     [Fact]
