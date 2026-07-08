@@ -99,6 +99,13 @@ export interface EvolucaoMensalPonto {
   saldo: number;
 }
 
+export interface MarcosFinanceiros {
+  primeiroLancamentoEm: string | null;
+  primeiraMetaCriadaEm: string | null;
+  primeiraMetaConcluidaEm: string | null;
+  primeiroOrcamentoEm: string | null;
+}
+
 export interface PaginaLancamentos {
   total: number;
   itens: Lancamento[];

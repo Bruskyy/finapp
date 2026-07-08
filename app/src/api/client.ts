@@ -8,6 +8,7 @@ import {
   GastoPorCategoria,
   Lancamento,
   LoginRequest,
+  MarcosFinanceiros,
   Notificacao,
   Objetivo,
   PaginaLancamentos,
@@ -353,6 +354,10 @@ export function obterGastosPorCategoria(inicio: string, fim: string): Promise<Ga
 
 export function obterEvolucaoMensal(meses = 6): Promise<EvolucaoMensalPonto[]> {
   return requisitar(`/api/relatorios/evolucao-mensal?meses=${meses}`);
+}
+
+export function obterMarcosFinanceiros(): Promise<MarcosFinanceiros> {
+  return requisitar("/api/relatorios/marcos");
 }
 
 // ----- Gamificação -----

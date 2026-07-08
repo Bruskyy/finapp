@@ -59,4 +59,37 @@ WHERE Ano * 12 + Mes >= {corte} AND UsuarioId = {usuarioId}")
             })
             .ToList();
     }
+
+    // MIN/OrderBy().Take(1) trivial por usuário - diferente das agregações
+    // pesadas acima (somas/group by sobre toda a tabela), não justifica
+    // view/procedure nativa; LINQ simples é o padrão já usado nos outros
+    // repositórios do serviço pra esse tipo de consulta.
+    public async Task<MarcosFinanceiros> MarcosAsync(Guid usuarioId, CancellationToken ct)
+    {
+        var primeiroLancamento = await _db.Lancamentos.AsNoTracking()
+            .Where(x => x.UsuarioId == usuarioId)
+            .OrderBy(x => x.CriadoEm)
+            .Select(x => (DateTime?)x.CriadoEm)
+            .FirstOrDefaultAsync(ct);
+
+        var primeiraMetaCriada = await _db.Objetivos.AsNoTracking()
+            .Where(x => x.UsuarioId == usuarioId)
+            .OrderBy(x => x.CriadoEm)
+            .Select(x => (DateTime?)x.CriadoEm)
+            .FirstOrDefaultAsync(ct);
+
+        var primeiraMetaConcluida = await _db.Objetivos.AsNoTracking()
+            .Where(x => x.UsuarioId == usuarioId && x.ConcluidoEm != null)
+            .OrderBy(x => x.ConcluidoEm)
+            .Select(x => x.ConcluidoEm)
+            .FirstOrDefaultAsync(ct);
+
+        var primeiroOrcamento = await _db.Orcamentos.AsNoTracking()
+            .Where(x => x.UsuarioId == usuarioId)
+            .OrderBy(x => x.CriadoEm)
+            .Select(x => (DateTime?)x.CriadoEm)
+            .FirstOrDefaultAsync(ct);
+
+        return new MarcosFinanceiros(primeiroLancamento, primeiraMetaCriada, primeiraMetaConcluida, primeiroOrcamento);
+    }
 }
