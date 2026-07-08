@@ -21,6 +21,7 @@ import OnboardingScreen from "./src/screens/OnboardingScreen";
 import PerfilScreen from "./src/screens/PerfilScreen";
 import PersonalizarInicioScreen from "./src/screens/PersonalizarInicioScreen";
 import PlanejamentoScreen from "./src/screens/PlanejamentoScreen";
+import QuestionarioPerfilScreen from "./src/screens/QuestionarioPerfilScreen";
 import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import TransacoesScreen from "./src/screens/TransacoesScreen";
@@ -228,7 +229,7 @@ function FluxoAuth() {
 }
 
 function RaizNavegacao() {
-  const { status } = useAuth();
+  const { status, usuario } = useAuth();
   const [onboardingVisto, setOnboardingVisto] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -249,6 +250,14 @@ function RaizNavegacao() {
 
   if (status === "carregando") return <TelaCarregandoAuth />;
   if (status === "nao-autenticado") return <FluxoAuth />;
+
+  // Questionário de perfil (BACKLOG-PRODUTO.md, onboarding inteligente):
+  // só pra quem ainda não respondeu nem pulou. usuario.onboardingConcluido
+  // vem de GET /me; QuestionarioPerfilScreen atualiza o AuthContext ao
+  // concluir/pular, o que já tira o gate sozinho no próximo render.
+  if (usuario && !usuario.onboardingConcluido) {
+    return <QuestionarioPerfilScreen />;
+  }
 
   return (
     <NavigationContainer>

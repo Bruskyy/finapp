@@ -109,6 +109,41 @@ export interface Usuario {
   nome: string;
   email: string;
   criadoEm: string;
+  onboardingConcluido: boolean;
+}
+
+export enum MomentoDeVida {
+  EnsinoMedio = 1,
+  Faculdade = 2,
+  PrimeiroEmprego = 3,
+  TrabalhaHaAlgunsAnos = 4,
+  Autonomo = 5,
+  Empresario = 6,
+}
+
+export enum MaiorObjetivo {
+  Notebook = 1,
+  Carro = 2,
+  Viagem = 3,
+  Casa = 4,
+  Reserva = 5,
+  Outro = 6,
+}
+
+export enum MaiorDificuldade {
+  GastoMuito = 1,
+  NaoConsigoGuardar = 2,
+  EsquecoOndeGasto = 3,
+  QueroInvestir = 4,
+}
+
+export interface PerfilOnboardingRequest {
+  momentoDeVida: MomentoDeVida;
+  maiorObjetivo: MaiorObjetivo;
+  nomeObjetivoPersonalizado: string | null;
+  valorMensalDesejado: number;
+  valorAlvoObjetivo: number;
+  maiorDificuldade: MaiorDificuldade;
 }
 
 export interface RegistrarRequest {

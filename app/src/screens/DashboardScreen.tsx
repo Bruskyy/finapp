@@ -110,6 +110,12 @@ export default function DashboardScreen() {
   const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const widgets = preferencias?.widgetsAtivos;
 
+  // Meta mais perto de ser concluída - decidido aqui (não mais dentro de
+  // MetaDestaque) porque o nome dela também vira o título do card abaixo.
+  const objetivoDestaque = [...objetivos]
+    .filter((o) => !o.concluido)
+    .sort((a, b) => b.percentualConcluido - a.percentualConcluido)[0] ?? null;
+
   return (
     <View style={estilos.container}>
       {/* Cartão principal: muito respiro, saldo é o protagonista da tela */}
@@ -194,10 +200,10 @@ export default function DashboardScreen() {
           </Card>
         )}
 
-        {widgets?.metasDestaque && objetivos.some((o) => !o.concluido) && (
+        {widgets?.metasDestaque && objetivoDestaque && (
           <Card estiloExtra={estilos.cartaoSecao}>
-            <Text style={estilos.tituloSecao}>Meta em destaque</Text>
-            <MetaDestaque objetivos={objetivos} />
+            <Text style={estilos.tituloSecao}>{objetivoDestaque.nome}</Text>
+            <MetaDestaque destaque={objetivoDestaque} />
           </Card>
         )}
       </ScrollView>
