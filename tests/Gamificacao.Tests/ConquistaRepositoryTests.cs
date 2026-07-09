@@ -23,16 +23,17 @@ public class ConquistaRepositoryTests : IClassFixture<PostgresFixture>
     }
 
     [Fact]
-    public async Task ListarCatalogoAsync_DeveRetornarAsSeisConquistasSeedadas()
+    public async Task ListarCatalogoAsync_DeveRetornarAsQuinzeConquistasSeedadas()
     {
         await using var db = CriarDbContext();
         var repo = new ConquistaRepository(db);
 
         var catalogo = await repo.ListarCatalogoAsync(CancellationToken.None);
 
-        Assert.Equal(6, catalogo.Count);
+        Assert.Equal(15, catalogo.Count);
         Assert.Contains(catalogo, c => c.Codigo == ConquistaCodigos.PrimeiroSalario);
         Assert.Contains(catalogo, c => c.Codigo == ConquistaCodigos.MetasConcluidas5);
+        Assert.Contains(catalogo, c => c.Codigo == ConquistaCodigos.Sequencia7);
     }
 
     [Fact]
