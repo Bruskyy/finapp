@@ -893,6 +893,87 @@ segunda lista), sem chamada extra.
 "Há N meses" / "Há N anos" — lógica pura, testada manualmente contra os
 limites de cada faixa (7, 30, 365 dias).
 
+### Push real com Expo Push API (Roadmap Cofrin 1.0, Sprint 5, fecha a Onda 2)
+
+`Notificacoes.Api` só persistia notificação até aqui — a central in-app
+já existia (Onda 1), mas nada empurrava de verdade pro usuário fora do
+app aberto. `expo-notifications` + Expo Push API fecham essa lacuna,
+gratuitos, sem cartão.
+
+**Nova entidade `DispositivoPush`**: token de push por usuário, upsert
+por `Token` (chave única) — se outra conta logar no mesmo aparelho, o
+token é *reatribuído*, não duplicado (`ReatribuirUsuario`). `POST
+/dispositivos` registra, `DELETE /dispositivos` remove; os dois caem no
+catch-all de rota que o Gateway já tinha pra `/api/notificacoes/**`, sem
+rota nova lá.
+
+**`IProvedorPush`/`ProvedorPushExpo` — porta nova, não reaproveita
+`INotificacaoProvider`.** O serviço já tinha uma abstração de "provedor
+externo" (`INotificacaoProvider`/`NotificacaoProviderSimulado`), mas ela
+é específica de dois fluxos (confirmação de resgate, alerta de
+lançamento) e existe hoje só pra exercitar o Polly em teste — reaproveitá-la
+pra push genérico exigiria mudar a assinatura e arriscar os testes que já
+cobrem esse comportamento. Porta nova, ortogonal: qualquer notificação
+persistida pode virar push, pra qualquer token cadastrado.
+`NotificacaoPushService` (papel de orquestrador, mesmo padrão de
+`ResgateService` em Gamificacao) decide **não** enviar quando
+`UsuarioId` é nulo (notificação antiga, pré-autenticação — ver "Zero
+trust real") ou quando o usuário não tem token cadastrado.
+
+**Reaproveita o Polly que já existia** (`NotificacaoResiliencePipelineFactory`,
+mesmo retry+circuit breaker do fluxo de resgate) — `ProvedorPushExpo`
+cria a própria instância, mesmo padrão dos dois consumers existentes.
+Best-effort by design: falha de push nunca propaga — a notificação já
+foi persistida e já aparece na central in-app independente do push
+funcionar.
+
+**Plugado em dois pontos**, ambos já existentes: `LancamentoCriadoConsumerService`
+e `ResgateSolicitadoConsumerService`, logo após `AdicionarAsync` devolver
+`processado == true` — evita reenviar push num reprocessamento
+idempotente do mesmo evento.
+
+**A preferência `notificacoesAtivas` (já existia, só controlava a
+central in-app) passa a controlar o token de verdade**: em vez de
+sincronizar um campo booleano com o backend, ligar o switch chama
+`ativarPush()` (registra o token) e desligar chama `desativarPush()`
+(remove) — ausência de token cadastrado já significa "não enviar push"
+sem precisar de mais um campo de configuração no servidor. Token
+também é registrado automaticamente sempre que a sessão fica autenticada
+(login, registro, Google, restauração de sessão no boot), num único
+`useEffect` observando `status` em `AuthContext`.
+
+**Bug de bundling real, achado e corrigido nesta rodada:** importar
+`expo-notifications` estaticamente quebrava o build **web** inteiro —
+erro de bundling (Metro não resolvia `badgin`, dependência transitiva do
+`BadgeModule.web.js` da própria lib), não de runtime, então nenhum guard
+tipo `if (Platform.OS === "web")` dentro da função resolvia (o `import`
+no topo do arquivo já é suficiente pra travar o bundle, a função nem
+precisa ser chamada). Corrigido com `pushNotifications.web.ts`: Metro
+prioriza automaticamente arquivos `.web.ts` sobre `.ts` ao bundlar pra
+web (mesmo mecanismo que a própria `expo-notifications` usa
+internamente) — a versão web nunca importa a lib, os dois exports viram
+no-op. Sem esse arquivo, um redeploy do Vercel teria quebrado a versão
+web publicada inteira por causa de uma dependência de uma feature que a
+web nem suporta.
+
+**Limitação documentada, não um bug**: `expo-notifications` só roda em
+iOS/Android nativo — a versão web do Cofrin sempre vai depender só da
+central in-app pra notificações, não é algo que dê pra "consertar" (é a
+própria Expo que não suporta push no navegador).
+
+**Pendência de infraestrutura externa, mesma categoria da conta Google
+Play do Sprint 6:** obter o Expo Push Token de verdade exige um
+`projectId` de um projeto EAS (`extra.eas.projectId`, populado por `eas
+init` — precisa de uma conta Expo gratuita) e, em Android, um
+*development build* (a partir da SDK 53 o Expo Go não suporta mais push
+nesse SO). Sem isso, o app funciona 100% normal — `obterTokenExpo()`
+devolve `null` e as funções de ativar/desativar viram no-op — só sem
+push de verdade até a conta ser criada.
+
+11 testes novos (`DispositivoPushRepositoryTests`, Testcontainers.Postgres;
+`NotificacaoPushServiceTests`, com fake de `IProvedorPush` escrito à mão —
+sem lib de mock no projeto; `DispositivosEndpointsTests`, WebApplicationFactory).
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

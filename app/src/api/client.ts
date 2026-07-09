@@ -419,3 +419,11 @@ export function listarNotificacoes(): Promise<Notificacao[]> {
 export function marcarNotificacaoLida(id: string): Promise<void> {
   return requisitar(`/api/notificacoes/${id}/marcar-lida`, { method: "POST" });
 }
+
+export function registrarDispositivoPush(token: string): Promise<void> {
+  return requisitar("/api/notificacoes/dispositivos", { method: "POST", body: JSON.stringify({ token }) });
+}
+
+export function removerDispositivoPush(token: string): Promise<void> {
+  return requisitar("/api/notificacoes/dispositivos", { method: "DELETE", body: JSON.stringify({ token }) });
+}

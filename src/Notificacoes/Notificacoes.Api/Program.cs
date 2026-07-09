@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Notificacoes.Api.Aplicacao;
 using Notificacoes.Api.Contratos;
 using Notificacoes.Api.Mensageria;
 using Notificacoes.Api.Persistencia;
@@ -21,6 +22,12 @@ builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddSingleton<INotificacaoProvider, NotificacaoProviderSimulado>();
 builder.Services.AddHostedService<ResgateSolicitadoConsumerService>();
 builder.Services.AddHostedService<LancamentoCriadoConsumerService>();
+
+// Push real (Roadmap 1.0, Sprint 5) - AddHttpClient dá o HttpClient pooled
+// (IHttpClientFactory) que ProvedorPushExpo usa pra falar com a Expo Push API.
+builder.Services.AddScoped<IDispositivoPushRepository, DispositivoPushRepository>();
+builder.Services.AddScoped<NotificacaoPushService>();
+builder.Services.AddHttpClient<IProvedorPush, ProvedorPushExpo>();
 
 // Valida o Bearer token de novo aqui (mesma config do Gateway/Usuarios.Api)
 // em vez de confiar cegamente em quem chamou - zero trust real, mesmo padrão
@@ -99,6 +106,21 @@ app.MapPost("/notificacoes/{id:guid}/marcar-lida", async (Guid id, ClaimsPrincip
 {
     var encontrada = await repo.MarcarComoLidaAsync(id, IdDoUsuario(principal), ct);
     return encontrada ? Results.NoContent() : Results.NotFound();
+});
+
+app.MapPost("/dispositivos", async (RegistrarDispositivoRequest req, ClaimsPrincipal principal, IDispositivoPushRepository repo, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(req.Token))
+        return Results.BadRequest(new { erro = "Token é obrigatório." });
+
+    await repo.RegistrarAsync(IdDoUsuario(principal), req.Token, ct);
+    return Results.NoContent();
+});
+
+app.MapDelete("/dispositivos", async (RegistrarDispositivoRequest req, ClaimsPrincipal principal, IDispositivoPushRepository repo, CancellationToken ct) =>
+{
+    await repo.RemoverAsync(IdDoUsuario(principal), req.Token, ct);
+    return Results.NoContent();
 });
 
 app.MapHealthChecks("/health").AllowAnonymous();

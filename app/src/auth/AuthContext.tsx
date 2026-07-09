@@ -10,6 +10,8 @@ import {
   registrar as apiRegistrar,
 } from "../api/client";
 import { Usuario } from "../types";
+import { ativarPush } from "../utils/pushNotifications";
+import { obterPreferencias } from "../utils/preferencias";
 import {
   obterRefreshToken,
   obterToken,
@@ -99,6 +101,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Registra o token de push sempre que a sessão fica autenticada (login,
+  // registro, login com Google ou restauração de sessão no boot) - um único
+  // gancho em vez de duplicar a chamada nos 4 pontos de entrada. Só ativa se
+  // a preferência de notificações já estiver ligada (padrão é ligada - ver
+  // preferencias.ts); best-effort, nunca lança (ver pushNotifications.ts).
+  useEffect(() => {
+    if (status !== "autenticado") return;
+    obterPreferencias().then((p) => {
+      if (p.notificacoesAtivas) ativarPush();
+    });
+  }, [status]);
 
   async function autenticarComToken(token: string, refreshToken: string) {
     await Promise.all([salvarToken(token), salvarRefreshToken(refreshToken)]);
