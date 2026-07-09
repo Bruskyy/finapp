@@ -107,6 +107,15 @@ export interface MarcosFinanceiros {
   primeiroOrcamentoEm: string | null;
 }
 
+export interface Conquista {
+  id: string;
+  codigo: string;
+  nome: string;
+  descricao: string;
+  icone: string;
+  desbloqueadaEm: string | null;
+}
+
 export interface PaginaLancamentos {
   total: number;
   itens: Lancamento[];

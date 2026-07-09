@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import {
   Categoria,
+  Conquista,
   Conta,
   CriarLancamentoRequest,
   EvolucaoMensalPonto,
@@ -375,6 +376,10 @@ export function solicitarResgate(quantidade: number): Promise<Resgate> {
 
 export function obterResgate(id: string): Promise<Resgate> {
   return requisitar(`/api/gamificacao/resgates/${id}`);
+}
+
+export function listarConquistas(): Promise<Conquista[]> {
+  return requisitar("/api/gamificacao/conquistas");
 }
 
 // ----- Notificações -----

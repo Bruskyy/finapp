@@ -114,6 +114,7 @@ public class LancamentoConsumerService : BackgroundService
 
         MovimentoMoedas movimento;
         Guid eventId;
+        Func<Guid, CancellationToken, Task>? avaliarConquistas = null;
 
         switch (routingKey)
         {
@@ -123,6 +124,9 @@ public class LancamentoConsumerService : BackgroundService
                 var calculadora = scope.ServiceProvider.GetRequiredService<CalculadoraDePontuacao>();
                 movimento = calculadora.Calcular(criado);
                 eventId = criado.EventId;
+                avaliarConquistas = (usuarioId, ct2) =>
+                    scope.ServiceProvider.GetRequiredService<ConquistaService>()
+                        .AvaliarLancamentoAsync(usuarioId, criado.CategoriaId, criado.Tipo, ct2);
                 break;
 
             case "objetivo.concluido":
@@ -131,6 +135,9 @@ public class LancamentoConsumerService : BackgroundService
                 var regraBonus = scope.ServiceProvider.GetRequiredService<RegraObjetivoConcluido>();
                 movimento = regraBonus.Calcular(concluido);
                 eventId = concluido.EventId;
+                avaliarConquistas = (usuarioId, ct2) =>
+                    scope.ServiceProvider.GetRequiredService<ConquistaService>()
+                        .AvaliarObjetivoConcluidoAsync(usuarioId, ct2);
                 break;
 
             default:
@@ -140,6 +147,15 @@ public class LancamentoConsumerService : BackgroundService
 
         var processado = await repositorio.RegistrarAsync(movimento, ct);
         if (!processado)
+        {
             _logger.LogInformation("Evento {EventId} já tinha sido processado - ignorado (idempotência).", eventId);
+            return;
+        }
+
+        // conquistas só avaliadas na primeira vez que o evento é processado -
+        // reprocessar o mesmo evento (idempotência acima) não deve reavaliar
+        // contadores.
+        if (movimento.UsuarioId is { } usuarioId && avaliarConquistas is not null)
+            await avaliarConquistas(usuarioId, ct);
     }
 }
