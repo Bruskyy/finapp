@@ -531,6 +531,62 @@ Quarto item do backlog de produto, e o primeiro que cruza serviços de verdade d
 
 **Bug real de fronteira entre janelas, achado testando manualmente ponta a ponta:** `fn_SaldoPeriodo`/`sp_GastosPorCategoria` (SQL nativo, reaproveitados de relatórios mensais) são inclusivos nos dois extremos (`Data >= @Inicio AND Data <= @Fim` — convenção correta lá, onde `fimDoMes()` já é o último dia do mês). O worker, porém, construía as duas janelas (atual e anterior) com o mesmo padrão *half-open* (`fim` exclusive) usado nas consultas LINQ baseadas em `CriadoEm` (`ListarUsuariosComLancamentoAsync`, `DiasComLancamentoAsync`) — misturando as duas convenções sem ajuste. Resultado: o dia de fronteira entre as duas janelas (`inicioJanelaAtual`) era contado **nas duas janelas ao mesmo tempo** nas consultas de saldo/categoria, inflando ou reduzindo a "economia vs. semana anterior" (um teste manual com lançamentos reais mostrou `R$ 150,00` quando o valor correto era `R$ 250,00`). Fix: recuar 1 dia no limite superior passado especificamente pras duas consultas SQL nativas (`fimJanelaAtualInclusive`/`fimJanelaAnteriorInclusive`), mantendo as consultas `CriadoEm`-based como estavam. Só apareceu testando o fluxo completo com dados reais atravessando as duas janelas — reforça, de novo, por que a checklist de verificação deste projeto sempre inclui o cálculo numérico exato, não só "a notificação foi criada".
 
+### Conquistas/badges (BACKLOG-PRODUTO.md, Onda 1, item 5)
+
+Quinto item do backlog de produto. Catálogo de 6 conquistas
+(`Primeiro salário`, `10/100/1000 lançamentos`, `Primeira meta concluída`,
+`5 metas concluídas`), desacoplado do saldo de moedas, disparado pelos
+mesmos eventos que `Gamificacao.Api` já consome (`LancamentoCriadoEvent`,
+`ObjetivoConcluidoEvent`) — **zero infraestrutura de mensageria nova**.
+Substitui o placeholder "Em breve: níveis, conquistas e sequências de
+uso." que já existia em `PerfilScreen.tsx`.
+
+**Escopo trocado em relação ao texto original do backlog:** "10 metas
+criadas" virou "metas concluídas" — não existe hoje evento de criação de
+objetivo (só `ObjetivoConcluidoEvent`, na conclusão), e criar um exigiria
+outbox novo em `Lancamentos.Api`, na contramão do próprio espírito do item
+("reaproveita totalmente o pipeline de eventos existente"). Sequência de
+dias de uso (streak) também ficou de fora desta primeira leva — a lógica
+de "dias consecutivos" é bem mais complexa que contagem simples e não foi
+validada como prioridade ainda.
+
+**Por que NÃO reaproveitar o Strategy `IRegraPontuacao` existente:**
+`IRegraPontuacao.Aplica()` é mutuamente exclusivo por design — um
+lançamento gera exatamente UM movimento de moedas, a calculadora escolhe
+UMA regra. Conquistas são o oposto: o mesmo evento pode disparar VÁRIAS
+verificações ao mesmo tempo (um lançamento de salário conta tanto pra
+"primeiro salário" quanto pro contador de "10/100/1000 lançamentos").
+Forçar isso no mesmo Strategy seria artificial — por isso `ConquistaService`
+é uma classe dedicada (mesmo papel arquitetural de
+`CalculadoraDePontuacao`/`ResgateService`), não uma nova implementação de
+`IRegraPontuacao`. Ponto de entrevista interessante: reconhecer quando um
+padrão que parece aplicável na verdade não é a resposta certa.
+
+**Contador dedicado em vez de `COUNT(*)` em `MovimentosMoedas`:** cada
+evento processado já gera uma linha em `MovimentosMoedas`, então dava pra
+contar por lá — mas exigiria casar por texto no campo `Motivo` (frágil)
+pra distinguir "lançamento" de "bônus de meta". Nova tabela
+`ContadoresConquista` (`UsuarioId + Chave` como chave composta) é
+incrementada atomicamente a cada evento relevante, O(1) pra ler/incrementar,
+sem acoplamento com o texto do ledger de moedas.
+
+**Acoplamento aceito — `CategoriaId` fixo de "Salário":**
+`Gamificacao.Api` não tem acesso ao catálogo de categorias de
+`Lancamentos.Api`, só recebe o `Guid CategoriaId` cru no evento. A
+categoria "Salário" é dado de referência global fixo, seedado em
+`Lancamentos.Infrastructure` (migration `OrcamentosECategoriasSeed`,
+`77777777-7777-7777-7777-777777777777`) — `Gamificacao.Api` referencia
+esse GUID como constante. Trade-off aceito: acoplamento cross-service
+pontual, mas mais barato que uma chamada síncrona só pra resolver o nome
+de uma categoria numa verificação de baixa criticidade.
+
+**Idempotência:** índice único em `(UsuarioId, ConquistaId)` em
+`UsuariosConquistas` — mesmo padrão de `MovimentosMoedas.EventId`.
+Conquistas de "primeiro evento" chamam `DesbloquearAsync` incondicionalmente
+a cada evento relevante (a constraint absorve tentativas repetidas como
+no-op); conquistas de "marco" (10/100/1000, 5 metas) só chamam quando o
+contador pós-incremento bate exatamente o threshold.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

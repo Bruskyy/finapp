@@ -87,7 +87,7 @@ pré-requisito de dados/regras pro "Mentor IA" da Onda 4 — construir a
 versão determinística primeiro valida o que é útil dizer antes de pagar
 (figurativamente) o custo de integrar um LLM.
 
-### 5. Conquistas/badges (separado do saldo de moedas)
+### 5. Conquistas/badges (separado do saldo de moedas) — ✅ feito, ver README ("Conquistas/badges")
 **O que é nos apps de referência:** nenhum tem — Duolingo tem, e o projeto
 já cita Duolingo como inspiração de gamificação.
 **Proposta:** entidade nova em `Gamificacao.Api` (`Conquista`,

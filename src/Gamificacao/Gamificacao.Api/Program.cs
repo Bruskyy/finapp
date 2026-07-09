@@ -24,6 +24,9 @@ builder.Services.AddScoped<RegraObjetivoConcluido>();
 builder.Services.AddScoped<IResgateRepository, ResgateRepository>();
 builder.Services.AddScoped<ResgateService>();
 
+builder.Services.AddScoped<IConquistaRepository, ConquistaRepository>();
+builder.Services.AddScoped<ConquistaService>();
+
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddHostedService<LancamentoConsumerService>();
@@ -108,6 +111,20 @@ app.MapGet("/resgates/{id:guid}", async (Guid id, ClaimsPrincipal principal, IRe
     return resgate is null
         ? Results.NotFound()
         : Results.Ok(new ResgateResponse(resgate.Id, resgate.Quantidade, resgate.Status.ToString()));
+});
+
+app.MapGet("/conquistas", async (ClaimsPrincipal principal, IConquistaRepository repo, CancellationToken ct) =>
+{
+    var usuarioId = IdDoUsuario(principal);
+    var catalogo = await repo.ListarCatalogoAsync(ct);
+    var desbloqueadas = (await repo.ListarDesbloqueadasAsync(usuarioId, ct))
+        .ToDictionary(x => x.ConquistaId, x => (DateTime?)x.DesbloqueadaEm);
+
+    return Results.Ok(catalogo
+        .OrderBy(c => c.Nome)
+        .Select(c => new ConquistaResponse(
+            c.Id, c.Codigo, c.Nome, c.Descricao, c.Icone,
+            desbloqueadas.GetValueOrDefault(c.Id))));
 });
 
 app.MapHealthChecks("/health").AllowAnonymous();

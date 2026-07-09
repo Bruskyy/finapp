@@ -2,11 +2,11 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { obterMarcosFinanceiros } from "../api/client";
+import { listarConquistas, obterMarcosFinanceiros } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import EstadoVazio from "../componentes/EstadoVazio";
 import { cor, espaco, fonte } from "../tema";
-import { MarcosFinanceiros } from "../types";
+import { Conquista, MarcosFinanceiros } from "../types";
 import { iniciais } from "../utils/iniciais";
 
 interface Marco {
@@ -47,12 +47,16 @@ export default function PerfilScreen() {
   const { usuario } = useAuth();
   const nome = usuario?.nome ?? "";
   const [marcosApi, setMarcosApi] = useState<MarcosFinanceiros | null>(null);
+  const [conquistas, setConquistas] = useState<Conquista[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       obterMarcosFinanceiros()
         .then(setMarcosApi)
         .catch(() => setMarcosApi(null));
+      listarConquistas()
+        .then(setConquistas)
+        .catch(() => setConquistas([]));
     }, [])
   );
 
@@ -96,10 +100,34 @@ export default function PerfilScreen() {
       )}
 
       <Text style={estilos.tituloSecao}>Conquistas</Text>
-      <EstadoVazio
-        icone="trophy-outline"
-        mensagem="Em breve: níveis, conquistas e sequências de uso."
-      />
+      {conquistas.length === 0 ? (
+        <EstadoVazio icone="trophy-outline" mensagem="Suas conquistas aparecem aqui conforme você usa o app." />
+      ) : (
+        <View style={estilos.linhaDoTempo}>
+          {conquistas.map((conquista) => {
+            const desbloqueada = conquista.desbloqueadaEm !== null;
+            return (
+              <View key={conquista.id} style={estilos.marco}>
+                <View style={[estilos.iconeMarco, !desbloqueada && estilos.iconeConquistaBloqueada]}>
+                  <Ionicons
+                    name={conquista.icone as keyof typeof Ionicons.glyphMap}
+                    size={16}
+                    color={desbloqueada ? cor.primaria : cor.cinza500}
+                  />
+                </View>
+                <View style={estilos.textoMarco}>
+                  <Text style={[estilos.marcoTitulo, !desbloqueada && estilos.marcoTituloBloqueado]}>
+                    {conquista.nome}
+                  </Text>
+                  <Text style={estilos.marcoData}>
+                    {desbloqueada ? `Desbloqueada em ${formatarData(conquista.desbloqueadaEm!)}` : conquista.descricao}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -136,4 +164,9 @@ const estilos = StyleSheet.create({
   textoMarco: { flex: 1 },
   marcoTitulo: { fontSize: 14, color: cor.cinza900, fontWeight: "500" },
   marcoData: { fontSize: 12, color: cor.cinza500, marginTop: 2 },
+
+  // conquistas bloqueadas usam a mesma lista, mas apagadas - sem cor de
+  // marca no ícone/título até o usuário desbloquear de verdade.
+  iconeConquistaBloqueada: { backgroundColor: cor.cinza200 },
+  marcoTituloBloqueado: { color: cor.cinza500, fontWeight: "400" },
 });
