@@ -20,6 +20,7 @@ interface ItemDrawer {
 // ITEM-DRAWER-E-CORES-DE-MARCA.md, Ajuste 3).
 const ITENS: ItemDrawer[] = [
   { rota: "Início", label: "Início", icone: "home-outline" },
+  { rota: "Contas", label: "Contas", icone: "wallet-outline" },
   { rota: "Personalizar", label: "Personalizar início", icone: "options-outline" },
   { rota: "Moedas", label: "Moedas", icone: "medal-outline" },
   { rota: "Notificações", label: "Notificações", icone: "notifications-outline" },
