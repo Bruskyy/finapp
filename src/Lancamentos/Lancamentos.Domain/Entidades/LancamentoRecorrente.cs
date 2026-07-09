@@ -66,6 +66,27 @@ public class LancamentoRecorrente
     /// <summary>Identificador da competência mensal, ex: "2026-07".</summary>
     public static string CompetenciaDe(DateTime data) => $"{data:yyyy-MM}";
 
+    /// <summary>
+    /// Data do próximo vencimento a partir da referência (hoje conta como
+    /// "vence hoje" se o dia já chegou). Rola pro mês seguinte quando o dia
+    /// efetivo deste mês já passou - usado pelo alerta de "faltam N dias",
+    /// diferente de VencidaEm (que só olha "venceu ou não neste mês").
+    /// </summary>
+    public DateTime ProximoVencimentoEm(DateTime referencia)
+    {
+        var diaEsteMes = DiaEfetivoEm(referencia.Year, referencia.Month);
+        if (referencia.Day <= diaEsteMes)
+            return new DateTime(referencia.Year, referencia.Month, diaEsteMes);
+
+        var proximoMes = referencia.AddMonths(1);
+        var diaProximoMes = DiaEfetivoEm(proximoMes.Year, proximoMes.Month);
+        return new DateTime(proximoMes.Year, proximoMes.Month, diaProximoMes);
+    }
+
+    /// <summary>Dias até o próximo vencimento (0 = vence hoje).</summary>
+    public int DiasAteProximoVencimento(DateTime referencia) =>
+        (ProximoVencimentoEm(referencia) - referencia.Date).Days;
+
     /// <summary>Materializa o lançamento desta recorrência para uma competência.</summary>
     public Lancamento MaterializarEm(DateTime referencia)
     {

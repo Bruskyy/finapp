@@ -92,4 +92,63 @@ public class LancamentoRecorrenteTests
         Assert.Equal("2026-07", LancamentoRecorrente.CompetenciaDe(new DateTime(2026, 7, 4)));
         Assert.Equal("2026-01", LancamentoRecorrente.CompetenciaDe(new DateTime(2026, 1, 31)));
     }
+
+    [Fact]
+    public void ProximoVencimentoEm_AntesDoDiaNesteMes_DeveRetornarEsteMes()
+    {
+        var recorrencia = Recorrencia(diaDoMes: 15);
+
+        Assert.Equal(new DateTime(2026, 7, 15), recorrencia.ProximoVencimentoEm(new DateTime(2026, 7, 10)));
+    }
+
+    [Fact]
+    public void ProximoVencimentoEm_NoDiaDoVencimento_DeveRetornarOMesmoDia()
+    {
+        var recorrencia = Recorrencia(diaDoMes: 15);
+
+        Assert.Equal(new DateTime(2026, 7, 15), recorrencia.ProximoVencimentoEm(new DateTime(2026, 7, 15)));
+    }
+
+    [Fact]
+    public void ProximoVencimentoEm_DepoisDoDiaNesteMes_DeveRolarParaOProximoMes()
+    {
+        var recorrencia = Recorrencia(diaDoMes: 5);
+
+        Assert.Equal(new DateTime(2026, 8, 5), recorrencia.ProximoVencimentoEm(new DateTime(2026, 7, 28)));
+    }
+
+    [Fact]
+    public void ProximoVencimentoEm_Dia31RolandoParaFevereiro_DeveUsarUltimoDiaDoMes()
+    {
+        var recorrencia = Recorrencia(diaDoMes: 31);
+
+        // já passou do dia 31 de janeiro (não existe 31 nem em janeiro
+        // aqui, referência já é fevereiro) - deve rolar pro último dia de fevereiro
+        Assert.Equal(new DateTime(2026, 2, 28), recorrencia.ProximoVencimentoEm(new DateTime(2026, 2, 1)));
+    }
+
+    [Fact]
+    public void DiasAteProximoVencimento_NoDiaDoVencimento_DeveSerZero()
+    {
+        var recorrencia = Recorrencia(diaDoMes: 15);
+
+        Assert.Equal(0, recorrencia.DiasAteProximoVencimento(new DateTime(2026, 7, 15)));
+    }
+
+    [Fact]
+    public void DiasAteProximoVencimento_TresDiasAntes_DeveSerTres()
+    {
+        var recorrencia = Recorrencia(diaDoMes: 15);
+
+        Assert.Equal(3, recorrencia.DiasAteProximoVencimento(new DateTime(2026, 7, 12)));
+    }
+
+    [Fact]
+    public void DiasAteProximoVencimento_RolandoParaOProximoMes_DeveContarAPartirDoMesSeguinte()
+    {
+        var recorrencia = Recorrencia(diaDoMes: 5);
+
+        // vencimento de julho (dia 5) já passou; próximo é 5 de agosto
+        Assert.Equal(8, recorrencia.DiasAteProximoVencimento(new DateTime(2026, 7, 28)));
+    }
 }

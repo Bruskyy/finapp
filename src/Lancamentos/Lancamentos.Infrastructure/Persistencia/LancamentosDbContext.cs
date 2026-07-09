@@ -19,6 +19,8 @@ public class LancamentosDbContext : DbContext
     public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<ResumoSemanalGerado> ResumosSemanaisGerados => Set<ResumoSemanalGerado>();
+    public DbSet<AlertaOrcamentoEnviado> AlertasOrcamentoEnviados => Set<AlertaOrcamentoEnviado>();
+    public DbSet<AlertaRecorrenciaEnviado> AlertasRecorrenciaEnviados => Set<AlertaRecorrenciaEnviado>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -154,6 +156,24 @@ public class LancamentosDbContext : DbContext
         {
             e.ToTable("ResumosSemanaisGerados");
             e.HasKey(x => x.UsuarioId); // uma linha por usuário (upsert), não histórico
+        });
+
+        modelBuilder.Entity<AlertaOrcamentoEnviado>(e =>
+        {
+            e.ToTable("AlertasOrcamentoEnviados");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Competencia).HasMaxLength(7).IsRequired(); // "2026-07"
+            // idempotencia: um alerta por orcamento, por competencia, por limiar (80/100)
+            e.HasIndex(x => new { x.OrcamentoId, x.Competencia, x.Limiar }).IsUnique();
+        });
+
+        modelBuilder.Entity<AlertaRecorrenciaEnviado>(e =>
+        {
+            e.ToTable("AlertasRecorrenciaEnviados");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Competencia).HasMaxLength(7).IsRequired();
+            // idempotencia: um alerta por recorrencia por competencia de vencimento
+            e.HasIndex(x => new { x.RecorrenciaId, x.Competencia }).IsUnique();
         });
     }
 }

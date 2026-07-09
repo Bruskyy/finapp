@@ -13,6 +13,8 @@ const ICONE_POR_TIPO: Record<TipoNotificacao, keyof typeof Ionicons.glyphMap> = 
   [TipoNotificacao.ResgateConfirmado]: "checkmark-circle-outline",
   [TipoNotificacao.ResgateFalhou]: "close-circle-outline",
   [TipoNotificacao.ResumoSemanal]: "stats-chart-outline",
+  [TipoNotificacao.OrcamentoEstourado]: "alert-circle-outline",
+  [TipoNotificacao.RecorrenciaAVencer]: "calendar-outline",
 };
 
 const COR_POR_TIPO: Record<TipoNotificacao, string> = {
@@ -21,6 +23,8 @@ const COR_POR_TIPO: Record<TipoNotificacao, string> = {
   [TipoNotificacao.ResgateConfirmado]: cor.verde,
   [TipoNotificacao.ResgateFalhou]: cor.vermelho,
   [TipoNotificacao.ResumoSemanal]: cor.primaria,
+  [TipoNotificacao.OrcamentoEstourado]: cor.vermelho,
+  [TipoNotificacao.RecorrenciaAVencer]: cor.laranja,
 };
 
 const FUNDO_POR_TIPO: Record<TipoNotificacao, string> = {
@@ -28,6 +32,8 @@ const FUNDO_POR_TIPO: Record<TipoNotificacao, string> = {
   [TipoNotificacao.LancamentoRecorrente]: cor.primariaSuave,
   [TipoNotificacao.ResgateConfirmado]: cor.verdeSuave,
   [TipoNotificacao.ResgateFalhou]: cor.vermelhoSuave,
+  [TipoNotificacao.OrcamentoEstourado]: cor.vermelhoSuave,
+  [TipoNotificacao.RecorrenciaAVencer]: cor.laranjaSuave,
   [TipoNotificacao.ResumoSemanal]: cor.primariaSuave,
 };
 

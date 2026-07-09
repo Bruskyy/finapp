@@ -98,7 +98,7 @@ consumidor do mesmo tópico, ou nova regra Strategy) — reaproveita
 totalmente o pipeline de eventos existente.
 **Esforço:** M. **Custo:** R$0.
 
-### 6. Alertas de orçamento estourado / conta fixa a vencer
+### 6. Alertas de orçamento estourado / conta fixa a vencer — ✅ feito, ver README ("Alertas de orçamento estourado / conta fixa a vencer") — fecha a Onda 1
 **Proposta:** `Orcamento` já sabe o gasto do mês (procedure existente); só
 falta comparar contra o teto e publicar notificação quando ultrapassar
 80%/100%. Mesma lógica pra `Recorrencia` (Fixas): notificação N dias antes

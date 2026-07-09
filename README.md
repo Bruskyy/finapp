@@ -609,6 +609,46 @@ antes do primeiro request). Falha ao migrar derruba o boot do serviço de
 propósito (fail-fast) — melhor um serviço que não sobe do que um que sobe
 servindo um schema incompatível com o código.
 
+### Alertas de orçamento estourado / conta fixa a vencer (BACKLOG-PRODUTO.md, Onda 1, item 6 — fecha a Onda 1)
+
+Último item da Onda 1. Dois alertas distintos, ambos disparados a partir
+de dado e infraestrutura que já existiam — sem worker novo, sem tabela de
+catálogo, sem binding de fila novo.
+
+**Orçamento: checagem síncrona, não um worker periódico.** Diferente do
+resumo semanal (que não tem nenhum evento próprio pra reagir),
+"orçamento estourado" tem um gatilho natural: a criação de uma despesa.
+`OrcamentoAlertaService.AvaliarAsync` roda dentro do próprio `POST
+/lancamentos`, logo depois do lançamento ser criado — mesmo gatilho já
+usado pra "meta concluída" em `POST /objetivos/{id}/aportes`. Reaproveita
+`IRelatorioRepository.GastosPorCategoriaAsync`, a mesma chamada que `GET
+/orcamentos` já fazia pra calcular `percentualUsado`. `OrcamentoAlertaRegras.LimiaresParaAlertar`
+é uma função pura que decide quais de `[80, 100]` foram cruzados — se o
+gasto passa de 100% de uma vez (lançamento grande numa categoria sem
+histórico), os dois alertas disparam juntos, comportamento correto,
+validado manualmente numa conta de teste. Chamado dentro de um
+`try/catch` que só loga: diferente do aporte de objetivo (onde o evento é
+parte da mesma operação de negócio), aqui é um efeito colateral
+secundário — se a checagem falhar, o lançamento (que já foi criado) não
+pode virar 500 por causa disso.
+
+**Conta fixa: o `RecorrenciaWorker` existente ganha uma segunda
+responsabilidade, não um worker novo.** O mesmo loop que já decide "venceu
+hoje" (`VencidaEm`) agora também decide "faltam 3 dias" (`DiasAteProximoVencimento`,
+novo método puro em `LancamentoRecorrente` que lida com a virada de mês —
+dia 31 perto do fim de fevereiro rola pro vencimento de março). A
+competência de idempotência usada é a do **vencimento futuro**, não a de
+hoje — importante pro caso em que o aviso de 3 dias cai num mês diferente
+do vencimento em si.
+
+**Sem coluna estruturada nova em `Notificacao`:** ao contrário do resumo
+semanal (que precisava de campos próprios pro card do Dashboard), os dois
+alertas novos não têm card nenhum — só a mensagem formatada na central de
+notificações, reaproveitando o construtor simples que `Lancamento`/`LancamentoRecorrente`
+já usam. `TipoNotificacao` ganha só dois valores de enum
+(`OrcamentoEstourado = 6`, `RecorrenciaAVencer = 7`); zero migration em
+`Notificacoes.Api`.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

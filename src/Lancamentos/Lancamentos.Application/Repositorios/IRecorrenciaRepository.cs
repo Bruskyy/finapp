@@ -22,4 +22,10 @@ public interface IRecorrenciaRepository
     /// UNIQUE (RecorrenciaId, Competencia).
     /// </summary>
     Task<bool> MaterializarAsync(LancamentoRecorrente recorrencia, Lancamento lancamento, string competencia, CancellationToken ct);
+
+    /// <summary>Se o alerta de "a vencer" já foi enviado pra essa (recorrência, competência).</summary>
+    Task<bool> AlertaJaEnviadoAsync(Guid recorrenciaId, string competencia, CancellationToken ct);
+
+    /// <summary>Grava o rastreio de idempotência e enfileira o evento de alerta no mesmo SaveChanges.</summary>
+    Task RegistrarAlertaEEnfileirarAsync(Guid recorrenciaId, string descricao, decimal valor, int diasParaVencimento, string competencia, Guid? usuarioId, CancellationToken ct);
 }

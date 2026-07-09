@@ -17,6 +17,7 @@ using Lancamentos.Infrastructure.Repositorios;
 using Lancamentos.Api.Contratos;
 using Lancamentos.Api.Validacao;
 using Lancamentos.Domain.Entidades;
+using Lancamentos.Application.Orcamentos;
 using Lancamentos.Application.Relatorios;
 using Lancamentos.Infrastructure.Mensageria;
 using Lancamentos.Infrastructure.Recorrencias;
@@ -31,6 +32,8 @@ builder.Services.AddScoped<ILancamentoRepository, LancamentoRepository>();
 builder.Services.AddScoped<IContaRepository, ContaRepository>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
+builder.Services.AddScoped<IOrcamentoAlertaRepository, OrcamentoAlertaRepository>();
+builder.Services.AddScoped<OrcamentoAlertaService>();
 builder.Services.AddScoped<IRecorrenciaRepository, RecorrenciaRepository>();
 builder.Services.AddScoped<IObjetivoRepository, ObjetivoRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
@@ -135,7 +138,7 @@ using (var scope = app.Services.CreateScope())
 
 // ----- Lançamentos -----
 
-app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ClaimsPrincipal principal, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>
+app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ClaimsPrincipal principal, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, OrcamentoAlertaService orcamentoAlerta, ILogger<Program> logger, CancellationToken ct) =>
 {
     var usuarioId = IdDoUsuario(principal);
 
@@ -147,6 +150,23 @@ app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ClaimsPrincipal p
         lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, usuarioId, ct));
 
     await repo.AdicionarAsync(lancamento, ct);
+
+    // Best-effort, não bloqueante: o lançamento já foi criado - se a checagem
+    // de orçamento falhar, isso não pode virar 500 pra um efeito colateral
+    // secundário (diferente do aporte de objetivo, onde o evento é parte da
+    // mesma operação de negócio).
+    if (req.Tipo == TipoLancamento.Despesa)
+    {
+        try
+        {
+            await orcamentoAlerta.AvaliarAsync(usuarioId, req.CategoriaId, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Falha ao avaliar alerta de orçamento pra categoria {CategoriaId}.", req.CategoriaId);
+        }
+    }
+
     return Results.Created($"/lancamentos/{lancamento.Id}", ParaResponse(lancamento));
 }).AddEndpointFilter<ValidationFilter<CriarLancamentoRequest>>();
 
