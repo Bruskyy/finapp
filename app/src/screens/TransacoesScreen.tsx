@@ -16,7 +16,8 @@ import { confirmar } from "../confirmar";
 import EstadoVazio from "../componentes/EstadoVazio";
 import ItemLancamento from "../componentes/ItemLancamento";
 import { fimDoMes, inicioDoMes } from "../constants";
-import { cor, espaco, fonte, formatarMoeda, raio } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Lancamento, TipoLancamento } from "../types";
 
 const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -59,6 +60,8 @@ function agruparPorDia(lancamentos: Lancamento[]): Secao[] {
 }
 
 export default function TransacoesScreen() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const navigation = useNavigation();
   const [mesReferencia, setMesReferencia] = useState(new Date());
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
@@ -243,51 +246,53 @@ export default function TransacoesScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
+    centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
 
-  cabecalho: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: espaco.lg },
-  tituloMesBotao: { flexDirection: "row", alignItems: "center", gap: espaco.xs },
-  tituloMes: { ...fonte.tituloCard, color: cor.cinza900, textTransform: "capitalize" },
+    cabecalho: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: espaco.lg },
+    tituloMesBotao: { flexDirection: "row", alignItems: "center", gap: espaco.xs },
+    tituloMes: { ...fonte.tituloCard, color: cor.cinza900, textTransform: "capitalize" },
 
-  resumo: { flexDirection: "row", gap: espaco.xl, marginBottom: espaco.lg },
-  resumoItem: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
-  resumoRotulo: { fontSize: 12, color: cor.cinza500 },
-  resumoValor: { fontSize: 15, fontWeight: "600" },
+    resumo: { flexDirection: "row", gap: espaco.xl, marginBottom: espaco.lg },
+    resumoItem: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
+    resumoRotulo: { fontSize: 12, color: cor.cinza500 },
+    resumoValor: { fontSize: 15, fontWeight: "600" },
 
-  erro: { color: cor.vermelho, marginBottom: espaco.sm },
+    erro: { color: cor.vermelho, marginBottom: espaco.sm },
 
-  tituloSecao: {
-    ...fonte.legenda,
-    color: cor.cinza700,
-    fontWeight: "600",
-    textTransform: "capitalize",
-    marginTop: espaco.lg,
-    marginBottom: espaco.sm,
-  },
-  separador: { height: espaco.sm },
-  // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
-  listaConteudo: { paddingBottom: espaco.xxxl + espaco.xl },
+    tituloSecao: {
+      ...fonte.legenda,
+      color: cor.cinza700,
+      fontWeight: "600",
+      textTransform: "capitalize",
+      marginTop: espaco.lg,
+      marginBottom: espaco.sm,
+    },
+    separador: { height: espaco.sm },
+    // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
+    listaConteudo: { paddingBottom: espaco.xxxl + espaco.xl },
 
-  modalFundo: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: espaco.xl,
-  },
-  modalCartao: {
-    width: "100%",
-    maxWidth: 340,
-    maxHeight: "70%",
-    backgroundColor: cor.branco,
-    borderRadius: raio.card,
-    padding: espaco.lg,
-  },
-  modalTitulo: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
-  opcaoMes: { paddingVertical: espaco.md, borderRadius: raio.input, paddingHorizontal: espaco.md },
-  opcaoMesSelecionada: { backgroundColor: cor.primariaSuave },
-  textoOpcaoMes: { fontSize: 15, color: cor.cinza900, textTransform: "capitalize" },
-  textoOpcaoMesSelecionada: { color: cor.primaria, fontWeight: "600" },
-});
+    modalFundo: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.4)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: espaco.xl,
+    },
+    modalCartao: {
+      width: "100%",
+      maxWidth: 340,
+      maxHeight: "70%",
+      backgroundColor: cor.superficie,
+      borderRadius: raio.card,
+      padding: espaco.lg,
+    },
+    modalTitulo: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
+    opcaoMes: { paddingVertical: espaco.md, borderRadius: raio.input, paddingHorizontal: espaco.md },
+    opcaoMesSelecionada: { backgroundColor: cor.primariaSuave },
+    textoOpcaoMes: { fontSize: 15, color: cor.cinza900, textTransform: "capitalize" },
+    textoOpcaoMesSelecionada: { color: cor.primaria, fontWeight: "600" },
+  });
+}

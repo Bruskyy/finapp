@@ -125,7 +125,7 @@ nível, coleções/customização manual como fase 2).
 **Custo:** R$0 pra lógica; assets visuais exigem tempo de ilustração
 (própria ou IA de geração de imagem com free tier — pesquisar antes).
 
-### 8. Modo escuro
+### 8. Modo escuro — ✅ feito, ver README ("Modo escuro")
 **Proposta:** `tema/tokens.ts` já centraliza toda a paleta — é o ponto de
 extensão certo pra um tema alternativo com `useColorScheme`.
 **Esforço:** M (não é só trocar cor — cada tela precisa ser revisada pra

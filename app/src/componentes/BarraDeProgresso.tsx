@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
-import { cor, espaco } from "../tema";
+import { Cor, espaco } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 
 interface BarraDeProgressoProps {
   percentual: number; // 0-100
@@ -12,6 +13,8 @@ interface BarraDeProgressoProps {
  * limite → vermelho ao estourar. Usada em Orçamentos e Metas.
  */
 export default function BarraDeProgresso({ percentual, limiteAtencao = 80 }: BarraDeProgressoProps) {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const clamped = Math.max(0, Math.min(100, percentual));
   const corBarra =
     percentual > 100 ? cor.vermelho : percentual >= limiteAtencao ? cor.laranja : cor.primaria;
@@ -23,12 +26,14 @@ export default function BarraDeProgresso({ percentual, limiteAtencao = 80 }: Bar
   );
 }
 
-const estilos = StyleSheet.create({
-  trilha: {
-    height: espaco.sm,
-    borderRadius: espaco.xs,
-    backgroundColor: cor.cinza200,
-    overflow: "hidden",
-  },
-  barra: { height: "100%", borderRadius: espaco.xs },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    trilha: {
+      height: espaco.sm,
+      borderRadius: espaco.xs,
+      backgroundColor: cor.cinza200,
+      overflow: "hidden",
+    },
+    barra: { height: "100%", borderRadius: espaco.xs },
+  });
+}

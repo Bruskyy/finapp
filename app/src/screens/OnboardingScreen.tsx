@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import Botao from "../componentes/Botao";
-import { cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte } from "../tema";
+import { useEstilos } from "../tema/ThemeContext";
 
 interface Props {
   aoConcluir: () => void;
@@ -28,6 +29,7 @@ const PAGINAS: Pagina[] = [
  * biblioteca de carrossel (mesmo padrão de toggle já usado em
  * PlanejamentoScreen). */
 export default function OnboardingScreen({ aoConcluir }: Props) {
+  const estilos = useEstilos(criarEstilos);
   const [pagina, setPagina] = useState(0);
   const ultimaPagina = pagina === PAGINAS.length - 1;
 
@@ -69,21 +71,23 @@ export default function OnboardingScreen({ aoConcluir }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: cor.fundoTela,
-    paddingHorizontal: espaco.xl,
-    justifyContent: "space-between",
-    paddingVertical: espaco.xxl,
-  },
-  conteudo: { flex: 1, alignItems: "center", justifyContent: "center" },
-  mascote: { width: 160, height: 160, marginBottom: espaco.xl },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900, textAlign: "center", marginBottom: espaco.sm },
-  texto: { fontSize: 15, color: cor.cinza500, textAlign: "center", maxWidth: 280 },
-  rodape: {},
-  pontos: { flexDirection: "row", gap: espaco.xs, marginBottom: espaco.lg, alignSelf: "center" },
-  ponto: { width: 8, height: 8, borderRadius: 4, backgroundColor: cor.cinza300 },
-  pontoAtivo: { width: 20, backgroundColor: cor.primaria },
-  botaoPular: { alignSelf: "center", marginTop: espaco.xs },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: cor.fundoTela,
+      paddingHorizontal: espaco.xl,
+      justifyContent: "space-between",
+      paddingVertical: espaco.xxl,
+    },
+    conteudo: { flex: 1, alignItems: "center", justifyContent: "center" },
+    mascote: { width: 160, height: 160, marginBottom: espaco.xl },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900, textAlign: "center", marginBottom: espaco.sm },
+    texto: { fontSize: 15, color: cor.cinza500, textAlign: "center", maxWidth: 280 },
+    rodape: {},
+    pontos: { flexDirection: "row", gap: espaco.xs, marginBottom: espaco.lg, alignSelf: "center" },
+    ponto: { width: 8, height: 8, borderRadius: 4, backgroundColor: cor.cinza300 },
+    pontoAtivo: { width: 20, backgroundColor: cor.primaria },
+    botaoPular: { alignSelf: "center", marginTop: espaco.xs },
+  });
+}

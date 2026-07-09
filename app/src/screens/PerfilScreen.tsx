@@ -5,7 +5,8 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { listarConquistas, obterMarcosFinanceiros } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import EstadoVazio from "../componentes/EstadoVazio";
-import { cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Conquista, MarcosFinanceiros } from "../types";
 import { iniciais } from "../utils/iniciais";
 
@@ -44,6 +45,8 @@ function montarMarcos(criadoEmUsuario: string | undefined, marcosApi: MarcosFina
 }
 
 export default function PerfilScreen() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const { usuario } = useAuth();
   const nome = usuario?.nome ?? "";
   const [marcosApi, setMarcosApi] = useState<MarcosFinanceiros | null>(null);
@@ -132,41 +135,43 @@ export default function PerfilScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  tela: { flex: 1, backgroundColor: cor.fundoTela },
-  conteudo: { paddingHorizontal: espaco.lg, paddingTop: espaco.lg, paddingBottom: espaco.xxxl },
-  cabecalho: { alignItems: "center", marginBottom: espaco.lg },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: cor.primaria,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: espaco.md,
-  },
-  iniciais: { fontSize: 32, fontWeight: "700", color: cor.branco },
-  nome: { ...fonte.tituloCard, color: cor.cinza900 },
-  email: { fontSize: 13, color: cor.cinza500 },
-  diasDeJornada: { fontSize: 13, color: cor.primaria, fontWeight: "600", marginTop: espaco.sm },
-  tituloSecao: { ...fonte.tituloSecao, color: cor.cinza900, alignSelf: "flex-start", marginBottom: espaco.sm, marginTop: espaco.lg },
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    tela: { flex: 1, backgroundColor: cor.fundoTela },
+    conteudo: { paddingHorizontal: espaco.lg, paddingTop: espaco.lg, paddingBottom: espaco.xxxl },
+    cabecalho: { alignItems: "center", marginBottom: espaco.lg },
+    avatar: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: cor.primaria,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: espaco.md,
+    },
+    iniciais: { fontSize: 32, fontWeight: "700", color: cor.branco },
+    nome: { ...fonte.tituloCard, color: cor.cinza900 },
+    email: { fontSize: 13, color: cor.cinza500 },
+    diasDeJornada: { fontSize: 13, color: cor.primaria, fontWeight: "600", marginTop: espaco.sm },
+    tituloSecao: { ...fonte.tituloSecao, color: cor.cinza900, alignSelf: "flex-start", marginBottom: espaco.sm, marginTop: espaco.lg },
 
-  linhaDoTempo: { width: "100%" },
-  marco: { flexDirection: "row", alignItems: "flex-start", marginBottom: espaco.md, gap: espaco.sm },
-  iconeMarco: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: cor.primariaSuave,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  textoMarco: { flex: 1 },
-  marcoTitulo: { fontSize: 14, color: cor.cinza900, fontWeight: "500" },
-  marcoData: { fontSize: 12, color: cor.cinza500, marginTop: 2 },
+    linhaDoTempo: { width: "100%" },
+    marco: { flexDirection: "row", alignItems: "flex-start", marginBottom: espaco.md, gap: espaco.sm },
+    iconeMarco: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: cor.primariaSuave,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    textoMarco: { flex: 1 },
+    marcoTitulo: { fontSize: 14, color: cor.cinza900, fontWeight: "500" },
+    marcoData: { fontSize: 12, color: cor.cinza500, marginTop: 2 },
 
-  // conquistas bloqueadas usam a mesma lista, mas apagadas - sem cor de
-  // marca no ícone/título até o usuário desbloquear de verdade.
-  iconeConquistaBloqueada: { backgroundColor: cor.cinza200 },
-  marcoTituloBloqueado: { color: cor.cinza500, fontWeight: "400" },
-});
+    // conquistas bloqueadas usam a mesma lista, mas apagadas - sem cor de
+    // marca no ícone/título até o usuário desbloquear de verdade.
+    iconeConquistaBloqueada: { backgroundColor: cor.cinza200 },
+    marcoTituloBloqueado: { color: cor.cinza500, fontWeight: "400" },
+  });
+}

@@ -20,7 +20,8 @@ import GraficoEvolucaoMensal from "../componentes/GraficoEvolucaoMensal";
 import MetaDestaque from "../componentes/MetaDestaque";
 import ResumoOrcamentos from "../componentes/ResumoOrcamentos";
 import { fimDoMes, inicioDoMes } from "../constants";
-import { cor, espaco, fonte, formatarMoeda, raio } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import {
   EvolucaoMensalPonto,
   GastoPorCategoria,
@@ -40,6 +41,8 @@ import { obterPreferencias, Preferencias } from "../utils/preferencias";
 const DIAS_VALIDADE_RESUMO = 10;
 
 export default function DashboardScreen() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const [saldo, setSaldo] = useState<number | null>(null);
   const [moedas, setMoedas] = useState<number | null>(null);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
@@ -238,7 +241,8 @@ export default function DashboardScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
   container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
   centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
 
@@ -294,4 +298,5 @@ const estilos = StyleSheet.create({
   saldoConta: { fontSize: 14, fontWeight: "600", color: cor.cinza900 },
 
   erro: { color: cor.vermelho, marginBottom: espaco.sm },
-});
+  });
+}

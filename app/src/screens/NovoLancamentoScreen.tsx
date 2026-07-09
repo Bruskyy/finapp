@@ -7,10 +7,13 @@ import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
 import Input from "../componentes/Input";
-import { cor, espaco, fonte, iconeDaCategoria, raio } from "../tema";
+import { Cor, espaco, fonte, iconeDaCategoria, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Categoria, Conta, TipoLancamento } from "../types";
 
 export default function NovoLancamentoScreen() {
+  const { cor, tema } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const navigation = useNavigation();
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
@@ -144,7 +147,7 @@ export default function NovoLancamentoScreen() {
       <View style={estilos.linhaChips}>
         {categorias.length === 0 && <ActivityIndicator color={cor.primaria} />}
         {categorias.map((c) => {
-          const iconeCategoria = iconeDaCategoria(c.nome);
+          const iconeCategoria = iconeDaCategoria(c.nome, tema);
           return (
             <Chip
               key={c.id}
@@ -213,54 +216,56 @@ export default function NovoLancamentoScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xl },
-  cartaoForm: { marginBottom: espaco.xl },
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xl },
+    cartaoForm: { marginBottom: espaco.xl },
 
-  seletorTipo: { flexDirection: "row", gap: espaco.md, marginBottom: espaco.lg },
-  segmento: {
-    flex: 1,
-    flexDirection: "row",
-    gap: espaco.sm,
-    paddingVertical: espaco.lg,
-    borderRadius: raio.botao,
-    borderWidth: 1.5,
-    borderColor: cor.cinza300,
-    backgroundColor: cor.branco,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  segmentoDespesaAtivo: { backgroundColor: cor.vermelho, borderColor: cor.vermelho },
-  segmentoReceitaAtivo: { backgroundColor: cor.verde, borderColor: cor.verde },
-  textoSegmento: { fontSize: 16, fontWeight: "600", color: cor.cinza700 },
-  textoSegmentoAtivo: { color: cor.branco },
+    seletorTipo: { flexDirection: "row", gap: espaco.md, marginBottom: espaco.lg },
+    segmento: {
+      flex: 1,
+      flexDirection: "row",
+      gap: espaco.sm,
+      paddingVertical: espaco.lg,
+      borderRadius: raio.botao,
+      borderWidth: 1.5,
+      borderColor: cor.cinza300,
+      backgroundColor: cor.superficie,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    segmentoDespesaAtivo: { backgroundColor: cor.vermelho, borderColor: cor.vermelho },
+    segmentoReceitaAtivo: { backgroundColor: cor.verde, borderColor: cor.verde },
+    textoSegmento: { fontSize: 16, fontWeight: "600", color: cor.cinza700 },
+    textoSegmentoAtivo: { color: cor.branco },
 
-  rotulo: { fontSize: 14, fontWeight: "600", color: cor.cinza900, marginBottom: espaco.sm },
-  linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.lg },
+    rotulo: { fontSize: 14, fontWeight: "600", color: cor.cinza900, marginBottom: espaco.sm },
+    linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.lg },
 
-  mensagem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: espaco.sm,
-    borderRadius: raio.card,
-    padding: espaco.md,
-    marginTop: espaco.lg,
-    marginBottom: espaco.xl,
-  },
-  mensagemSucesso: { backgroundColor: cor.verdeSuave },
-  mensagemErro: { backgroundColor: cor.vermelhoSuave },
-  textoMensagem: { flex: 1, color: cor.cinza900, fontSize: 14 },
+    mensagem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: espaco.sm,
+      borderRadius: raio.card,
+      padding: espaco.md,
+      marginTop: espaco.lg,
+      marginBottom: espaco.xl,
+    },
+    mensagemSucesso: { backgroundColor: cor.verdeSuave },
+    mensagemErro: { backgroundColor: cor.vermelhoSuave },
+    textoMensagem: { flex: 1, color: cor.cinza900, fontSize: 14 },
 
-  linhaFixa: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: espaco.md,
-    marginBottom: espaco.md,
-  },
-  linhaFixaTexto: { flex: 1 },
-  rotuloFixa: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
-  legendaFixa: { fontSize: 12, color: cor.cinza500, marginTop: espaco.xs },
-  linkContasFixas: { alignSelf: "flex-start", paddingHorizontal: 0, marginBottom: espaco.md },
-});
+    linhaFixa: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: espaco.md,
+      marginBottom: espaco.md,
+    },
+    linhaFixaTexto: { flex: 1 },
+    rotuloFixa: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
+    legendaFixa: { fontSize: 12, color: cor.cinza500, marginTop: espaco.xs },
+    linkContasFixas: { alignSelf: "flex-start", paddingHorizontal: 0, marginBottom: espaco.md },
+  });
+}

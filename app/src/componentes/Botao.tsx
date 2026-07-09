@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
-import { cor, espaco, raio } from "../tema";
+import { Cor, espaco, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 
 export type VarianteBotao = "primario" | "secundario" | "texto";
 
@@ -24,10 +25,29 @@ export default function Botao({
   carregando = false,
   estiloExtra,
 }: BotaoProps) {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const desabilitado = disabled || carregando;
-  const estiloContainer = CONTAINER_POR_VARIANTE[variante];
-  const estiloPressedContainer = CONTAINER_PRESSED_POR_VARIANTE[variante];
-  const estiloRotulo = ROTULO_POR_VARIANTE[variante];
+
+  const containerPorVariante: Record<VarianteBotao, ViewStyle> = {
+    primario: estilos.containerPrimario,
+    secundario: estilos.containerSecundario,
+    texto: estilos.containerTexto,
+  };
+  const containerPressedPorVariante: Record<VarianteBotao, ViewStyle> = {
+    primario: estilos.containerPrimarioPressed,
+    secundario: estilos.containerSecundarioPressed,
+    texto: estilos.containerTextoPressed,
+  };
+  const rotuloPorVariante = {
+    primario: estilos.rotuloPrimario,
+    secundario: estilos.rotuloSecundario,
+    texto: estilos.rotuloTexto,
+  };
+
+  const estiloContainer = containerPorVariante[variante];
+  const estiloPressedContainer = containerPressedPorVariante[variante];
+  const estiloRotulo = rotuloPorVariante[variante];
 
   return (
     <Pressable
@@ -50,49 +70,33 @@ export default function Botao({
   );
 }
 
-const estilos = StyleSheet.create({
-  base: {
-    borderRadius: raio.botao,
-    paddingVertical: espaco.md,
-    paddingHorizontal: espaco.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-  },
-  desabilitado: { opacity: 0.5 },
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    base: {
+      borderRadius: raio.botao,
+      paddingVertical: espaco.md,
+      paddingHorizontal: espaco.lg,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 48,
+    },
+    desabilitado: { opacity: 0.5 },
 
-  containerPrimario: { backgroundColor: cor.primaria },
-  containerPrimarioPressed: { backgroundColor: cor.primariaEscura },
+    containerPrimario: { backgroundColor: cor.primaria },
+    containerPrimarioPressed: { backgroundColor: cor.primariaEscura },
 
-  containerSecundario: {
-    backgroundColor: "transparent",
-    borderWidth: 1.5,
-    borderColor: cor.primaria,
-  },
-  containerSecundarioPressed: { backgroundColor: cor.primariaSuave },
+    containerSecundario: {
+      backgroundColor: "transparent",
+      borderWidth: 1.5,
+      borderColor: cor.primaria,
+    },
+    containerSecundarioPressed: { backgroundColor: cor.primariaSuave },
 
-  containerTexto: { backgroundColor: "transparent", paddingHorizontal: espaco.sm, minHeight: undefined },
-  containerTextoPressed: { opacity: 0.6 },
+    containerTexto: { backgroundColor: "transparent", paddingHorizontal: espaco.sm, minHeight: undefined },
+    containerTextoPressed: { opacity: 0.6 },
 
-  rotuloPrimario: { color: cor.branco, fontSize: 16, fontWeight: "600" },
-  rotuloSecundario: { color: cor.primaria, fontSize: 16, fontWeight: "600" },
-  rotuloTexto: { color: cor.primaria, fontSize: 15, fontWeight: "600" },
-});
-
-const CONTAINER_POR_VARIANTE: Record<VarianteBotao, ViewStyle> = {
-  primario: estilos.containerPrimario,
-  secundario: estilos.containerSecundario,
-  texto: estilos.containerTexto,
-};
-
-const CONTAINER_PRESSED_POR_VARIANTE: Record<VarianteBotao, ViewStyle> = {
-  primario: estilos.containerPrimarioPressed,
-  secundario: estilos.containerSecundarioPressed,
-  texto: estilos.containerTextoPressed,
-};
-
-const ROTULO_POR_VARIANTE = {
-  primario: estilos.rotuloPrimario,
-  secundario: estilos.rotuloSecundario,
-  texto: estilos.rotuloTexto,
-};
+    rotuloPrimario: { color: cor.branco, fontSize: 16, fontWeight: "600" },
+    rotuloSecundario: { color: cor.primaria, fontSize: 16, fontWeight: "600" },
+    rotuloTexto: { color: cor.primaria, fontSize: 15, fontWeight: "600" },
+  });
+}

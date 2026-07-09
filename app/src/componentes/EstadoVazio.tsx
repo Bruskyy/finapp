@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { cor, espaco } from "../tema";
+import { Cor, espaco } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import Botao from "./Botao";
 
 interface EstadoVazioProps {
@@ -19,6 +20,8 @@ interface EstadoVazioProps {
  * curta e botão de ação opcional.
  */
 export default function EstadoVazio({ icone, mascote = false, mensagem, textoAcao, onAcao }: EstadoVazioProps) {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   return (
     <View style={estilos.container}>
       <View style={estilos.circuloIcone}>
@@ -36,18 +39,20 @@ export default function EstadoVazio({ icone, mascote = false, mensagem, textoAca
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { alignItems: "center", justifyContent: "center", paddingVertical: espaco.xxxl, paddingHorizontal: espaco.xl },
-  circuloIcone: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: cor.primariaSuave,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: espaco.lg,
-  },
-  mascote: { width: 64, height: 64 },
-  mensagem: { fontSize: 15, color: cor.cinza500, textAlign: "center", marginBottom: espaco.lg },
-  botao: { minWidth: 180 },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { alignItems: "center", justifyContent: "center", paddingVertical: espaco.xxxl, paddingHorizontal: espaco.xl },
+    circuloIcone: {
+      width: 88,
+      height: 88,
+      borderRadius: 44,
+      backgroundColor: cor.primariaSuave,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: espaco.lg,
+    },
+    mascote: { width: 64, height: 64 },
+    mensagem: { fontSize: 15, color: cor.cinza500, textAlign: "center", marginBottom: espaco.lg },
+    botao: { minWidth: 180 },
+  });
+}

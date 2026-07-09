@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { cor, espaco } from "../tema";
+import { Cor, espaco } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { EvolucaoMensalPonto } from "../types";
 
 const ALTURA_MAXIMA = 90;
@@ -10,6 +11,8 @@ const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "s
  * — Views puras, sem biblioteca de gráfico (compatível web e nativo).
  */
 export default function GraficoEvolucaoMensal({ dados }: { dados: EvolucaoMensalPonto[] }) {
+  const { cor } = useTema();
+  const styles = useEstilos(criarEstilos);
   const maior = Math.max(...dados.map((d) => Math.max(d.receitas, d.despesas)), 1);
 
   return (
@@ -45,18 +48,20 @@ export default function GraficoEvolucaoMensal({ dados }: { dados: EvolucaoMensal
   );
 }
 
-const styles = StyleSheet.create({
-  area: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-around",
-    height: ALTURA_MAXIMA + 24,
-  },
-  coluna: { alignItems: "center", gap: 4 },
-  parDeBarras: { flexDirection: "row", alignItems: "flex-end", gap: 3 },
-  barra: { width: 12, borderRadius: 3 },
-  rotuloMes: { fontSize: 11, color: cor.cinza500 },
-  legenda: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: espaco.sm, marginTop: espaco.sm },
-  bolinha: { width: 8, height: 8, borderRadius: 4 },
-  textoLegenda: { fontSize: 11, color: cor.cinza500, marginRight: espaco.sm },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    area: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-around",
+      height: ALTURA_MAXIMA + 24,
+    },
+    coluna: { alignItems: "center", gap: 4 },
+    parDeBarras: { flexDirection: "row", alignItems: "flex-end", gap: 3 },
+    barra: { width: 12, borderRadius: 3 },
+    rotuloMes: { fontSize: 11, color: cor.cinza500 },
+    legenda: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: espaco.sm, marginTop: espaco.sm },
+    bolinha: { width: 8, height: 8, borderRadius: 4 },
+    textoLegenda: { fontSize: 11, color: cor.cinza500, marginRight: espaco.sm },
+  });
+}

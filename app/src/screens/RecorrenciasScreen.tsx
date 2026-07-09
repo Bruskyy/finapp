@@ -5,7 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { listarRecorrencias, pausarRecorrencia, reativarRecorrencia } from "../api/client";
 import Card from "../componentes/Card";
 import EstadoVazio from "../componentes/EstadoVazio";
-import { cor, espaco, fonte, formatarMoeda, iconeDaRecorrencia } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda, iconeDaRecorrencia } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Recorrencia, TipoLancamento } from "../types";
 
 /**
@@ -14,6 +15,8 @@ import { Recorrencia, TipoLancamento } from "../types";
  * o que já existe (ver ITEM-AJUSTES-RECORRENCIA-E-MARCA.md).
  */
 export default function RecorrenciasScreen() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const [recorrencias, setRecorrencias] = useState<Recorrencia[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -101,26 +104,28 @@ export default function RecorrenciasScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
-  subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs },
-  erro: { color: cor.vermelho, marginTop: espaco.sm, marginBottom: espaco.sm },
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
+    centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
+    subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs },
+    erro: { color: cor.vermelho, marginTop: espaco.sm, marginBottom: espaco.sm },
 
-  listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xl },
-  itemCartao: { flexDirection: "row", alignItems: "center", gap: espaco.md, marginBottom: espaco.sm },
-  itemPausado: { opacity: 0.55 },
-  iconeWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: cor.primariaSuave,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  itemCentro: { flex: 1 },
-  itemDescricao: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
-  itemDetalhe: { fontSize: 12, color: cor.cinza500, marginTop: 2 },
-  itemValor: { fontSize: 15, fontWeight: "600" },
-});
+    listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xl },
+    itemCartao: { flexDirection: "row", alignItems: "center", gap: espaco.md, marginBottom: espaco.sm },
+    itemPausado: { opacity: 0.55 },
+    iconeWrapper: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: cor.primariaSuave,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    itemCentro: { flex: 1 },
+    itemDescricao: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
+    itemDetalhe: { fontSize: 12, color: cor.cinza500, marginTop: 2 },
+    itemValor: { fontSize: 15, fontWeight: "600" },
+  });
+}

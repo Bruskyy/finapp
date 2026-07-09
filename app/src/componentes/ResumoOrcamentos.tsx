@@ -1,10 +1,12 @@
 import { StyleSheet, Text, View } from "react-native";
-import { cor, espaco, formatarMoeda } from "../tema";
+import { Cor, espaco, formatarMoeda } from "../tema";
+import { useEstilos } from "../tema/ThemeContext";
 import { OrcamentoStatus } from "../types";
 import BarraDeProgresso from "./BarraDeProgresso";
 
 /** Resumo compacto dos orçamentos do mês — versão widget do Dashboard, sem edição. */
 export default function ResumoOrcamentos({ orcamentos }: { orcamentos: OrcamentoStatus[] }) {
+  const estilos = useEstilos(criarEstilos);
   if (orcamentos.length === 0) return null;
 
   const ordenados = [...orcamentos].sort((a, b) => b.percentualUsado - a.percentualUsado).slice(0, 3);
@@ -28,9 +30,11 @@ export default function ResumoOrcamentos({ orcamentos }: { orcamentos: Orcamento
   );
 }
 
-const estilos = StyleSheet.create({
-  linha: { marginBottom: espaco.md },
-  cabecalhoLinha: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.xs },
-  categoria: { fontSize: 13, color: cor.cinza900, flex: 1 },
-  valores: { fontSize: 12, color: cor.cinza500 },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    linha: { marginBottom: espaco.md },
+    cabecalhoLinha: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.xs },
+    categoria: { fontSize: 13, color: cor.cinza900, flex: 1 },
+    valores: { fontSize: 12, color: cor.cinza500 },
+  });
+}

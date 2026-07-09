@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { cor, espaco, formatarData, formatarMoeda, iconeDaCategoria, raio } from "../tema";
+import { Cor, espaco, formatarData, formatarMoeda, iconeDaCategoria, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { TipoLancamento } from "../types";
 
 interface ItemLancamentoProps {
@@ -29,8 +30,10 @@ export default function ItemLancamento({
   recorrente = false,
   onExcluir,
 }: ItemLancamentoProps) {
+  const { cor, tema } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const ehDespesa = tipo === TipoLancamento.Despesa;
-  const iconeCategoria = iconeDaCategoria(categoria);
+  const iconeCategoria = iconeDaCategoria(categoria, tema);
   const corValor = ehDespesa ? cor.vermelho : cor.verde;
 
   return (
@@ -73,39 +76,41 @@ export default function ItemLancamento({
   );
 }
 
-const estilos = StyleSheet.create({
-  // Fundo branco próprio (em vez de confiar no fundo da tela): cada linha
-  // vira um "mini-card" branco, com contraste garantido em qualquer fundo.
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: espaco.md,
-    gap: espaco.md,
-    backgroundColor: cor.branco,
-    borderRadius: raio.card,
-  },
-  iconeWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  centro: { flex: 1 },
-  descricao: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
-  linhaDetalhe: { flexDirection: "row", alignItems: "center", gap: espaco.xs, marginTop: espaco.xs },
-  detalhe: { fontSize: 13, color: cor.cinza500 },
-  tags: { fontSize: 12, color: cor.primaria, marginTop: espaco.xs },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: espaco.xs,
-    backgroundColor: cor.primariaSuave,
-    borderRadius: raio.chip,
-    paddingHorizontal: espaco.xs,
-    paddingVertical: espaco.xs,
-  },
-  textoBadge: { fontSize: 10, color: cor.primaria, fontWeight: "600" },
-  valor: { fontSize: 15, fontWeight: "600" },
-  botaoExcluir: { padding: espaco.xs },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    // Fundo próprio (em vez de confiar no fundo da tela): cada linha vira um
+    // "mini-card", com contraste garantido em qualquer fundo.
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: espaco.md,
+      gap: espaco.md,
+      backgroundColor: cor.superficie,
+      borderRadius: raio.card,
+    },
+    iconeWrapper: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    centro: { flex: 1 },
+    descricao: { fontSize: 15, color: cor.cinza900, fontWeight: "500" },
+    linhaDetalhe: { flexDirection: "row", alignItems: "center", gap: espaco.xs, marginTop: espaco.xs },
+    detalhe: { fontSize: 13, color: cor.cinza500 },
+    tags: { fontSize: 12, color: cor.primaria, marginTop: espaco.xs },
+    badge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: espaco.xs,
+      backgroundColor: cor.primariaSuave,
+      borderRadius: raio.chip,
+      paddingHorizontal: espaco.xs,
+      paddingVertical: espaco.xs,
+    },
+    textoBadge: { fontSize: 10, color: cor.primaria, fontWeight: "600" },
+    valor: { fontSize: 15, fontWeight: "600" },
+    botaoExcluir: { padding: espaco.xs },
+  });
+}

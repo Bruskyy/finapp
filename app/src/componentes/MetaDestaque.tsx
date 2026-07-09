@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
-import { espaco, cor, formatarMoeda } from "../tema";
+import { espaco, Cor, formatarMoeda } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Objetivo } from "../types";
 import BarraDeProgresso from "./BarraDeProgresso";
 
@@ -30,6 +31,8 @@ function textoPrevisao(destaque: Objetivo): string | null {
  * mais perto de ser concluída), então este componente não repete o nome.
  */
 export default function MetaDestaque({ destaque }: { destaque: Objetivo }) {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const previsao = textoPrevisao(destaque);
 
   return (
@@ -48,8 +51,10 @@ export default function MetaDestaque({ destaque }: { destaque: Objetivo }) {
   );
 }
 
-const estilos = StyleSheet.create({
-  valores: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.sm },
-  previsao: { flexDirection: "row", alignItems: "center", gap: espaco.xs, marginTop: espaco.sm },
-  previsaoTexto: { fontSize: 12, color: cor.cinza500, flex: 1 },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    valores: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.sm },
+    previsao: { flexDirection: "row", alignItems: "center", gap: espaco.xs, marginTop: espaco.sm },
+    previsaoTexto: { fontSize: 12, color: cor.cinza500, flex: 1 },
+  });
+}

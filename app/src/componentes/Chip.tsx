@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text } from "react-native";
-import { cor, espaco, raio } from "../tema";
+import { Cor, espaco, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 
 interface ChipProps {
   texto: string;
@@ -15,6 +16,8 @@ interface ChipProps {
  * Ver DESIGN_SYSTEM.md — nenhuma tela cria seu próprio "botão pequeno".
  */
 export default function Chip({ texto, selecionado = false, onPress, icone, corIcone }: ChipProps) {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   return (
     <Pressable
       onPress={onPress}
@@ -35,19 +38,21 @@ export default function Chip({ texto, selecionado = false, onPress, icone, corIc
   );
 }
 
-const estilos = StyleSheet.create({
-  base: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: espaco.md,
-    paddingVertical: espaco.sm,
-    borderRadius: raio.chip,
-    borderWidth: 1,
-    borderColor: cor.cinza300,
-    backgroundColor: cor.branco,
-  },
-  selecionado: { backgroundColor: cor.primaria, borderColor: cor.primaria },
-  icone: { marginRight: espaco.xs },
-  texto: { fontSize: 13, color: cor.cinza900 },
-  textoSelecionado: { color: cor.branco, fontWeight: "600" },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    base: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: espaco.md,
+      paddingVertical: espaco.sm,
+      borderRadius: raio.chip,
+      borderWidth: 1,
+      borderColor: cor.cinza300,
+      backgroundColor: cor.superficie,
+    },
+    selecionado: { backgroundColor: cor.primaria, borderColor: cor.primaria },
+    icone: { marginRight: espaco.xs },
+    texto: { fontSize: 13, color: cor.cinza900 },
+    textoSelecionado: { color: cor.branco, fontWeight: "600" },
+  });
+}
