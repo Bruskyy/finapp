@@ -13,6 +13,12 @@
 > cadastrar cartão de novo (a exceção do Azure SQL na Etapa 7 foi um caso
 > específico já decidido, não abre precedente geral).
 >
+> **Exceção documentada (decisão do Vitor, 07/2026):** a conta de
+> desenvolvedor do Google Play (US$25, taxa única) será paga como parte do
+> lançamento do Cofrin 1.0 — ver "Roadmap Cofrin 1.0" no fim deste arquivo.
+> Assim como o Azure SQL, é caso específico decidido conscientemente, não
+> abre precedente.
+>
 > Diferença de filosofia importante: o `BACKLOG-mobills.md` **excluía**
 > deliberadamente Open Finance real e cartão de crédito com fatura por não
 > agregarem requisito técnico novo. Esse racional não vale mais — aqui a
@@ -110,7 +116,7 @@ notificação que já existem.
 
 ## Onda 2 — Retenção visual (maior escopo de UI, ainda sem custo)
 
-### 7. Escritório virtual + coleções
+### 7. Escritório virtual + coleções — adiado pra pós-1.0 (ver "Roadmap Cofrin 1.0")
 **O que é nos apps de referência:** nenhum tem — é a proposta mais
 ambiciosa e mais "assinatura do Cofrin" da lista original do Vitor.
 **Proposta:** avatar/sala que evolui com o uso (mesa → escritório completo),
@@ -131,7 +137,7 @@ extensão certo pra um tema alternativo com `useColorScheme`.
 **Esforço:** M (não é só trocar cor — cada tela precisa ser revisada pra
 contraste). **Custo:** R$0.
 
-### 9. Notificação push real
+### 9. Notificação push real — no Roadmap Cofrin 1.0 (Sprint 5)
 **Proposta:** hoje `Notificacoes.Api` só persiste (a central in-app já
 existe) — falta o "empurrão" de verdade. `expo-notifications` +
 `Expo Push Notification Service` é gratuito sem limite prático pro volume
@@ -264,25 +270,94 @@ conversa de posicionamento antes de ser uma de arquitetura.
 
 ---
 
-## Ordem de execução sugerida (meu julgamento, redirecionável)
+## Roadmap Cofrin 1.0 (substitui a antiga "ordem de execução sugerida")
 
-**Onda 1** (1 → 6) primeiro — tudo R$0 garantido, reaproveita infra
-existente, entrega valor rápido e visível. Dentro da onda: item 4 (resumo
-semanal) antes do item 5 (conquistas) porque valida o pipeline de eventos
-→ notificação que o item 5 também vai usar.
+> Decisão do Vitor (07/2026), com insumo de uma análise externa de produto
+> (ChatGPT) filtrada contra a realidade do código: em vez de seguir as
+> ondas em sequência, o próximo marco é **lançar o Cofrin 1.0 na Play
+> Store**. A Onda 1 inteira + modo escuro já estão prontos; o 1.0 fecha as
+> lacunas que sobraram e publica. O que a análise externa sugeriu e **já
+> existia** (dashboard personalizável, metas com projeção, orçamentos com
+> alerta, resumo semanal, linha do tempo, conquistas, central de
+> notificações, onboarding, login Google) não foi refeito.
+>
+> **Princípio-guia do 1.0 — "momento de recompensa":** cada ação
+> importante devolve um retorno emocional pequeno e imediato. A régua pra
+> qualquer escopo novo: *"isso faz o usuário querer abrir o app amanhã?"*
 
-Depois, **Onda 2** (7 → 9) — maior escopo de UI, mas ainda sem
-dependência de pesquisa externa. Item 7 (escritório virtual) é o maior do
-backlog inteiro; sugiro quebrá-lo em sub-entregas quando chegar a vez.
+### Sprint 1 — Destravar o que está invisível (frontend; backend já pronto)
+- **UI de importação CSV**: o backend inteiro existe desde a Etapa 6
+  (S3/SQS/worker/outbox) e **nenhuma tela chama** — tela nova no drawer com
+  `expo-document-picker` (grátis), `POST /importacoes` + polling de status.
+- **Tela de Contas + transferência**: `POST /transferencias` e
+  `client.transferir()` existem sem nenhum consumidor de UI — tela nova no
+  drawer com saldos por conta (reusa `listarSaldosPorConta()`) e ação de
+  transferir.
+- **Saudação no Dashboard**: "Bom dia/Boa tarde/Boa noite, {nome}" acima do
+  mês (nome já disponível via `useAuth()`).
 
-**Onda 3** (10 → 14) depois — paridade com apps estabelecidos, todo mundo
-R$0 confirmado, mas maior volume de modelagem nova (principalmente o item
-10, cartão de crédito).
+### Sprint 2 — Streak + conquistas expandidas
+- **Sequência de dias (streak)** em `Gamificacao.Api`: entidade nova
+  alimentada pelos eventos de lançamento que o serviço já consome
+  idempotentemente (mesmo padrão de `ContadorConquista`); cuidado com fuso
+  (America/Sao_Paulo) na virada do dia. `GET /sequencia` + exibição no
+  Dashboard (o slot já existe reservado no código) e no Perfil.
+- **Conquistas: de 6 pra ~25-30** via o pipeline existente
+  (códigos/thresholds/seed em migration), nas categorias organização,
+  consistência (streak 7/30/100/365), economia e planejamento. Sem
+  ilustração individual por enquanto (Ionicons). O que exigir evento novo
+  cross-service é cortado nesta rodada.
+- **Decisão registrada: XP fica de fora.** Sem marketplace (item 7), XP e
+  moedas seriam dois contadores redundantes que só acumulam. XP/níveis
+  voltam junto com o escritório virtual, quando moedas tiverem onde ser
+  gastas.
 
-**Onda 4** (15 → 18) por último — cada item tem uma dependência (pesquisa
-de custo, ou quebra de premissa de arquitetura) que vale resolver com mais
-calma, não sob pressão de "preciso entregar isso essa semana".
+### Sprint 3 — Momentos de recompensa
+- **Pós-aporte**: "Sua meta ficou X dias mais próxima" — delta do
+  `previsaoConclusaoEm` que `aportarObjetivo()` já devolve.
+- **Pós-lançamento**: feedback enriquecido ("Registrado. +N moedas ·
+  sequência de X dias").
+- **Animação leve** (Animated nativo, sem lib paga) em marcos: meta
+  concluída, conquista desbloqueada.
 
-Os itens de "precisa de pesquisa" ficam fora da fila até alguém (Vitor ou
-eu, sob pedido) investigar e trazer de volta com uma resposta concreta de
-viabilidade.
+### Sprint 4 — Feed de Evolução no Perfil
+- Unificar "Sua jornada" + "Conquistas" num feed cronológico reverso,
+  agregando no client 3 fontes que já existem: `GET /relatorios/marcos`,
+  `GET /conquistas` e as notificações tipadas. Sem backend novo.
+- **Decisão registrada: "Central de Insights" (ideia externa) adiada
+  pós-1.0** — sobrepõe demais o resumo semanal; revisitar com dados de
+  usuários reais.
+
+### Sprint 5 — Push real (item 9 da Onda 2)
+- `expo-notifications` + Expo Push API (grátis, sem cartão): app registra
+  o token via endpoint novo em `Notificacoes.Api`; ao persistir
+  notificação, o serviço também envia push via HTTP (retry Polly).
+- Push chega no app mobile; a versão web segue só com a central in-app.
+- Respeita a preferência `notificacoesAtivas` que já existe.
+
+### Sprint 6 — Lançamento Play Store
+- Polish final (revisão visual nos 2 temas, ícone/splash, performance).
+- Publicação: conta dev Google (**US$25, a exceção documentada no topo**),
+  build AAB via EAS free tier, listing, política de privacidade (página
+  estática no Vercel, R$0).
+- **Atenção**: contas pessoais novas do Google Play exigem teste fechado
+  com um número mínimo de testadores por 14 dias antes do acesso à
+  produção (verificar o número atual na doc do Google na hora) — o Vitor
+  precisa recrutar os testadores; planejar esse prazo.
+
+### Depois do 1.0 (nada disso se perde)
+- **Escritório virtual/coleções (item 7)** — com feedback de usuários
+  reais e moedas acumuladas pra gastar.
+- **XP/níveis** — junto com o marketplace.
+- **Central de Insights** — se o resumo semanal não bastar.
+- **Ondas 3 e 4** (10 → 18) — inalteradas, na ordem já descrita nos itens.
+- Os itens de "precisa de pesquisa" continuam fora da fila até alguém
+  (Vitor ou eu, sob pedido) investigar e trazer resposta concreta de
+  viabilidade.
+
+### Modo de execução
+Cada sprint = um ou mais PRs (branch → CI verde → merge), um bloco
+funcional por vez. Backend novo (streak, push tokens) ganha testes
+Testcontainers no padrão existente; decisões técnicas relevantes ganham
+entrada em "Decisões de arquitetura" no README. Checkpoint com o Vitor ao
+fim de cada sprint antes de seguir pro próximo.

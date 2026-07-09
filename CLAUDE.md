@@ -19,7 +19,7 @@ Sou Vitor, desenvolvedor com experiência em C#, SQL, html, css e react. Estou e
 
 App **mobile** de controle financeiro pessoal (inspirado no Mobills) com **gamificação**: o uso do app gera moedas (pontos resgatáveis com ledger próprio — sem valor monetário real por questões regulatórias, mas tecnicamente modelado como se fosse). Versão web futura fica viabilizada porque toda a lógica vive no backend atrás de um gateway; o Expo permite rodar o mesmo código como web.
 
-**Restrição absoluta: custo R$ 0.** Nada de serviços pagos, nem "free tier" que exija cartão de crédito. Tudo local via Docker; deploy futuro apenas em serviços gratuitos sem cartão (Neon, CloudAMQP Little Lemur, Render/Fly.io, Expo).
+**Restrição absoluta: custo R$ 0.** Nada de serviços pagos, nem "free tier" que exija cartão de crédito. Tudo local via Docker; deploy futuro apenas em serviços gratuitos sem cartão (Neon, CloudAMQP Little Lemur, Render/Fly.io, Expo). Duas exceções pontuais já decididas pelo Vitor, que não abrem precedente: Azure SQL (Etapa 7) e a conta de desenvolvedor do Google Play (US$25, taxa única — parte do Roadmap Cofrin 1.0 em `BACKLOG-PRODUTO.md`).
 
 ## Requisitos das vagas que o projeto DEVE cobrir (não fugir do foco)
 
