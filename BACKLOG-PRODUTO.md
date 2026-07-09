@@ -285,7 +285,7 @@ conversa de posicionamento antes de ser uma de arquitetura.
 > importante devolve um retorno emocional pequeno e imediato. A régua pra
 > qualquer escopo novo: *"isso faz o usuário querer abrir o app amanhã?"*
 
-### Sprint 1 — Destravar o que está invisível (frontend; backend já pronto)
+### Sprint 1 — Destravar o que está invisível (frontend; backend já pronto) — ✅ feito, ver README ("UI de importação CSV + modo \"Banco\" da importação")
 - **UI de importação CSV**: o backend inteiro existe desde a Etapa 6
   (S3/SQS/worker/outbox) e **nenhuma tela chama** — tela nova no drawer com
   `expo-document-picker` (grátis), `POST /importacoes` + polling de status.
@@ -296,17 +296,20 @@ conversa de posicionamento antes de ser uma de arquitetura.
 - **Saudação no Dashboard**: "Bom dia/Boa tarde/Boa noite, {nome}" acima do
   mês (nome já disponível via `useAuth()`).
 
-### Sprint 2 — Streak + conquistas expandidas
+### Sprint 2 — Streak + conquistas expandidas — ✅ feito, ver README ("Streak de dias consecutivos + catálogo de conquistas de 6 para 15")
 - **Sequência de dias (streak)** em `Gamificacao.Api`: entidade nova
   alimentada pelos eventos de lançamento que o serviço já consome
   idempotentemente (mesmo padrão de `ContadorConquista`); cuidado com fuso
   (America/Sao_Paulo) na virada do dia. `GET /sequencia` + exibição no
   Dashboard (o slot já existe reservado no código) e no Perfil.
-- **Conquistas: de 6 pra ~25-30** via o pipeline existente
-  (códigos/thresholds/seed em migration), nas categorias organização,
-  consistência (streak 7/30/100/365), economia e planejamento. Sem
-  ilustração individual por enquanto (Ionicons). O que exigir evento novo
-  cross-service é cortado nesta rodada.
+- **Conquistas: de 6 pra 15** via o pipeline existente
+  (códigos/thresholds/seed em migration): consistência (streak
+  7/30/100/365) e mais marcos de organização/economia. Sem ilustração
+  individual por enquanto (Ionicons). **Nota de escopo:** o alvo original
+  era "~25-30" — ficou em 15 porque esse é o teto do que dá pra fazer sem
+  evento cross-service novo (planejamento/orçamentos exigiria Gamificacao
+  passar a consumir `orcamento.estourado`, hoje só de Notificacoes.Api) —
+  cortado conforme a regra já definida abaixo.
 - **Decisão registrada: XP fica de fora.** Sem marketplace (item 7), XP e
   moedas seriam dois contadores redundantes que só acumulam. XP/níveis
   voltam junto com o escritório virtual, quando moedas tiverem onde ser
