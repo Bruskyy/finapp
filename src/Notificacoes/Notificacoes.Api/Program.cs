@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -117,7 +118,10 @@ app.MapPost("/dispositivos", async (RegistrarDispositivoRequest req, ClaimsPrinc
     return Results.NoContent();
 });
 
-app.MapDelete("/dispositivos", async (RegistrarDispositivoRequest req, ClaimsPrincipal principal, IDispositivoPushRepository repo, CancellationToken ct) =>
+// MapDelete não permite corpo inferido (só POST/PUT/PATCH permitem) - o
+// RequestDelegateFactory lança em tempo de build de rota (derruba a
+// aplicação inteira, não só este endpoint) sem o [FromBody] explícito.
+app.MapDelete("/dispositivos", async ([FromBody] RegistrarDispositivoRequest req, ClaimsPrincipal principal, IDispositivoPushRepository repo, CancellationToken ct) =>
 {
     await repo.RemoverAsync(IdDoUsuario(principal), req.Token, ct);
     return Results.NoContent();
