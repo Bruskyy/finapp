@@ -79,7 +79,10 @@ app.UseAuthorization();
 app.MapGet("/notificacoes", async (ClaimsPrincipal principal, INotificacaoRepository repo, CancellationToken ct) =>
 {
     var notificacoes = await repo.ListarAsync(IdDoUsuario(principal), ct);
-    return Results.Ok(notificacoes.Select(n => new NotificacaoResponse(n.Id, n.Tipo, n.Mensagem, n.Lida, n.CriadoEm)));
+    return Results.Ok(notificacoes.Select(n => new NotificacaoResponse(
+        n.Id, n.Tipo, n.Mensagem, n.Lida, n.CriadoEm,
+        n.EconomiaVsSemanaAnterior, n.CategoriaMaiorGasto, n.ValorCategoriaMaiorGasto,
+        n.DiasComLancamento, n.NomeObjetivoDestaque, n.PercentualObjetivoDestaque)));
 });
 
 app.MapPost("/notificacoes/{id:guid}/marcar-lida", async (Guid id, ClaimsPrincipal principal, INotificacaoRepository repo, CancellationToken ct) =>

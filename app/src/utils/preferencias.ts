@@ -7,7 +7,8 @@ export type WidgetDashboard =
   | "graficoCategorias"
   | "resumoOrcamentos"
   | "metasDestaque"
-  | "saldoMoedas";
+  | "saldoMoedas"
+  | "resumoSemanal";
 
 export interface Preferencias {
   notificacoesAtivas: boolean;
@@ -22,6 +23,7 @@ const PADRAO: Preferencias = {
     resumoOrcamentos: true,
     metasDestaque: true,
     saldoMoedas: true,
+    resumoSemanal: true,
   },
 };
 

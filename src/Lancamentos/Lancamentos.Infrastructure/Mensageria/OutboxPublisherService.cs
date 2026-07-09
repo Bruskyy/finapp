@@ -86,6 +86,9 @@ public class OutboxPublisherService : BackgroundService
         nameof(LancamentoCriadoEvent) => "lancamento.criado",
         nameof(LancamentoRecorrenteCriadoEvent) => "lancamento.recorrente.criado",
         nameof(ObjetivoConcluidoEvent) => "objetivo.concluido",
+        // Cai sob o wildcard "lancamento.#" que a fila de Notificacoes.Api
+        // já escuta - propositalmente, pra não precisar de bind de fila novo.
+        nameof(ResumoSemanalGeradoEvent) => "lancamento.resumo.semanal",
         _ => "lancamento.desconhecido"
     };
 }

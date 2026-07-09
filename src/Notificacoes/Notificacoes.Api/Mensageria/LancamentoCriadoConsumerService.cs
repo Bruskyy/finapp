@@ -131,6 +131,21 @@ public class LancamentoCriadoConsumerService : BackgroundService
                     recorrente.UsuarioId);
                 break;
 
+            case "lancamento.resumo.semanal":
+                var resumo = JsonSerializer.Deserialize<ResumoSemanalGeradoEvent>(json)
+                    ?? throw new InvalidOperationException("Payload de ResumoSemanalGeradoEvent inválido.");
+                notificacao = Notificacao.ParaResumoSemanal(
+                    resumo.EventId,
+                    MontarMensagemResumoSemanal(resumo),
+                    resumo.UsuarioId,
+                    resumo.EconomiaVsSemanaAnterior,
+                    resumo.CategoriaMaiorGasto,
+                    resumo.ValorCategoriaMaiorGasto,
+                    resumo.DiasComLancamento,
+                    resumo.NomeObjetivoDestaque,
+                    resumo.PercentualObjetivoDestaque);
+                break;
+
             default:
                 _logger.LogWarning("Routing key {RoutingKey} sem handler — mensagem descartada.", routingKey);
                 return;
@@ -139,5 +154,24 @@ public class LancamentoCriadoConsumerService : BackgroundService
         var processado = await repositorio.AdicionarAsync(notificacao, ct);
         if (!processado)
             _logger.LogInformation("Evento {EventId} já tinha sido processado - ignorado (idempotência).", notificacao.EventId);
+    }
+
+    private static string MontarMensagemResumoSemanal(ResumoSemanalGeradoEvent resumo)
+    {
+        var economia = resumo.EconomiaVsSemanaAnterior >= 0
+            ? $"Você economizou {resumo.EconomiaVsSemanaAnterior:C} a mais que a semana passada."
+            : $"Você gastou {Math.Abs(resumo.EconomiaVsSemanaAnterior):C} a mais que a semana passada.";
+
+        var categoria = resumo.CategoriaMaiorGasto is not null
+            ? $" Maior gasto: {resumo.CategoriaMaiorGasto} ({resumo.ValorCategoriaMaiorGasto:C})."
+            : "";
+
+        var dias = $" Você registrou algo em {resumo.DiasComLancamento} {(resumo.DiasComLancamento == 1 ? "dia" : "dias")}.";
+
+        var meta = resumo.NomeObjetivoDestaque is not null
+            ? $" Sua meta '{resumo.NomeObjetivoDestaque}' está {resumo.PercentualObjetivoDestaque:0.#}% completa."
+            : "";
+
+        return $"Seu resumo da semana: {economia}{categoria}{dias}{meta}";
     }
 }

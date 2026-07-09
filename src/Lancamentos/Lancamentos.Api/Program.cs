@@ -20,6 +20,7 @@ using Lancamentos.Domain.Entidades;
 using Lancamentos.Application.Relatorios;
 using Lancamentos.Infrastructure.Mensageria;
 using Lancamentos.Infrastructure.Recorrencias;
+using Lancamentos.Infrastructure.Relatorios;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,8 @@ builder.Services.AddScoped<IObjetivoRepository, ObjetivoRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddHostedService<RecorrenciaWorker>();
 builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
+builder.Services.AddScoped<IResumoSemanalRepository, ResumoSemanalRepository>();
+builder.Services.AddHostedService<ResumoSemanalWorker>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddHostedService<OutboxPublisherService>();

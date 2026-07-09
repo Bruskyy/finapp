@@ -122,4 +122,14 @@ public class LancamentoRepository : ILancamentoRepository
         _db.Lancamentos.Add(entrada);
         await _db.SaveChangesAsync(ct); // atomicidade: mesmo banco, mesma transacao (por isso nao precisa de Saga)
     }
+
+    public async Task<IReadOnlyList<Guid>> ListarUsuariosComLancamentoAsync(DateTime inicio, DateTime fim, CancellationToken ct)
+        // CriadoEm (quando o usuário de fato usou o app), não Data (a data do
+        // lançamento em si, que pode ser retroativa) - mesmo critério usado
+        // na linha do tempo de marcos.
+        => await _db.Lancamentos.AsNoTracking()
+            .Where(x => x.UsuarioId != null && x.CriadoEm >= inicio && x.CriadoEm < fim)
+            .Select(x => x.UsuarioId!.Value)
+            .Distinct()
+            .ToListAsync(ct);
 }

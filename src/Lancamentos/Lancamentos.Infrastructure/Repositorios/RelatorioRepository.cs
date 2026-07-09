@@ -92,4 +92,11 @@ WHERE Ano * 12 + Mes >= {corte} AND UsuarioId = {usuarioId}")
 
         return new MarcosFinanceiros(primeiroLancamento, primeiraMetaCriada, primeiraMetaConcluida, primeiroOrcamento);
     }
+
+    public async Task<int> DiasComLancamentoAsync(DateTime inicio, DateTime fim, Guid usuarioId, CancellationToken ct)
+        => await _db.Lancamentos.AsNoTracking()
+            .Where(x => x.UsuarioId == usuarioId && x.CriadoEm >= inicio && x.CriadoEm < fim)
+            .Select(x => x.CriadoEm.Date)
+            .Distinct()
+            .CountAsync(ct);
 }

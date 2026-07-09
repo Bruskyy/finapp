@@ -76,7 +76,7 @@ e o histórico de aportes já calculam — **zero IA precisa pra isso funcionar
 bem**.
 **Esforço:** P. **Custo:** R$0.
 
-### 4. Resumo semanal determinístico (proto-mentor, sem IA)
+### 4. Resumo semanal determinístico (proto-mentor, sem IA) — ✅ feito, ver README ("Resumo semanal determinístico — proto-mentor sem IA")
 **Proposta:** um `BackgroundService` (mesmo padrão do `RecorrenciaWorker`)
 gera, toda semana, um resumo por regras: quanto economizou vs. semana
 anterior, categoria de maior gasto, quantos dias registrou algo, distância
