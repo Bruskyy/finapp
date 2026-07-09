@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { criarLancamento, criarRecorrencia, listarCategorias, listarContas } from "../api/client";
+import { criarLancamento, criarRecorrencia, listarCategorias, listarContas, obterSequencia } from "../api/client";
 import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
@@ -84,7 +84,26 @@ export default function NovoLancamentoScreen() {
           data: new Date().toISOString(),
           tags: listaTags.length > 0 ? listaTags : undefined,
         });
-        setMensagem({ texto: "Lançamento registrado! Suas moedas estão a caminho.", erro: false });
+
+        // "Momento de recompensa" (Roadmap 1.0, Sprint 3): moedas e conquistas
+        // são creditadas de forma assíncrona (evento RabbitMQ processado por
+        // Gamificacao.Api, fora do ciclo request/response deste POST) - não dá
+        // pra afirmar "+N moedas" aqui sem duplicar a régua de pontuação no
+        // client. A sequência de dias é o único número que já reflete o estado
+        // real do backend nesse instante, então é o que a mensagem cita.
+        let textoSequencia = "";
+        try {
+          const seq = await obterSequencia();
+          if (seq.diasConsecutivos > 0) {
+            textoSequencia = ` Sequência de ${seq.diasConsecutivos} ${seq.diasConsecutivos === 1 ? "dia" : "dias"}.`;
+          }
+        } catch {
+          // detalhe cosmético - não deve travar a confirmação do lançamento
+        }
+        setMensagem({
+          texto: `Lançamento registrado! Suas moedas estão a caminho.${textoSequencia}`,
+          erro: false,
+        });
       }
       setDescricao("");
       setValor("");

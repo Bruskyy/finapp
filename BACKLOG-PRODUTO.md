@@ -315,13 +315,24 @@ conversa de posicionamento antes de ser uma de arquitetura.
   voltam junto com o escritório virtual, quando moedas tiverem onde ser
   gastas.
 
-### Sprint 3 — Momentos de recompensa
+### Sprint 3 — Momentos de recompensa — ✅ feito, ver README ("Momentos de recompensa")
 - **Pós-aporte**: "Sua meta ficou X dias mais próxima" — delta do
   `previsaoConclusaoEm` que `aportarObjetivo()` já devolve.
-- **Pós-lançamento**: feedback enriquecido ("Registrado. +N moedas ·
-  sequência de X dias").
-- **Animação leve** (Animated nativo, sem lib paga) em marcos: meta
-  concluída, conquista desbloqueada.
+- **Pós-lançamento**: feedback enriquecido com a sequência de dias atual.
+  **Nota de escopo:** "+N moedas" ficou de fora do texto — moedas são
+  creditadas de forma assíncrona (evento RabbitMQ processado por
+  Gamificacao.Api), então o valor exato não existe ainda no instante da
+  resposta do `POST /lancamentos`; afirmar um número aqui exigiria
+  duplicar a régua de pontuação no client. A sequência de dias, por vir
+  de uma consulta separada logo em seguida, já reflete o estado real.
+- **Animação leve** (Animated nativo, sem lib paga — componente `Confete`
+  reutilizável) em meta concluída, que é detectável na hora (o retorno de
+  `aportarObjetivo` já informa `concluido: true/false`). **Conquista
+  desbloqueada ficou de fora** pelo mesmo motivo do item acima: o
+  desbloqueio acontece de forma assíncrona, o client não sabe na hora se
+  uma ação específica disparou uma conquista — celebrar isso direito
+  pede o Feed de Evolução (Sprint 4) ou push (Sprint 5), não um evento
+  síncrono que não existe.
 
 ### Sprint 4 — Feed de Evolução no Perfil
 - Unificar "Sua jornada" + "Conquistas" num feed cronológico reverso,

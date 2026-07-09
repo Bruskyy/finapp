@@ -7,10 +7,11 @@ import BarraDeProgresso from "../componentes/BarraDeProgresso";
 import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
+import Confete from "../componentes/Confete";
 import EstadoVazio from "../componentes/EstadoVazio";
 import Input from "../componentes/Input";
 import { confirmar } from "../confirmar";
-import { Cor, espaco, fonte, formatarMoeda } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Conta, Objetivo } from "../types";
 
@@ -21,6 +22,8 @@ export default function ObjetivosScreen() {
   const [contas, setContas] = useState<Conta[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [mensagemAporte, setMensagemAporte] = useState<string | null>(null);
+  const [mostrarConfete, setMostrarConfete] = useState(false);
 
   // formulário de novo objetivo
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -93,9 +96,32 @@ export default function ObjetivosScreen() {
     if (!valor || valor <= 0 || contaAporte === null) return;
     setAportando(true);
     setErro(null);
+    setMensagemAporte(null);
     try {
       const atualizado = await aportarObjetivo(objetivo.id, valor, contaAporte);
       setObjetivos((lista) => lista.map((o) => (o.id === atualizado.id ? atualizado : o)));
+
+      // "Momento de recompensa" (Roadmap 1.0, Sprint 3): meta concluída AGORA
+      // (transição detectável na hora, sem esperar evento assíncrono) ganha
+      // confete; caso contrário, se a previsão de conclusão adiantou, avisa
+      // quantos dias — nunca mostra número negativo/neutro como se fosse ruim,
+      // um aporte nunca deveria parecer um "fracasso".
+      if (!objetivo.concluido && atualizado.concluido) {
+        setMostrarConfete(true);
+      } else if (objetivo.previsaoConclusaoEm && atualizado.previsaoConclusaoEm) {
+        const diasGanhos = Math.round(
+          (new Date(objetivo.previsaoConclusaoEm).getTime() - new Date(atualizado.previsaoConclusaoEm).getTime()) /
+            86_400_000
+        );
+        setMensagemAporte(
+          diasGanhos > 0
+            ? `Sua meta ficou ${diasGanhos} ${diasGanhos === 1 ? "dia" : "dias"} mais próxima!`
+            : "Aporte registrado!"
+        );
+      } else {
+        setMensagemAporte("Aporte registrado!");
+      }
+
       setValorAporte("");
       setAporteEm(null);
     } catch (e) {
@@ -134,6 +160,13 @@ export default function ObjetivosScreen() {
       </View>
 
       {erro && <Text style={estilos.erro}>{erro}</Text>}
+      {mensagemAporte && (
+        <View style={estilos.avisoSucesso}>
+          <Ionicons name="checkmark-circle" size={18} color={cor.verde} />
+          <Text style={estilos.textoSucesso}>{mensagemAporte}</Text>
+        </View>
+      )}
+      {mostrarConfete && <Confete onFim={() => setMostrarConfete(false)} />}
 
       {mostrarFormulario && (
         <Card estiloExtra={estilos.formulario}>
@@ -258,6 +291,16 @@ function criarEstilos(cor: Cor) {
     titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
     subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, maxWidth: 260 },
     erro: { color: cor.vermelho, marginTop: espaco.sm, marginBottom: espaco.sm },
+    avisoSucesso: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: espaco.sm,
+      backgroundColor: cor.verdeSuave,
+      borderRadius: raio.card,
+      padding: espaco.md,
+      marginTop: espaco.sm,
+    },
+    textoSucesso: { flex: 1, fontSize: 13, color: cor.cinza900 },
 
     formulario: { marginTop: espaco.lg, marginBottom: espaco.md },
     linhaDupla: { flexDirection: "row", gap: espaco.sm },

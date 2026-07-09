@@ -822,6 +822,44 @@ extensões de `ConquistaThresholdsTests`) + 3 de integração
 (`SequenciaServiceTests`, Testcontainers.Postgres) cobrindo o desbloqueio
 de `SEQUENCIA_7` ao longo de 7 dias simulados.
 
+### Momentos de recompensa (Roadmap Cofrin 1.0, Sprint 3)
+
+Princípio-guia do Roadmap 1.0: cada ação importante devolve um retorno
+emocional pequeno e imediato. Três micro-features, todas no app, sem
+backend novo — só consumindo dados que os endpoints já devolviam.
+
+**Pós-aporte, comparando o "antes" com o "depois".** `ObjetivosScreen`
+já tinha o objeto `Objetivo` completo antes de chamar `aportarObjetivo`,
+e a resposta traz o `Objetivo` atualizado — dá pra comparar
+`previsaoConclusaoEm` dos dois e calcular quantos dias a meta adiantou,
+sem endpoint novo. Regra deliberada: um aporte nunca mostra número
+negativo nem "regrediu" — se a previsão não melhorou, a mensagem cai
+pro genérico "Aporte registrado!" em vez de parecer uma cobrança.
+
+**Duas features do plano original ficaram de fora do texto, e o porquê é
+o mesmo nos dois casos: moedas e conquistas são creditadas/desbloqueadas
+de forma assíncrona** (evento RabbitMQ processado por `Gamificacao.Api`,
+fora do ciclo request/response do `POST /lancamentos` ou
+`POST /objetivos/{id}/aportes`). Não dá pra afirmar "+N moedas" no
+instante da resposta sem duplicar `CalculadoraDePontuacao` no client —
+e o client não tem como saber, na hora, se a ação que acabou de fazer
+foi a que cruzou o threshold de alguma conquista. **Decisão:** o texto
+pós-lançamento cita a sequência de dias (que uma segunda chamada,
+`GET /sequencia`, já reflete de verdade, sem inventar número) em vez de
+moedas; celebração de conquista desbloqueada fica pro Feed de Evolução
+(Sprint 4) ou push (Sprint 5) — mecanismos desenhados pra descobrir
+eventos assíncronos depois do fato, não pra fingir uma sincronia que a
+arquitetura não tem.
+
+**`Confete` — componente novo, reutilizável, sem lib externa.**
+`app/src/componentes/Confete.tsx`: ~14 pecinhas coloridas (reaproveitando
+`paletaGraficos`, já compartilhada entre os dois temas) caem e giram via
+`Animated.timing` + `useNativeDriver`, staggered por `delay`. Só dispara
+em marcos **síncronos** — hoje, meta concluída (`aportarObjetivo`
+devolve `concluido: true` na hora). Posicionamento determinístico
+(`(i * 37) % 100`, não `Math.random()`) evita as pecinhas "pularem" de
+lugar se o componente re-renderizar no meio da animação.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
