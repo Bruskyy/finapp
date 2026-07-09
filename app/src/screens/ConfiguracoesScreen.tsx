@@ -1,17 +1,26 @@
 import { useEffect, useState } from "react";
-import { Linking, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import Constants from "expo-constants";
 import { atualizarPerfil, trocarSenha } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Input from "../componentes/Input";
-import { cor, espaco, fonte } from "../tema";
-import { obterPreferencias, Preferencias, salvarPreferencias } from "../utils/preferencias";
+import { Cor, espaco, fonte, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
+import { obterPreferencias, Preferencias, salvarPreferencias, TemaPreferido } from "../utils/preferencias";
 
 const URL_REPOSITORIO = "https://github.com/Bruskyy/finapp";
 
+const OPCOES_TEMA: { id: TemaPreferido; label: string }[] = [
+  { id: "sistema", label: "Sistema" },
+  { id: "claro", label: "Claro" },
+  { id: "escuro", label: "Escuro" },
+];
+
 export default function ConfiguracoesScreen() {
+  const { cor, preferencia, definirPreferencia } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const { usuario, atualizarUsuario, logout } = useAuth();
 
   const [nome, setNome] = useState(usuario?.nome ?? "");
@@ -131,6 +140,27 @@ export default function ConfiguracoesScreen() {
             accessibilityLabel="Ativar ou desativar notificações"
           />
         </View>
+
+        <Text style={estilos.rotuloAparencia}>Aparência</Text>
+        <View style={estilos.linhaTema}>
+          {OPCOES_TEMA.map((opcao) => {
+            const selecionado = preferencia === opcao.id;
+            return (
+              <Pressable
+                key={opcao.id}
+                onPress={() => definirPreferencia(opcao.id)}
+                style={[estilos.opcaoTema, selecionado && estilos.opcaoTemaSelecionada]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selecionado }}
+                accessibilityLabel={`Tema ${opcao.label}`}
+              >
+                <Text style={[estilos.textoOpcaoTema, selecionado && estilos.textoOpcaoTemaSelecionada]}>
+                  {opcao.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </Card>
 
       <Card estiloExtra={estilos.cartao}>
@@ -149,16 +179,34 @@ export default function ConfiguracoesScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.lg },
-  cartao: { marginBottom: espaco.md },
-  tituloCartao: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
-  erro: { color: cor.vermelho, marginBottom: espaco.sm },
-  sucesso: { color: cor.verde, marginBottom: espaco.sm },
-  linhaPreferencia: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  textoPreferencia: { fontSize: 15, color: cor.cinza900 },
-  textoSobre: { fontSize: 14, color: cor.cinza500, marginBottom: espaco.sm },
-  botaoRepositorio: { alignSelf: "flex-start", paddingHorizontal: 0 },
-  botaoSair: { marginTop: espaco.sm, marginBottom: espaco.xxl },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.lg },
+    cartao: { marginBottom: espaco.md },
+    tituloCartao: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
+    erro: { color: cor.vermelho, marginBottom: espaco.sm },
+    sucesso: { color: cor.verde, marginBottom: espaco.sm },
+    linhaPreferencia: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    textoPreferencia: { fontSize: 15, color: cor.cinza900 },
+
+    rotuloAparencia: { fontSize: 15, color: cor.cinza900, marginTop: espaco.lg, marginBottom: espaco.sm },
+    linhaTema: { flexDirection: "row", gap: espaco.sm },
+    opcaoTema: {
+      flex: 1,
+      paddingVertical: espaco.sm,
+      borderRadius: raio.chip,
+      borderWidth: 1,
+      borderColor: cor.cinza300,
+      backgroundColor: cor.superficie,
+      alignItems: "center",
+    },
+    opcaoTemaSelecionada: { backgroundColor: cor.primaria, borderColor: cor.primaria },
+    textoOpcaoTema: { fontSize: 13, color: cor.cinza900 },
+    textoOpcaoTemaSelecionada: { color: cor.branco, fontWeight: "600" },
+
+    textoSobre: { fontSize: 14, color: cor.cinza500, marginBottom: espaco.sm },
+    botaoRepositorio: { alignSelf: "flex-start", paddingHorizontal: 0 },
+    botaoSair: { marginTop: espaco.sm, marginBottom: espaco.xxl },
+  });
+}

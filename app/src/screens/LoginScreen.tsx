@@ -4,13 +4,15 @@ import { useAuth } from "../auth/AuthContext";
 import { useGoogleAuth } from "../auth/useGoogleAuth";
 import Botao from "../componentes/Botao";
 import Input from "../componentes/Input";
-import { cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte } from "../tema";
+import { useEstilos } from "../tema/ThemeContext";
 
 interface Props {
   aoIrParaRegistro: () => void;
 }
 
 export default function LoginScreen({ aoIrParaRegistro }: Props) {
+  const estilos = useEstilos(criarEstilos);
   const { login, loginComGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -96,23 +98,25 @@ export default function LoginScreen({ aoIrParaRegistro }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.fundoTela },
-  logo: {
-    width: 220,
-    height: 78,
-    alignSelf: "center",
-    marginBottom: espaco.xl,
-  },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900, textAlign: "center" },
-  subtitulo: {
-    fontSize: 14,
-    color: cor.cinza500,
-    textAlign: "center",
-    marginTop: espaco.xs,
-    marginBottom: espaco.xxl,
-  },
-  erro: { color: cor.vermelho, textAlign: "center", marginBottom: espaco.md },
-  botaoGoogle: { marginTop: espaco.sm },
-  botaoCadastro: { alignSelf: "center", marginTop: espaco.sm },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.fundoTela },
+    logo: {
+      width: 220,
+      height: 78,
+      alignSelf: "center",
+      marginBottom: espaco.xl,
+    },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900, textAlign: "center" },
+    subtitulo: {
+      fontSize: 14,
+      color: cor.cinza500,
+      textAlign: "center",
+      marginTop: espaco.xs,
+      marginBottom: espaco.xxl,
+    },
+    erro: { color: cor.vermelho, textAlign: "center", marginBottom: espaco.md },
+    botaoGoogle: { marginTop: espaco.sm },
+    botaoCadastro: { alignSelf: "center", marginTop: espaco.sm },
+  });
+}

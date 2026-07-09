@@ -10,9 +10,13 @@ export type WidgetDashboard =
   | "saldoMoedas"
   | "resumoSemanal";
 
+/** "sistema" segue o tema do SO/navegador (useColorScheme) - padrão pra quem nunca mexeu. */
+export type TemaPreferido = "sistema" | "claro" | "escuro";
+
 export interface Preferencias {
   notificacoesAtivas: boolean;
   widgetsAtivos: Record<WidgetDashboard, boolean>;
+  temaPreferido: TemaPreferido;
 }
 
 const PADRAO: Preferencias = {
@@ -25,6 +29,7 @@ const PADRAO: Preferencias = {
     saldoMoedas: true,
     resumoSemanal: true,
   },
+  temaPreferido: "sistema",
 };
 
 // Preferências não-sensíveis (ao contrário do token de auth, que usa

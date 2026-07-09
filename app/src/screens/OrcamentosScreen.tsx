@@ -15,10 +15,13 @@ import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
 import EstadoVazio from "../componentes/EstadoVazio";
 import Input from "../componentes/Input";
-import { cor, espaco, fonte, formatarMoeda } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Categoria, OrcamentoStatus } from "../types";
 
 export default function OrcamentosScreen() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const [orcamentos, setOrcamentos] = useState<OrcamentoStatus[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -161,6 +164,8 @@ export default function OrcamentosScreen() {
 }
 
 function CartaoOrcamento({ item, onRemover }: { item: OrcamentoStatus; onRemover: () => void }) {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const estourou = item.percentualUsado >= 100;
   const noLimite = item.percentualUsado >= 80 && !estourou;
   const corTexto = estourou ? cor.vermelho : noLimite ? cor.laranja : cor.primaria;
@@ -184,34 +189,36 @@ function CartaoOrcamento({ item, onRemover }: { item: OrcamentoStatus; onRemover
   );
 }
 
-const estilos = StyleSheet.create({
-  // paddingBottom reserva o espaço da nav flutuante (Planejamento ->
-  // Orçamentos vive dentro da TabsPrincipais). Só funciona porque a
-  // FlatList abaixo tem flex:1 (preenche o restante da coluna) - se ela
-  // encolhesse pro conteúdo, o botão/form que vem depois dela ficaria na
-  // altura natural do conteúdo, ignorando esse padding do container.
-  container: {
-    flex: 1,
-    paddingHorizontal: espaco.lg,
-    paddingTop: espaco.md,
-    paddingBottom: espaco.xxxl + espaco.xxl + espaco.lg,
-    backgroundColor: cor.fundoTela,
-  },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.lg },
-  erro: { color: cor.vermelho, marginBottom: espaco.sm },
-  lista: { flex: 1 },
-  listaConteudo: { paddingBottom: espaco.md },
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    // paddingBottom reserva o espaço da nav flutuante (Planejamento ->
+    // Orçamentos vive dentro da TabsPrincipais). Só funciona porque a
+    // FlatList abaixo tem flex:1 (preenche o restante da coluna) - se ela
+    // encolhesse pro conteúdo, o botão/form que vem depois dela ficaria na
+    // altura natural do conteúdo, ignorando esse padding do container.
+    container: {
+      flex: 1,
+      paddingHorizontal: espaco.lg,
+      paddingTop: espaco.md,
+      paddingBottom: espaco.xxxl + espaco.xxl + espaco.lg,
+      backgroundColor: cor.fundoTela,
+    },
+    centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.lg },
+    erro: { color: cor.vermelho, marginBottom: espaco.sm },
+    lista: { flex: 1 },
+    listaConteudo: { paddingBottom: espaco.md },
 
-  cartaoOrcamento: { marginBottom: espaco.md },
-  cartaoTopo: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  cartaoCategoria: { ...fonte.tituloCard, color: cor.cinza900 },
-  cartaoValores: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, marginBottom: espaco.sm },
-  cartaoPercentual: { fontSize: 12, fontWeight: "600", marginTop: espaco.sm },
+    cartaoOrcamento: { marginBottom: espaco.md },
+    cartaoTopo: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    cartaoCategoria: { ...fonte.tituloCard, color: cor.cinza900 },
+    cartaoValores: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, marginBottom: espaco.sm },
+    cartaoPercentual: { fontSize: 12, fontWeight: "600", marginTop: espaco.sm },
 
-  botaoNovoTeto: { marginTop: espaco.sm },
-  formulario: { marginTop: espaco.sm },
-  cabecalhoFormulario: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: espaco.md },
-  rotuloFormulario: { ...fonte.tituloCard, color: cor.cinza900 },
-  linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
-});
+    botaoNovoTeto: { marginTop: espaco.sm },
+    formulario: { marginTop: espaco.sm },
+    cabecalhoFormulario: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: espaco.md },
+    rotuloFormulario: { ...fonte.tituloCard, color: cor.cinza900 },
+    linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
+  });
+}

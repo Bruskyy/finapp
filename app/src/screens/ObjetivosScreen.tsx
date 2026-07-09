@@ -10,10 +10,13 @@ import Chip from "../componentes/Chip";
 import EstadoVazio from "../componentes/EstadoVazio";
 import Input from "../componentes/Input";
 import { confirmar } from "../confirmar";
-import { cor, espaco, fonte, formatarMoeda } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Conta, Objetivo } from "../types";
 
 export default function ObjetivosScreen() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [contas, setContas] = useState<Conta[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -247,30 +250,32 @@ export default function ObjetivosScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.md, backgroundColor: cor.fundoTela },
-  centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
-  cabecalho: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
-  subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, maxWidth: 260 },
-  erro: { color: cor.vermelho, marginTop: espaco.sm, marginBottom: espaco.sm },
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.md, backgroundColor: cor.fundoTela },
+    centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
+    cabecalho: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900 },
+    subtitulo: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, maxWidth: 260 },
+    erro: { color: cor.vermelho, marginTop: espaco.sm, marginBottom: espaco.sm },
 
-  formulario: { marginTop: espaco.lg, marginBottom: espaco.md },
-  linhaDupla: { flexDirection: "row", gap: espaco.sm },
-  metadeLinha: { flex: 1 },
+    formulario: { marginTop: espaco.lg, marginBottom: espaco.md },
+    linhaDupla: { flexDirection: "row", gap: espaco.sm },
+    metadeLinha: { flex: 1 },
 
-  // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
-  listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xxxl + espaco.xl },
-  cartaoObjetivo: { marginBottom: espaco.md },
-  linhaTitulo: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: espaco.sm, gap: espaco.sm },
-  nomeObjetivo: { ...fonte.tituloCard, color: cor.cinza900, flex: 1 },
-  valores: { fontSize: 13, color: cor.cinza500 },
-  botaoExcluir: { padding: espaco.xs },
-  dica: { fontSize: 12, color: cor.cinza500, marginTop: espaco.sm },
+    // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
+    listaConteudo: { paddingTop: espaco.lg, paddingBottom: espaco.xxxl + espaco.xl },
+    cartaoObjetivo: { marginBottom: espaco.md },
+    linhaTitulo: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: espaco.sm, gap: espaco.sm },
+    nomeObjetivo: { ...fonte.tituloCard, color: cor.cinza900, flex: 1 },
+    valores: { fontSize: 13, color: cor.cinza500 },
+    botaoExcluir: { padding: espaco.xs },
+    dica: { fontSize: 12, color: cor.cinza500, marginTop: espaco.sm },
 
-  blocoAporte: { marginTop: espaco.md },
-  linhaChipsConta: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
-  linhaBotoesAporte: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
-  botaoConfirmarAporte: { flex: 1 },
-  botaoAportar: { alignSelf: "flex-start", paddingHorizontal: 0, marginTop: espaco.sm },
-});
+    blocoAporte: { marginTop: espaco.md },
+    linhaChipsConta: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
+    linhaBotoesAporte: { flexDirection: "row", alignItems: "center", gap: espaco.sm },
+    botaoConfirmarAporte: { flex: 1 },
+    botaoAportar: { alignSelf: "flex-start", paddingHorizontal: 0, marginTop: espaco.sm },
+  });
+}

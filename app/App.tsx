@@ -1,5 +1,11 @@
 import "react-native-gesture-handler";
-import { DrawerActions, NavigationContainer, useNavigation } from "@react-navigation/native";
+import {
+  DarkTheme,
+  DefaultTheme,
+  DrawerActions,
+  NavigationContainer,
+  useNavigation,
+} from "@react-navigation/native";
 import {
   BottomTabBarButtonProps,
   createBottomTabNavigator,
@@ -25,7 +31,8 @@ import QuestionarioPerfilScreen from "./src/screens/QuestionarioPerfilScreen";
 import RecorrenciasScreen from "./src/screens/RecorrenciasScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
 import TransacoesScreen from "./src/screens/TransacoesScreen";
-import { cor, espaco, sombra } from "./src/tema";
+import { Cor, espaco, sombra } from "./src/tema";
+import { ThemeProvider, useEstilos, useTema } from "./src/tema/ThemeContext";
 import { marcarOnboardingVisto, obterOnboardingVisto } from "./src/utils/onboarding";
 
 const Tab = createBottomTabNavigator();
@@ -40,6 +47,8 @@ const icones: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 /** Botão central "Novo": FAB elevado acima da tab bar, ~20% maior que os demais. */
 function BotaoNovoTabBar({ onPress, accessibilityState }: BottomTabBarButtonProps) {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const focado = !!accessibilityState?.selected;
   return (
     <Pressable
@@ -61,6 +70,7 @@ function BotaoNovoTabBar({ onPress, accessibilityState }: BottomTabBarButtonProp
  * onPress. */
 function BotaoMaisTabBar({ children }: BottomTabBarButtonProps) {
   const navigation = useNavigation();
+  const estilos = useEstilos(criarEstilos);
   return (
     <Pressable
       onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
@@ -86,6 +96,7 @@ function BotaoAbaPadrao({
   accessibilityLabel,
   testID,
 }: BottomTabBarButtonProps) {
+  const estilos = useEstilos(criarEstilos);
   return (
     <Pressable
       onPress={onPress}
@@ -102,12 +113,14 @@ function BotaoAbaPadrao({
 }
 
 function TabsPrincipais() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: cor.primaria,
-        tabBarInactiveTintColor: cor.marcaEscura,
+        tabBarInactiveTintColor: cor.navInativo,
         tabBarStyle: estilos.tabBar,
         tabBarButton: (props) => <BotaoAbaPadrao {...props} />,
         // Item ativo ganha um círculo preenchido verde-primavera com o
@@ -121,7 +134,7 @@ function TabsPrincipais() {
               <Ionicons name={icones[route.name]} size={size} color={cor.branco} />
             </View>
           ) : (
-            <Ionicons name={icones[route.name]} size={size} color={cor.marcaEscura} />
+            <Ionicons name={icones[route.name]} size={size} color={cor.navInativo} />
           ),
       })}
     >
@@ -149,6 +162,7 @@ function TabsPrincipais() {
 }
 
 function DrawerPrincipal() {
+  const { cor } = useTema();
   return (
     <Drawer.Navigator
       screenOptions={{
@@ -202,6 +216,8 @@ function DrawerPrincipal() {
 }
 
 function TelaCarregandoAuth() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   return (
     <View style={estilos.carregando}>
       <ActivityIndicator size="large" color={cor.primaria} />
@@ -260,62 +276,87 @@ function RaizNavegacao() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={useTemaNavegacao()}>
       <DrawerPrincipal />
     </NavigationContainer>
   );
 }
 
+/** Mapeia o tema do app pro tema do React Navigation (chrome nativo da lib -
+ * fundo de transição entre telas, cor default de header/borda) - parte só de
+ * `DefaultTheme`/`DarkTheme` da própria lib (preserva `fonts` e outras
+ * propriedades internas que não são da conta deste app mudar). */
+function useTemaNavegacao() {
+  const { tema, cor } = useTema();
+  const base = tema === "escuro" ? DarkTheme : DefaultTheme;
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: cor.primaria,
+      background: cor.fundoTela,
+      card: cor.superficie,
+      text: cor.cinza900,
+      border: cor.cinza300,
+      notification: cor.laranja,
+    },
+  };
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <StatusBar style="auto" />
-      <RaizNavegacao />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <StatusBar style="auto" />
+        <RaizNavegacao />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
-const estilos = StyleSheet.create({
-  carregando: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: cor.fundoTela },
-  // Pílula flutuante (padrão do kit Figma de referência): fundo verde-suave,
-  // ícones inativos em teal escuro de marca, ícone ativo vira um círculo
-  // verde-primavera com o ícone em branco (ver iconeAtivoCirculo).
-  tabBar: {
-    position: "absolute",
-    left: espaco.lg,
-    right: espaco.lg,
-    bottom: espaco.lg,
-    height: 64,
-    borderRadius: 32,
-    borderTopWidth: 0,
-    backgroundColor: cor.primariaSuave,
-    ...sombra,
-  },
-  // 30x30: cabe dentro do slot de ícone que o bottom-tabs já reserva
-  // (~28x31) sem estourar - um círculo maior (ex: 40x40) sai da caixa e
-  // distorce visualmente em relação ao resto da barra.
-  iconeAtivoCirculo: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: cor.primaria,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  botaoAba: { flex: 1, alignItems: "center", justifyContent: "center" },
-  wrapperFab: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
-  fab: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: cor.primaria,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 18,
-    ...sombra,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  fabFocado: { backgroundColor: cor.primariaEscura },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    carregando: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: cor.fundoTela },
+    // Pílula flutuante (padrão do kit Figma de referência): fundo verde-suave,
+    // ícones inativos em teal escuro de marca, ícone ativo vira um círculo
+    // verde-primavera com o ícone em branco (ver iconeAtivoCirculo).
+    tabBar: {
+      position: "absolute",
+      left: espaco.lg,
+      right: espaco.lg,
+      bottom: espaco.lg,
+      height: 64,
+      borderRadius: 32,
+      borderTopWidth: 0,
+      backgroundColor: cor.primariaSuave,
+      ...sombra,
+    },
+    // 30x30: cabe dentro do slot de ícone que o bottom-tabs já reserva
+    // (~28x31) sem estourar - um círculo maior (ex: 40x40) sai da caixa e
+    // distorce visualmente em relação ao resto da barra.
+    iconeAtivoCirculo: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: cor.primaria,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    botaoAba: { flex: 1, alignItems: "center", justifyContent: "center" },
+    wrapperFab: { flex: 1, alignItems: "center", justifyContent: "flex-end" },
+    fab: {
+      width: 58,
+      height: 58,
+      borderRadius: 29,
+      backgroundColor: cor.primaria,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 18,
+      ...sombra,
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    fabFocado: { backgroundColor: cor.primariaEscura },
+  });
+}

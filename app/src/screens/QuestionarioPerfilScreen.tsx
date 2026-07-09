@@ -5,7 +5,8 @@ import Botao from "../componentes/Botao";
 import Chip from "../componentes/Chip";
 import Input from "../componentes/Input";
 import { useAuth } from "../auth/AuthContext";
-import { cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte } from "../tema";
+import { useEstilos } from "../tema/ThemeContext";
 import { MaiorDificuldade, MaiorObjetivo, MomentoDeVida, PerfilOnboardingRequest } from "../types";
 
 const OPCOES_MOMENTO: { valor: MomentoDeVida; texto: string }[] = [
@@ -47,6 +48,7 @@ function paraNumero(valor: string): number {
  * ali e em FluxoAuth (App.tsx) - sem lib de wizard nova.
  */
 export default function QuestionarioPerfilScreen() {
+  const estilos = useEstilos(criarEstilos);
   const { atualizarUsuario } = useAuth();
 
   const [step, setStep] = useState(0);
@@ -271,16 +273,18 @@ export default function QuestionarioPerfilScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cor.fundoTela },
-  conteudo: { flexGrow: 1, justifyContent: "center", paddingHorizontal: espaco.xl, paddingVertical: espaco.xxl },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xs },
-  subtitulo: { fontSize: 14, color: cor.cinza500, marginBottom: espaco.lg },
-  linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
-  erro: { color: cor.vermelho, marginTop: espaco.sm },
-  rodape: { paddingHorizontal: espaco.xl, paddingBottom: espaco.xxl },
-  pontos: { flexDirection: "row", gap: espaco.xs, marginBottom: espaco.lg, alignSelf: "center" },
-  ponto: { width: 8, height: 8, borderRadius: 4, backgroundColor: cor.cinza300 },
-  pontoAtivo: { width: 20, backgroundColor: cor.primaria },
-  linhaBotoesSecundarios: { flexDirection: "row", justifyContent: "center", gap: espaco.md, marginTop: espaco.xs },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: cor.fundoTela },
+    conteudo: { flexGrow: 1, justifyContent: "center", paddingHorizontal: espaco.xl, paddingVertical: espaco.xxl },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xs },
+    subtitulo: { fontSize: 14, color: cor.cinza500, marginBottom: espaco.lg },
+    linhaChips: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.md },
+    erro: { color: cor.vermelho, marginTop: espaco.sm },
+    rodape: { paddingHorizontal: espaco.xl, paddingBottom: espaco.xxl },
+    pontos: { flexDirection: "row", gap: espaco.xs, marginBottom: espaco.lg, alignSelf: "center" },
+    ponto: { width: 8, height: 8, borderRadius: 4, backgroundColor: cor.cinza300 },
+    pontoAtivo: { width: 20, backgroundColor: cor.primaria },
+    linhaBotoesSecundarios: { flexDirection: "row", justifyContent: "center", gap: espaco.md, marginTop: espaco.xs },
+  });
+}

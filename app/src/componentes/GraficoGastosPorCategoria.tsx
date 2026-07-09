@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
-import { cor, espaco, formatarMoeda, paletaGraficos } from "../tema";
+import { Cor, espaco, formatarMoeda, paletaGraficos } from "../tema";
+import { useEstilos } from "../tema/ThemeContext";
 import { GastoPorCategoria } from "../types";
 
 /**
@@ -8,6 +9,7 @@ import { GastoPorCategoria } from "../types";
  * de biblioteca de gráfico, funciona igual em web e nativo.
  */
 export default function GraficoGastosPorCategoria({ dados }: { dados: GastoPorCategoria[] }) {
+  const styles = useEstilos(criarEstilos);
   const total = dados.reduce((soma, d) => soma + d.totalGasto, 0);
   if (total === 0) return null;
 
@@ -40,11 +42,13 @@ export default function GraficoGastosPorCategoria({ dados }: { dados: GastoPorCa
   );
 }
 
-const styles = StyleSheet.create({
-  linha: { marginBottom: espaco.md },
-  cabecalhoLinha: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.xs },
-  nomeCategoria: { fontSize: 13, color: cor.cinza900, flex: 1 },
-  valor: { fontSize: 12, color: cor.cinza500 },
-  trilha: { height: espaco.sm, borderRadius: espaco.xs, backgroundColor: cor.cinza200, overflow: "hidden" },
-  barra: { height: espaco.sm, borderRadius: espaco.xs },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    linha: { marginBottom: espaco.md },
+    cabecalhoLinha: { flexDirection: "row", justifyContent: "space-between", marginBottom: espaco.xs },
+    nomeCategoria: { fontSize: 13, color: cor.cinza900, flex: 1 },
+    valor: { fontSize: 12, color: cor.cinza500 },
+    trilha: { height: espaco.sm, borderRadius: espaco.xs, backgroundColor: cor.cinza200, overflow: "hidden" },
+    barra: { height: espaco.sm, borderRadius: espaco.xs },
+  });
+}

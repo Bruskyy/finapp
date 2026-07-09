@@ -3,13 +3,15 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import Botao from "../componentes/Botao";
 import Input from "../componentes/Input";
-import { cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte } from "../tema";
+import { useEstilos } from "../tema/ThemeContext";
 
 interface Props {
   aoIrParaLogin: () => void;
 }
 
 export default function RegisterScreen({ aoIrParaLogin }: Props) {
+  const estilos = useEstilos(criarEstilos);
   const { registrar } = useAuth();
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -78,22 +80,24 @@ export default function RegisterScreen({ aoIrParaLogin }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.fundoTela },
-  logo: {
-    width: 220,
-    height: 78,
-    alignSelf: "center",
-    marginBottom: espaco.xl,
-  },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900, textAlign: "center" },
-  subtitulo: {
-    fontSize: 14,
-    color: cor.cinza500,
-    textAlign: "center",
-    marginTop: espaco.xs,
-    marginBottom: espaco.xxl,
-  },
-  erro: { color: cor.vermelho, textAlign: "center", marginBottom: espaco.md },
-  botaoLogin: { alignSelf: "center", marginTop: espaco.sm },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, justifyContent: "center", paddingHorizontal: espaco.xl, backgroundColor: cor.fundoTela },
+    logo: {
+      width: 220,
+      height: 78,
+      alignSelf: "center",
+      marginBottom: espaco.xl,
+    },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900, textAlign: "center" },
+    subtitulo: {
+      fontSize: 14,
+      color: cor.cinza500,
+      textAlign: "center",
+      marginTop: espaco.xs,
+      marginBottom: espaco.xxl,
+    },
+    erro: { color: cor.vermelho, textAlign: "center", marginBottom: espaco.md },
+    botaoLogin: { alignSelf: "center", marginTop: espaco.sm },
+  });
+}

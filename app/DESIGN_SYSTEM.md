@@ -20,9 +20,13 @@ administrativo/ERP.
 
 Paleta única de marca+produto (ver IDENTIDADE-VISUAL.md), extraída por
 amostragem de pixel do kit Figma de referência — antes eram dois sistemas
-separados (marca preto+dourado vs. produto azul), agora é um só.
+separados (marca preto+dourado vs. produto azul), agora é um só. Desde o
+modo escuro (Onda 2, item 8), `cor` não é mais um objeto fixo — é o valor
+resolvido pelo tema ativo (ver seção "Modo escuro" abaixo). A tabela mostra
+os valores do tema **claro**; cada token tem uma contraparte escura em
+`corEscura` (`tokens.ts`).
 
-| Token | Hex | Uso |
+| Token | Hex (claro) | Uso |
 |---|---|---|
 | `primaria` | `#00D09E` | Verde-primavera de marca: botões primários, progresso, elementos ativos, navegação |
 | `primariaEscura` | `#00A67D` | Estado pressed/hover da primária |
@@ -35,20 +39,28 @@ separados (marca preto+dourado vs. produto azul), agora é um só.
 | `laranjaSuave` | `#fff3e0` | Fundo suave de atenção |
 | `moeda` | `#f9a825` | Gamificação (moedas) |
 | `moedaSuave` | `#fff8e1` | Fundo suave de moedas |
-| `marcaEscura` | `#052224` | Teal escuro de marca: ícone/splash, nav inferior (ícones inativos), cabeçalho do drawer |
-| `fundoTela` | `#F1FFF3` | **Fundo das telas** (mint claro, nunca branco puro) |
+| `marcaEscura` | `#052224` | Teal escuro de marca: ícone/splash, cabeçalho do drawer — **constante nos dois temas** (declaração de marca, não "clareia" no escuro) |
+| `navInativo` | `#052224` | Ícone inativo da pílula de navegação — muda com o tema (precisa contrastar contra `primariaSuave`, que muda) |
+| `fundoTela` | `#F1FFF3` | **Fundo das telas** (mint claro, nunca branco puro / nunca preto puro no escuro) |
+| `superficie` | `#ffffff` | Fundo de card/superfície elevada — separado de `branco` (ver abaixo), muda com o tema |
 | `cinza200` | `#eef1f4` | Fundos de trilha/divisórias |
 | `cinza300` | `#e0e6ea` | Bordas |
 | `cinza500` | `#78909c` | Texto secundário, legendas |
 | `cinza700` | `#455a64` | Texto de apoio com mais peso |
 | `cinza900` | `#263238` | Texto principal |
-| `branco` | `#ffffff` | Superfície de cards |
+| `branco` | `#ffffff` | **Literalmente branco nos dois temas** — só texto/ícone sobre bloco de cor saturada (saldo no card `primaria`, iniciais de avatar). Para fundo de card, use `superficie`, não `branco` |
 
 **Regra sem exceção:** verde = entrada, vermelho = saída. Nunca usados em
 elementos neutros (um botão neutro não é verde só porque "parece positivo").
 Isso vale mesmo dentro do cartão de saldo (fundo `primaria`, também verde) —
 lá o valor de Receitas/Despesas fica em branco, só o ícone de seta continua
 semântico, pra não virar "verde sobre verde".
+
+**`branco` vs. `superficie` — não confundir:** os dois são `#ffffff` no
+tema claro, o que os torna intercambiáveis lá — mas divergem no escuro.
+`superficie` é o "fundo de card", muda pra um teal escuro elevado;
+`branco` continua branco puro, porque é usado onde a cor de fundo por trás
+já é saturada (`primaria`) e não muda com o tema.
 
 ## Espaçamentos
 
@@ -178,26 +190,74 @@ lista densa.
 e botão de ação. Exemplos de texto: "Crie sua primeira meta", "Cadastre sua
 primeira conta", "Registre sua primeira despesa".
 
+## Modo escuro (Onda 2, item 8)
+
+Todo `StyleSheet.create` do app é reativo ao tema — não existe mais um
+objeto `cor` fixo importado direto de `tema/tokens.ts` em telas/componentes.
+Padrão obrigatório para qualquer arquivo que use cor:
+
+```tsx
+import { Cor, espaco, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
+
+export default function MeuComponente() {
+  const { cor } = useTema();           // só quando precisa de cor fora de StyleSheet
+  const estilos = useEstilos(criarEstilos);
+  return <View style={estilos.base} />;
+}
+
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    base: { backgroundColor: cor.superficie, padding: espaco.lg, borderRadius: raio.card },
+  });
+}
+```
+
+- `criarEstilos` fica **fora** do componente (não é recriada a cada
+  render); `useEstilos` memoiza o resultado e só recalcula quando o tema
+  muda (`useMemo` internamente).
+- `espaco`/`raio`/`fonte`/`sombra` continuam import estático direto — não
+  dependem do tema, só `cor` precisa da função.
+- Tabelas `Record<Enum, cor.xxx>` a nível de módulo (ex: mapa de cor por
+  tipo de notificação) não podem mais existir fora do componente — viram
+  função `(cor: Cor) => Record<...>` chamada dentro do componente, junto
+  com `useTema()`.
+- `useTema()` também expõe `preferencia` (`"sistema" | "claro" | "escuro"`,
+  o que o usuário escolheu) e `definirPreferencia` — usado no seletor de
+  Aparência em Configurações. Padrão pra quem nunca mexeu: `"sistema"`
+  (segue `useColorScheme()` do SO/navegador).
+- Paleta escura não é uma inversão de lightness — é re-tonalizada mantendo
+  a mesma régua semântica (verde = receita, vermelho = despesa, sem
+  exceção nos dois temas). Ver comentários em `corEscura` (`tokens.ts`)
+  para a lógica por token.
+
 ## Regras de consistência (auditoria)
 
 1. Nenhuma tela com valor hardcoded de cor/espaçamento/raio fora dos tokens.
 2. Só existem 3 variantes de botão, 1 chip, 1 input no app inteiro.
 3. Verde = entrada, vermelho = saída, sem exceção.
-4. Este documento é atualizado sempre que uma decisão de design mudar nas
+4. Nenhum arquivo com cor usa `StyleSheet.create` fora de `criarEstilos`
+   (ver "Modo escuro" acima) — módulo nunca resolve `cor.xxx` pra um valor
+   fixo na carga.
+5. Este documento é atualizado sempre que uma decisão de design mudar nas
    fases seguintes da refatoração.
 
 ## Exemplos certo/errado
 
 **Certo:**
 ```tsx
-import { cor, espaco, raio } from "../tema";
-<View style={{ padding: espaco.lg, borderRadius: raio.card, backgroundColor: cor.branco }} />
+import { Cor, espaco, raio } from "../tema";
+import { useEstilos } from "../tema/ThemeContext";
+const estilos = useEstilos((cor: Cor) =>
+  StyleSheet.create({ base: { padding: espaco.lg, borderRadius: raio.card, backgroundColor: cor.superficie } })
+);
 ```
 
 **Errado:**
 ```tsx
-// valor mágico fora da escala, cor fora do token
-<View style={{ padding: 18, borderRadius: 12, backgroundColor: "#fff" }} />
+// valor mágico fora da escala, cor fora do token, StyleSheet fixo a nível
+// de módulo (não reage a troca de tema)
+const estilos = StyleSheet.create({ base: { padding: 18, borderRadius: 12, backgroundColor: "#fff" } });
 ```
 
 **Certo:** botão de ação principal usa a variante `primario` do componente

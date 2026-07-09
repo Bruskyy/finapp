@@ -649,6 +649,75 @@ já usam. `TipoNotificacao` ganha só dois valores de enum
 (`OrcamentoEstourado = 6`, `RecorrenciaAVencer = 7`); zero migration em
 `Notificacoes.Api`.
 
+### Modo escuro (BACKLOG-PRODUTO.md, Onda 2, item 8)
+
+Primeiro item da Onda 2 (retenção visual). `tema/tokens.ts` já centralizava
+toda a paleta, mas a investigação inicial mostrou que **não existia
+nenhuma reatividade de tema no app**: todo `StyleSheet.create({...})`
+rodava uma única vez, na carga do módulo, com `cor.xxx` resolvido pra um
+valor fixo. Não havia atalho — alternar tema em runtime exigiu que os
+~28 arquivos (telas + componentes) que importavam `cor` direto passassem
+a montar seus estilos dentro do componente, via hook. Decisão de escopo:
+um PR só (não deixar o app "meio-escuro, meio-claro" por várias
+entregas), com **"Sistema" (segue `useColorScheme`)** como padrão pra
+quem nunca mexeu na preferência.
+
+**`cor` vira função do tema, não objeto fixo.** `tokens.ts` ganhou
+`corClara`/`corEscura`, dois objetos com a mesma interface `Cor` — nenhum
+consumidor referencia hex direto, só nomes semânticos, então trocar o
+objeto resolvido é suficiente. A derivação do escuro não é inverter
+lightness às cegas: é re-tonalizar mantendo a régua semântica (verde =
+receita, vermelho = despesa, sem exceção nos dois temas), só ajustando
+luminância/saturação pra manter contraste contra fundo escuro.
+
+**Dois tokens quebraram por fazer papel duplo assim que o tema deixou de
+ser fixo — ambos descobertos durante a conversão, não previstos de
+antemão:**
+- `cor.branco` servia tanto "fundo de card" (`Card`, `Input`, `Chip`,
+  itens de lista) quanto "texto/ícone branco sobre bloco de cor saturada"
+  (saldo no card verde-primavera, label do botão primário, iniciais de
+  avatar). O primeiro precisa mudar no escuro; o segundo tem que
+  continuar branco puro nos dois temas (o bloco por trás já é saturado e
+  não muda). Solução: novo token `cor.superficie` assume o papel de fundo
+  de card; `branco` continua sendo literalmente branco nos dois temas,
+  só pro segundo uso.
+- `cor.marcaEscura` servia tanto o bloco de marca deliberadamente escuro
+  (cabeçalho do drawer — uma declaração visual, não deveria clarear no
+  escuro) quanto o ícone inativo da pílula de navegação (que precisa
+  contrastar contra `primariaSuave`, o fundo da própria pílula, que MUDA
+  de valor entre os temas). Solução: novo token `cor.navInativo`, que
+  muda com o tema; `marcaEscura` vira constante nos dois temas, uso
+  exclusivo do cabeçalho do drawer.
+
+**Padrão de conversão, mecânico e idêntico nos ~28 arquivos:**
+`StyleSheet.create({...})` a nível de módulo vira uma função
+`criarEstilos(cor: Cor)` (ainda a nível de módulo, não recriada a cada
+render) chamada de dentro do componente via `useEstilos(criarEstilos)` —
+um hook que faz `useMemo(() => criar(cor), [cor])`, só recalculando
+quando o tema muda. Tabelas `Record<Enum, cor.xxx>` que existiam a nível
+de módulo (ex: mapa cor/ícone por tipo de notificação em
+`NotificacoesScreen`) tiveram que virar função chamada dentro do
+componente, pelo mesmo motivo. `App.tsx` foi o arquivo com mais
+reestruturação: `NavigationContainer` ganhou a prop `theme` (spread do
+`DefaultTheme`/`DarkTheme` do próprio React Navigation, só sobrescrevendo
+`colors`) — sem isso o chrome interno da lib ficava sempre claro,
+independente do tema do app.
+
+**Persistência reaproveita `preferencias.ts`:** `temaPreferido` (`"sistema"
+| "claro" | "escuro"`) entrou no mesmo objeto/chave AsyncStorage já usado
+pra `widgetsAtivos`; o merge `{...PADRAO, ...salvas}` já existente
+absorveu o campo novo sem migração. `ThemeProvider` lê a preferência uma
+vez no boot e resolve "sistema" via `useColorScheme()`, reagindo em tempo
+real a mudança do SO enquanto a preferência for "sistema". Seletor de 3
+opções em Configurações reaproveita o padrão visual de seleção do `Chip`
+(preenchido quando ativo) em vez de um `Switch` binário, que não serve
+pra 3 estados.
+
+**Trade-off aceito:** `paletaGraficos` (cores cíclicas de categoria nos
+gráficos) e a sombra única do sistema ficam compartilhadas entre os dois
+temas — já são tons médios/sombra discreta o bastante pra funcionar nos
+dois fundos, não justificou uma segunda lista só por completude.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

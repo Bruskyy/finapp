@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Card from "../componentes/Card";
-import { cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { obterPreferencias, Preferencias, salvarPreferencias, WidgetDashboard } from "../utils/preferencias";
 
 const WIDGETS: { id: WidgetDashboard; label: string; icone: keyof typeof Ionicons.glyphMap }[] = [
@@ -15,6 +16,8 @@ const WIDGETS: { id: WidgetDashboard; label: string; icone: keyof typeof Ionicon
 ];
 
 export default function PersonalizarInicioScreen() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const [preferencias, setPreferencias] = useState<Preferencias | null>(null);
 
   useEffect(() => {
@@ -58,17 +61,19 @@ export default function PersonalizarInicioScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
-  titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xs },
-  subtitulo: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.lg },
-  cartao: { marginBottom: espaco.xxl },
-  linha: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: espaco.sm,
-  },
-  linhaEsquerda: { flexDirection: "row", alignItems: "center", gap: espaco.md, flex: 1 },
-  rotulo: { fontSize: 15, color: cor.cinza900, flex: 1 },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
+    titulo: { ...fonte.tituloSecao, color: cor.cinza900, marginBottom: espaco.xs },
+    subtitulo: { fontSize: 13, color: cor.cinza500, marginBottom: espaco.lg },
+    cartao: { marginBottom: espaco.xxl },
+    linha: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: espaco.sm,
+    },
+    linhaEsquerda: { flexDirection: "row", alignItems: "center", gap: espaco.md, flex: 1 },
+    rotulo: { fontSize: 15, color: cor.cinza900, flex: 1 },
+  });
+}

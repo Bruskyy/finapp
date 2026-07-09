@@ -2,7 +2,8 @@ import { DrawerContentComponentProps, DrawerContentScrollView } from "@react-nav
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../auth/AuthContext";
-import { cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import { iniciais } from "../utils/iniciais";
 
 interface ItemDrawer {
@@ -28,13 +29,15 @@ const ITENS: ItemDrawer[] = [
 
 export default function DrawerContent(props: DrawerContentComponentProps) {
   const { usuario, logout } = useAuth();
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const nome = usuario?.nome ?? "";
   const rotaAtual = props.state.routeNames[props.state.index];
 
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={estilos.scroll}>
       {/* Bloco de marca escuro (teal) no cabeçalho - só aqui, o resto do
-          drawer continua no fundo claro padrão do Design System. */}
+          drawer continua no fundo padrão do Design System. */}
       <View style={estilos.cabecalhoMarca}>
         <Image source={require("../../assets/logo-horizontal.png")} style={estilos.logo} resizeMode="contain" />
 
@@ -77,35 +80,37 @@ export default function DrawerContent(props: DrawerContentComponentProps) {
   );
 }
 
-const estilos = StyleSheet.create({
-  scroll: { paddingTop: 0 },
-  cabecalhoMarca: {
-    backgroundColor: cor.marcaEscura,
-    paddingTop: espaco.lg,
-    paddingBottom: espaco.lg,
-    marginBottom: espaco.lg,
-  },
-  logo: { width: 130, height: 46, marginLeft: espaco.lg, marginBottom: espaco.xl },
-  cabecalho: { paddingHorizontal: espaco.lg },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: cor.primaria,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: espaco.sm,
-  },
-  iniciais: { fontSize: 20, fontWeight: "700", color: cor.branco },
-  nome: { ...fonte.tituloCard, color: cor.branco },
-  item: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: espaco.md,
-    paddingHorizontal: espaco.lg,
-    paddingVertical: espaco.md,
-  },
-  itemAtivo: { backgroundColor: cor.primariaSuave },
-  textoItem: { fontSize: 15, color: cor.cinza700, fontWeight: "500" },
-  textoItemAtivo: { color: cor.primaria, fontWeight: "600" },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    scroll: { paddingTop: 0 },
+    cabecalhoMarca: {
+      backgroundColor: cor.marcaEscura,
+      paddingTop: espaco.lg,
+      paddingBottom: espaco.lg,
+      marginBottom: espaco.lg,
+    },
+    logo: { width: 130, height: 46, marginLeft: espaco.lg, marginBottom: espaco.xl },
+    cabecalho: { paddingHorizontal: espaco.lg },
+    avatar: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: cor.primaria,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: espaco.sm,
+    },
+    iniciais: { fontSize: 20, fontWeight: "700", color: cor.branco },
+    nome: { ...fonte.tituloCard, color: cor.branco },
+    item: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: espaco.md,
+      paddingHorizontal: espaco.lg,
+      paddingVertical: espaco.md,
+    },
+    itemAtivo: { backgroundColor: cor.primariaSuave },
+    textoItem: { fontSize: 15, color: cor.cinza700, fontWeight: "500" },
+    textoItemAtivo: { color: cor.primaria, fontWeight: "600" },
+  });
+}

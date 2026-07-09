@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { cor, espaco, raio } from "../tema";
+import { Cor, espaco, raio } from "../tema";
+import { useEstilos, useTema } from "../tema/ThemeContext";
 import ObjetivosScreen from "./ObjetivosScreen";
 import OrcamentosScreen from "./OrcamentosScreen";
 
@@ -13,6 +14,8 @@ type Aba = "orcamentos" | "metas";
  * (mantém só 4 itens de uso diário) sem precisar de outro navigator aninhado.
  */
 export default function PlanejamentoScreen() {
+  const { cor } = useTema();
+  const estilos = useEstilos(criarEstilos);
   const [aba, setAba] = useState<Aba>("orcamentos");
   const ehOrcamentos = aba === "orcamentos";
   const ehMetas = aba === "metas";
@@ -47,28 +50,30 @@ export default function PlanejamentoScreen() {
   );
 }
 
-const estilos = StyleSheet.create({
-  container: { flex: 1, backgroundColor: cor.fundoTela },
-  seletor: {
-    flexDirection: "row",
-    gap: espaco.sm,
-    paddingHorizontal: espaco.lg,
-    paddingTop: espaco.md,
-    paddingBottom: espaco.sm,
-  },
-  segmento: {
-    flex: 1,
-    flexDirection: "row",
-    gap: espaco.xs,
-    paddingVertical: espaco.sm,
-    borderRadius: raio.botao,
-    borderWidth: 1.5,
-    borderColor: cor.cinza300,
-    backgroundColor: cor.branco,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  segmentoAtivo: { backgroundColor: cor.primaria, borderColor: cor.primaria },
-  textoSegmento: { fontSize: 14, fontWeight: "600", color: cor.cinza700 },
-  textoSegmentoAtivo: { color: cor.branco },
-});
+function criarEstilos(cor: Cor) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: cor.fundoTela },
+    seletor: {
+      flexDirection: "row",
+      gap: espaco.sm,
+      paddingHorizontal: espaco.lg,
+      paddingTop: espaco.md,
+      paddingBottom: espaco.sm,
+    },
+    segmento: {
+      flex: 1,
+      flexDirection: "row",
+      gap: espaco.xs,
+      paddingVertical: espaco.sm,
+      borderRadius: raio.botao,
+      borderWidth: 1.5,
+      borderColor: cor.cinza300,
+      backgroundColor: cor.superficie,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    segmentoAtivo: { backgroundColor: cor.primaria, borderColor: cor.primaria },
+    textoSegmento: { fontSize: 14, fontWeight: "600", color: cor.cinza700 },
+    textoSegmentoAtivo: { color: cor.branco },
+  });
+}
