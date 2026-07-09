@@ -860,6 +860,39 @@ devolve `concluido: true` na hora). Posicionamento determinístico
 (`(i * 37) % 100`, não `Math.random()`) evita as pecinhas "pularem" de
 lugar se o componente re-renderizar no meio da animação.
 
+### Feed de Evolução no Perfil (Roadmap Cofrin 1.0, Sprint 4)
+
+**Unifica duas seções que já existiam ("Sua jornada" e "Conquistas") num
+único feed cronológico reverso — zero backend novo, só agregação e
+ordenação no client** (`montarItensFeed` em `PerfilScreen.tsx`), casando
+3 fontes que a tela já buscava ou já tinha endpoint pronto:
+`GET /relatorios/marcos`, `GET /conquistas` (as com `desbloqueadaEm`
+preenchido) e — a fonte nova, mas sem endpoint novo — as notificações
+tipadas que já chegavam pra `NotificacoesScreen`.
+
+**Curadoria de quais notificações viram "marco":** `TipoNotificacao.Lancamento`
+e `LancamentoRecorrente` disparam uma notificação **por transação**
+(ver `LancamentoCriadoConsumerService` em `Notificacoes.Api`) — colocar
+isso no feed afogaria "você desbloqueou uma conquista" em ruído
+rotineiro, já que cada lançamento tem seu próprio lugar natural
+(Transações). Só entram tipos que já representam um marco por
+construção: `ResumoSemanal`, `OrcamentoEstourado`, `RecorrenciaAVencer`,
+`ResgateConfirmado`, `ResgateFalhou`.
+
+**Desvio deliberado do plano original: "Conquistas" não desapareceu
+dentro do feed — virou uma segunda seção, "Conquistas por desbloquear",
+só com o que ainda falta.** Um feed que só mostra o que já aconteceu
+perde a visão de "o que tem pela frente", que é o gancho de motivação
+que justificou ampliar o catálogo de 6 pra 15 conquistas no Sprint 2 —
+esconder as conquistas bloqueadas jogaria fora esse trabalho. As duas
+seções continuam derivadas do mesmo `GET /conquistas` já carregado
+(`desbloqueadaEm !== null` vira item do feed; `=== null` vira item da
+segunda lista), sem chamada extra.
+
+**`tempoRelativo`**: "Hoje" / "Ontem" / "Há N dias" / "Há N semanas" /
+"Há N meses" / "Há N anos" — lógica pura, testada manualmente contra os
+limites de cada faixa (7, 30, 365 dias).
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
