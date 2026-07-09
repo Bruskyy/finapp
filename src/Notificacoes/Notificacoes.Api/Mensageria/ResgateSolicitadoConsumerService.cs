@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using BuildingBlocks.Contracts.Gamificacao;
 using Microsoft.Extensions.Options;
+using Notificacoes.Api.Aplicacao;
 using Notificacoes.Api.Dominio;
 using Notificacoes.Api.Persistencia;
 using Notificacoes.Api.Provedores;
@@ -136,7 +137,13 @@ public class ResgateSolicitadoConsumerService : BackgroundService
         var notificacao = new Notificacao(eventId, tipo, mensagem, usuarioId);
         var processado = await repositorio.AdicionarAsync(notificacao, ct);
         if (!processado)
+        {
             _logger.LogInformation("Evento {EventId} já tinha sido processado - ignorado (idempotência).", eventId);
+            return;
+        }
+
+        await scope.ServiceProvider.GetRequiredService<NotificacaoPushService>()
+            .EnviarAsync(usuarioId, mensagem, ct);
     }
 
     private async Task PublicarAsync<T>(string routingKey, T evento, CancellationToken ct)

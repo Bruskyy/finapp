@@ -8,6 +8,7 @@ public class NotificacoesDbContext : DbContext
     public NotificacoesDbContext(DbContextOptions<NotificacoesDbContext> options) : base(options) { }
 
     public DbSet<Notificacao> Notificacoes => Set<Notificacao>();
+    public DbSet<DispositivoPush> DispositivosPush => Set<DispositivoPush>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +24,15 @@ public class NotificacoesDbContext : DbContext
             e.Property(x => x.EconomiaVsSemanaAnterior).HasColumnType("decimal(18,2)");
             e.Property(x => x.ValorCategoriaMaiorGasto).HasColumnType("decimal(18,2)");
             e.Property(x => x.PercentualObjetivoDestaque).HasColumnType("decimal(5,1)");
+        });
+
+        modelBuilder.Entity<DispositivoPush>(e =>
+        {
+            e.ToTable("DispositivosPush");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Token).HasMaxLength(200).IsRequired();
+            e.HasIndex(x => x.Token).IsUnique(); // um token pertence a um usuário por vez
+            e.HasIndex(x => x.UsuarioId);
         });
     }
 }

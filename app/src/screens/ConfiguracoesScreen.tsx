@@ -9,6 +9,7 @@ import Input from "../componentes/Input";
 import { Cor, espaco, fonte, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
 import { obterPreferencias, Preferencias, salvarPreferencias, TemaPreferido } from "../utils/preferencias";
+import { ativarPush, desativarPush } from "../utils/pushNotifications";
 
 const URL_REPOSITORIO = "https://github.com/Bruskyy/finapp";
 
@@ -81,6 +82,9 @@ export default function ConfiguracoesScreen() {
     const atualizadas: Preferencias = { ...preferencias, notificacoesAtivas: valor };
     setPreferencias(atualizadas);
     await salvarPreferencias(atualizadas);
+    // Registra/remove o token de push de verdade (Roadmap 1.0, Sprint 5) -
+    // a preferência sozinha só controlava a central in-app até aqui.
+    await (valor ? ativarPush() : desativarPush());
   }
 
   return (

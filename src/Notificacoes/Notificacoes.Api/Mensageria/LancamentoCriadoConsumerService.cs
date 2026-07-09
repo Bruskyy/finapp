@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using BuildingBlocks.Contracts.Lancamentos;
 using Microsoft.Extensions.Options;
+using Notificacoes.Api.Aplicacao;
 using Notificacoes.Api.Dominio;
 using Notificacoes.Api.Persistencia;
 using Notificacoes.Api.Provedores;
@@ -171,7 +172,15 @@ public class LancamentoCriadoConsumerService : BackgroundService
 
         var processado = await repositorio.AdicionarAsync(notificacao, ct);
         if (!processado)
+        {
             _logger.LogInformation("Evento {EventId} já tinha sido processado - ignorado (idempotência).", notificacao.EventId);
+            return;
+        }
+
+        // Push só na primeira vez que o evento é processado - reprocessar
+        // (idempotência acima) não deve reenviar push.
+        await scope.ServiceProvider.GetRequiredService<NotificacaoPushService>()
+            .EnviarAsync(notificacao.UsuarioId, notificacao.Mensagem, ct);
     }
 
     private static string MontarMensagemResumoSemanal(ResumoSemanalGeradoEvent resumo)

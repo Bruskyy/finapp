@@ -347,12 +347,31 @@ conversa de posicionamento antes de ser uma de arquitetura.
   pós-1.0** — sobrepõe demais o resumo semanal; revisitar com dados de
   usuários reais.
 
-### Sprint 5 — Push real (item 9 da Onda 2)
+### Sprint 5 — Push real (item 9 da Onda 2) — ✅ feito, ver README ("Push real com Expo Push API")
 - `expo-notifications` + Expo Push API (grátis, sem cartão): app registra
   o token via endpoint novo em `Notificacoes.Api`; ao persistir
   notificação, o serviço também envia push via HTTP (retry Polly).
 - Push chega no app mobile; a versão web segue só com a central in-app.
 - Respeita a preferência `notificacoesAtivas` que já existe.
+- **Pendência do Vitor pra validar de verdade**: criar uma conta Expo
+  gratuita e rodar `eas init` no projeto (gera o `projectId` que o app
+  usa pra pedir o push token — sem ele o app funciona normal, só sem
+  push real). Testar em Android exige um development build: a partir da
+  SDK 53 o Expo Go não suporta mais push nesse SO — mesma exceção de
+  "preciso de uma conta externa" já usada pro deploy (Render/Vercel) e
+  pela Play Store no Sprint 6.
+- **Bug real de bundling encontrado e corrigido nesta rodada:** importar
+  `expo-notifications` direto quebrava o build **web** inteiro (erro de
+  bundling, não de runtime — nem chegava a rodar) — uma dependência
+  transitiva da própria lib (`badgin`, usada só pro contador de badge no
+  ícone do app) não resolve no Metro pra essa plataforma. Resolvido com
+  `pushNotifications.web.ts` (Metro prioriza automaticamente `.web.ts`
+  sobre `.ts` ao bundlar pra web — mesmo mecanismo que a própria
+  expo-notifications usa internamente): a versão web nunca importa a lib,
+  vira no-op. Web nunca teve push de verdade mesmo (não é plataforma
+  suportada por `expo-notifications`), mas quase saiu do ar por causa
+  disso — sem esse arquivo, um redeploy do Vercel quebraria a versão web
+  publicada inteira.
 
 ### Sprint 6 — Lançamento Play Store
 - Polish final (revisão visual nos 2 temas, ícone/splash, performance).
