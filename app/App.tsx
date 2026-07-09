@@ -19,6 +19,7 @@ import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
 import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
+import ImportarExtratoScreen from "./src/screens/ImportarExtratoScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
 import NotificacoesScreen from "./src/screens/NotificacoesScreen";
@@ -209,6 +210,7 @@ function DrawerPrincipal() {
           navigation.navigate("Fixas") a partir do link contextual em
           NovoLancamentoScreen. */}
       <Drawer.Screen name="Fixas" component={RecorrenciasScreen} />
+      <Drawer.Screen name="Importar" component={ImportarExtratoScreen} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} />
       <Drawer.Screen name="Configurações" component={ConfiguracoesScreen} />
     </Drawer.Navigator>

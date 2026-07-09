@@ -190,6 +190,15 @@ export default function NovoLancamentoScreen() {
         estiloExtra={estilos.linkContasFixas}
       />
 
+      {/* Muitos lançamentos de uma vez? O caminho é o extrato — link
+          contextual pra feature não viver escondida só no drawer. */}
+      <Botao
+        texto="Importar extrato (CSV)"
+        variante="texto"
+        onPress={() => navigation.navigate("Importar" as never)}
+        estiloExtra={estilos.linkContasFixas}
+      />
+
       {fixa && (
         <Input
           placeholder="Dia do mês (1-31)"

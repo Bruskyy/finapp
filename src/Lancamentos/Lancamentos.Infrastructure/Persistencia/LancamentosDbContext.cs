@@ -1,5 +1,6 @@
 using Lancamentos.Application.Relatorios;
 using Lancamentos.Domain.Entidades;
+using Lancamentos.Infrastructure.Importacao;
 using Lancamentos.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,6 +18,7 @@ public class LancamentosDbContext : DbContext
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
     public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
+    public DbSet<ExtratoArquivo> ExtratosArquivos => Set<ExtratoArquivo>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<ResumoSemanalGerado> ResumosSemanaisGerados => Set<ResumoSemanalGerado>();
     public DbSet<AlertaOrcamentoEnviado> AlertasOrcamentoEnviados => Set<AlertaOrcamentoEnviado>();
@@ -141,6 +143,16 @@ public class LancamentosDbContext : DbContext
             e.HasNoKey();
             e.ToView(null); // lido via SqlQuery sobre vw_SaldoPorConta
             e.Property(x => x.Saldo).HasColumnType("decimal(18,2)");
+        });
+
+        modelBuilder.Entity<ExtratoArquivo>(e =>
+        {
+            e.ToTable("ExtratosArquivos");
+            // A chave já é única por construção (derivada do Id da importação,
+            // ver ImportacaoExtrato.ChaveS3) - serve direto de PK.
+            e.HasKey(x => x.Chave);
+            e.Property(x => x.Chave).HasMaxLength(100);
+            e.Property(x => x.Conteudo).IsRequired(); // nvarchar(max): o endpoint limita a 1 MB
         });
 
         modelBuilder.Entity<OutboxMessage>(e =>

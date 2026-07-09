@@ -121,6 +121,19 @@ export interface PaginaLancamentos {
   itens: Lancamento[];
 }
 
+export type StatusImportacao = "Pendente" | "Processando" | "Concluida" | "Falhou";
+
+export interface ImportacaoStatus {
+  id: string;
+  nomeArquivo: string;
+  status: StatusImportacao;
+  linhasImportadas: number;
+  linhasComErro: number;
+  erro: string | null;
+  criadoEm: string;
+  processadoEm: string | null;
+}
+
 export interface Usuario {
   id: string;
   nome: string;

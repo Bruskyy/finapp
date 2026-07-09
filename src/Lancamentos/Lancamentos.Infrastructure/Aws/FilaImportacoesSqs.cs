@@ -1,6 +1,7 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Lancamentos.Application.Importacao;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Lancamentos.Infrastructure.Aws;
@@ -9,12 +10,14 @@ public class FilaImportacoesSqs : IFilaImportacoes
 {
     private readonly IAmazonSQS _sqs;
     private readonly AwsOptions _options;
+    private readonly ILogger<FilaImportacoesSqs> _logger;
     private string? _queueUrl;
 
-    public FilaImportacoesSqs(IAmazonSQS sqs, IOptions<AwsOptions> options)
+    public FilaImportacoesSqs(IAmazonSQS sqs, IOptions<AwsOptions> options, ILogger<FilaImportacoesSqs> logger)
     {
         _sqs = sqs;
         _options = options.Value;
+        _logger = logger;
     }
 
     public async Task EnfileirarAsync(Guid importacaoId, CancellationToken ct)
@@ -48,6 +51,20 @@ public class FilaImportacoesSqs : IFilaImportacoes
 
     public async Task RemoverAsync(MensagemImportacao mensagem, CancellationToken ct)
         => await _sqs.DeleteMessageAsync(await ObterQueueUrlAsync(ct), mensagem.Recibo, ct);
+
+    /// <summary>Cria a fila se não existir (CreateQueue é idempotente pra mesma
+    /// config) — em produção AWS de verdade isso seria IaC, aqui atende o LocalStack.</summary>
+    public async Task GarantirInfraestruturaAsync(CancellationToken ct)
+    {
+        try
+        {
+            await _sqs.CreateQueueAsync(_options.FilaImportacoes, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Não foi possível garantir a fila {Fila} — LocalStack fora do ar?", _options.FilaImportacoes);
+        }
+    }
 
     private async Task<string> ObterQueueUrlAsync(CancellationToken ct)
     {

@@ -7,6 +7,7 @@ import {
   CriarLancamentoRequest,
   EvolucaoMensalPonto,
   GastoPorCategoria,
+  ImportacaoStatus,
   Lancamento,
   LoginRequest,
   MarcosFinanceiros,
@@ -275,6 +276,24 @@ export function transferir(contaOrigemId: string, contaDestinoId: string, valor:
     method: "POST",
     body: JSON.stringify({ contaOrigemId, contaDestinoId, valor }),
   });
+}
+
+// ----- Importação de extrato CSV (assíncrona: 202 + polling) -----
+
+/**
+ * O corpo é o CSV cru (o backend lê o body como texto, sem se importar com o
+ * Content-Type) — passa pelo requisitar() normal pra ganhar Bearer token e
+ * renovação automática de 401 de graça.
+ */
+export function iniciarImportacao(conteudoCsv: string, nomeArquivo: string): Promise<ImportacaoStatus> {
+  return requisitar(`/api/importacoes?nomeArquivo=${encodeURIComponent(nomeArquivo)}`, {
+    method: "POST",
+    body: conteudoCsv,
+  });
+}
+
+export function obterImportacao(id: string): Promise<ImportacaoStatus> {
+  return requisitar(`/api/importacoes/${id}`);
 }
 
 // ----- Recorrências (contas fixas) -----
