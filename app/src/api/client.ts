@@ -22,6 +22,7 @@ import {
   Recorrencia,
   Resgate,
   SaldoPorConta,
+  Sequencia,
   TipoLancamento,
   TokenResponse,
   Usuario,
@@ -403,6 +404,10 @@ export function obterResgate(id: string): Promise<Resgate> {
 
 export function listarConquistas(): Promise<Conquista[]> {
   return requisitar("/api/gamificacao/conquistas");
+}
+
+export function obterSequencia(): Promise<Sequencia> {
+  return requisitar("/api/gamificacao/sequencia");
 }
 
 // ----- Notificações -----

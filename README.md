@@ -768,6 +768,60 @@ cobrindo o roundtrip salvar/baixar do armazenamento, o polling de
 Pendente da fila (aparece/não aparece conforme status) e os no-ops. 244
 testes verdes no total.
 
+### Streak de dias consecutivos + catálogo de conquistas de 6 para 15 (Roadmap Cofrin 1.0, Sprint 2)
+
+**Streak alimentado pelo mesmo evento que já move moedas e conquistas —
+zero infraestrutura nova.** `LancamentoConsumerService` já consumia
+`lancamento.criado` pra calcular pontuação e avaliar conquistas; ganhou
+um terceiro gancho no mesmo `switch`, chamando o novo `SequenciaService`.
+Nenhum evento novo, nenhuma fila nova — só mais uma leitura do mesmo
+payload que já chegava.
+
+**"Dia de uso" é `OcorreuEm` (quando o evento foi publicado), não `Data`
+(a data de negócio do lançamento).** O evento carrega os dois campos
+separados. Usar `Data` deixaria o streak "consertável" — lançar hoje uma
+despesa retroativa de 3 dias atrás não pode preencher retroativamente a
+sequência. `OcorreuEm` reflete quando o usuário de fato interagiu com o
+app, que é o sinal que um streak (à Duolingo) precisa capturar.
+
+**Fuso horário explícito, não `DateTime.Today` do servidor.**
+`SequenciaService` converte `OcorreuEm` (UTC) pro fuso `America/Sao_Paulo`
+(ID IANA, resolvido pelo ICU do .NET em qualquer SO — inclusive Linux, onde
+o serviço roda de verdade no Render/CI) antes de extrair o `DateOnly`. Sem
+isso, um lançamento feito às 21h de Brasília (já 00h UTC do dia seguinte)
+contaria pro dia errado.
+
+**`SequenciaUsuario` é uma entidade com lógica própria, não um contador
+incremental como `ContadorConquista`.** Streak tem uma regra que um
+contador simples não modela: precisa *resetar* quando há uma lacuna, não
+só incrementar. `RegistrarUso(DateOnly dia)` é lógica pura e testável sem
+banco — mesmo dia é no-op (idempotente contra múltiplos lançamentos no
+mesmo dia), dia seguinte incrementa, qualquer lacuna maior reinicia em 1,
+`MelhorSequencia` nunca regride. Eventos fora de ordem (dia anterior ao já
+contado) são ignorados — a fila entrega at-least-once mas não garante
+ordem estrita.
+
+**Catálogo de conquistas: 6 → 15, usando só sinais que já existiam.** 4
+novas de consistência (`SEQUENCIA_7/30/100/365`) mais 5 que preenchem
+lacunas óbvias nos contadores que já existiam (`LANCAMENTOS_1/50/500`,
+`METAS_CONCLUIDAS_10/25`) — mesmo pipeline `ConquistaCodigos`/
+`ConquistaThresholds`/seed em migration de sempre, sem mudar a forma.
+**Decisão de escopo, documentada em vez de forçar um número redondo:**
+o Roadmap 1.0 mirava "~25-30"; ficou em 15 porque esse é o teto do que dá
+pra fazer sem um evento cross-service novo (ex: "orçamento nunca
+estourado" exigiria Gamificacao passar a consumir `orcamento.estourado`,
+que hoje só `Notificacoes.Api` escuta — fora do escopo deste sprint,
+registrado como ideia futura no backlog).
+
+**`GET /sequencia`** devolve `{ diasConsecutivos, melhorSequencia }` —
+sem sequência ainda (usuário novo), volta zero em vez de 404, mesmo
+espírito de outros endpoints de agregação do app (`/relatorios/marcos`).
+
+7 testes novos de domínio/lógica pura (`SequenciaUsuarioTests`,
+extensões de `ConquistaThresholdsTests`) + 3 de integração
+(`SequenciaServiceTests`, Testcontainers.Postgres) cobrindo o desbloqueio
+de `SEQUENCIA_7` ao longo de 7 dias simulados.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

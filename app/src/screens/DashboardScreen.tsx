@@ -12,6 +12,7 @@ import {
   obterGastosPorCategoria,
   obterSaldoFinanceiro,
   obterSaldoMoedas,
+  obterSequencia,
 } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import Card from "../componentes/Card";
@@ -31,6 +32,7 @@ import {
   Objetivo,
   OrcamentoStatus,
   SaldoPorConta,
+  Sequencia,
   TipoLancamento,
   TipoNotificacao,
 } from "../types";
@@ -54,6 +56,7 @@ export default function DashboardScreen() {
   const { usuario } = useAuth();
   const [saldo, setSaldo] = useState<number | null>(null);
   const [moedas, setMoedas] = useState<number | null>(null);
+  const [sequencia, setSequencia] = useState<Sequencia | null>(null);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [saldosContas, setSaldosContas] = useState<SaldoPorConta[]>([]);
   const [gastosCategoria, setGastosCategoria] = useState<GastoPorCategoria[]>([]);
@@ -73,6 +76,7 @@ export default function DashboardScreen() {
       const [
         resSaldo,
         resMoedas,
+        resSequencia,
         resLancamentos,
         resSaldosContas,
         resGastos,
@@ -84,6 +88,7 @@ export default function DashboardScreen() {
       ] = await Promise.all([
         obterSaldoFinanceiro(inicio, fim),
         obterSaldoMoedas(),
+        obterSequencia(),
         listarLancamentos(inicio, fim),
         listarSaldosPorConta(),
         obterGastosPorCategoria(inicio, fim),
@@ -95,6 +100,7 @@ export default function DashboardScreen() {
       ]);
       setSaldo(resSaldo.saldo);
       setMoedas(resMoedas.saldo);
+      setSequencia(resSequencia);
       setLancamentos(resLancamentos.itens);
       setSaldosContas(resSaldosContas);
       // transferências entre contas não são gasto real — fora do gráfico
@@ -186,16 +192,26 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {/* Espaço permanente de gamificação — só dados reais hoje (moedas).
-          Slot preparado para nível/XP/sequência quando o backend existir. */}
-      {widgets?.saldoMoedas && (
-        <View style={estilos.faixaMoedas}>
-          <Ionicons name="medal" size={18} color={cor.moeda} />
-          <Text style={estilos.textoMoedas}>
-            {moedas !== null ? moedas : "--"} moedas
-          </Text>
-        </View>
-      )}
+      {/* Espaço permanente de gamificação: moedas + sequência de dias
+          (Roadmap 1.0, Sprint 2 — antes só o slot de moedas existia aqui). */}
+      <View style={estilos.linhaGamificacao}>
+        {widgets?.saldoMoedas && (
+          <View style={estilos.faixaMoedas}>
+            <Ionicons name="medal" size={18} color={cor.moeda} />
+            <Text style={estilos.textoMoedas}>
+              {moedas !== null ? moedas : "--"} moedas
+            </Text>
+          </View>
+        )}
+        {sequencia !== null && sequencia.diasConsecutivos > 0 && (
+          <View style={estilos.faixaSequencia}>
+            <Ionicons name="flame" size={18} color={cor.moeda} />
+            <Text style={estilos.textoMoedas}>
+              {sequencia.diasConsecutivos} {sequencia.diasConsecutivos === 1 ? "dia" : "dias"} seguidos
+            </Text>
+          </View>
+        )}
+      </View>
 
       {erro && <Text style={estilos.erro}>{erro}</Text>}
 
@@ -288,6 +304,7 @@ function criarEstilos(cor: Cor) {
   resumoRotulo: { fontSize: 12, color: cor.branco, opacity: 0.8 },
   resumoValor: { fontSize: 15, fontWeight: "600", color: cor.branco },
 
+  linhaGamificacao: { flexDirection: "row", flexWrap: "wrap", gap: espaco.sm, marginBottom: espaco.xl },
   faixaMoedas: {
     flexDirection: "row",
     alignItems: "center",
@@ -297,7 +314,16 @@ function criarEstilos(cor: Cor) {
     borderRadius: raio.chip,
     paddingHorizontal: espaco.md,
     paddingVertical: espaco.sm,
-    marginBottom: espaco.xl,
+  },
+  faixaSequencia: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: espaco.sm,
+    alignSelf: "flex-start",
+    backgroundColor: cor.moedaSuave,
+    borderRadius: raio.chip,
+    paddingHorizontal: espaco.md,
+    paddingVertical: espaco.sm,
   },
   textoMoedas: { fontSize: 13, fontWeight: "600", color: cor.cinza900 },
 

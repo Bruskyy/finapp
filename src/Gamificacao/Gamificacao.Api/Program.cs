@@ -27,6 +27,9 @@ builder.Services.AddScoped<ResgateService>();
 builder.Services.AddScoped<IConquistaRepository, ConquistaRepository>();
 builder.Services.AddScoped<ConquistaService>();
 
+builder.Services.AddScoped<ISequenciaRepository, SequenciaRepository>();
+builder.Services.AddScoped<SequenciaService>();
+
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddHostedService<LancamentoConsumerService>();
@@ -135,6 +138,14 @@ app.MapGet("/conquistas", async (ClaimsPrincipal principal, IConquistaRepository
         .Select(c => new ConquistaResponse(
             c.Id, c.Codigo, c.Nome, c.Descricao, c.Icone,
             desbloqueadas.GetValueOrDefault(c.Id))));
+});
+
+app.MapGet("/sequencia", async (ClaimsPrincipal principal, ISequenciaRepository repo, CancellationToken ct) =>
+{
+    var sequencia = await repo.ObterAsync(IdDoUsuario(principal), ct);
+    return Results.Ok(new SequenciaResponse(
+        sequencia?.DiasConsecutivos ?? 0,
+        sequencia?.MelhorSequencia ?? 0));
 });
 
 app.MapHealthChecks("/health").AllowAnonymous();

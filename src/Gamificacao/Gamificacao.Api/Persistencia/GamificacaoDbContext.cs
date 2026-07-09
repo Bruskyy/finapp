@@ -13,6 +13,7 @@ public class GamificacaoDbContext : DbContext
     public DbSet<Conquista> Conquistas => Set<Conquista>();
     public DbSet<UsuarioConquista> UsuariosConquistas => Set<UsuarioConquista>();
     public DbSet<ContadorConquista> ContadoresConquista => Set<ContadorConquista>();
+    public DbSet<SequenciaUsuario> SequenciasUsuario => Set<SequenciaUsuario>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -102,6 +103,81 @@ public class GamificacaoDbContext : DbContext
                     Nome = "5 metas concluídas",
                     Descricao = "Concluiu 5 metas de poupança.",
                     Icone = "trophy-outline",
+                },
+                // Roadmap Cofrin 1.0, Sprint 2 - catálogo de 6 para 15,
+                // continuando o mesmo padrão de Guid memorável (dígito
+                // hexadecimal repetido por linha, seguindo de onde 1-6 parou).
+                new
+                {
+                    Id = Guid.Parse("77777777-7777-7777-7777-777777777777"),
+                    Codigo = Regras.ConquistaCodigos.Sequencia7,
+                    Nome = "7 dias de sequência",
+                    Descricao = "Usou o Cofrin por 7 dias seguidos.",
+                    Icone = "flame-outline",
+                },
+                new
+                {
+                    Id = Guid.Parse("88888888-8888-8888-8888-888888888888"),
+                    Codigo = Regras.ConquistaCodigos.Sequencia30,
+                    Nome = "30 dias de sequência",
+                    Descricao = "Usou o Cofrin por 30 dias seguidos.",
+                    Icone = "flame-outline",
+                },
+                new
+                {
+                    Id = Guid.Parse("99999999-9999-9999-9999-999999999999"),
+                    Codigo = Regras.ConquistaCodigos.Sequencia100,
+                    Nome = "100 dias de sequência",
+                    Descricao = "Usou o Cofrin por 100 dias seguidos.",
+                    Icone = "flame-outline",
+                },
+                new
+                {
+                    Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                    Codigo = Regras.ConquistaCodigos.Sequencia365,
+                    Nome = "365 dias de sequência",
+                    Descricao = "Usou o Cofrin por 365 dias seguidos.",
+                    Icone = "flame-outline",
+                },
+                new
+                {
+                    Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                    Codigo = Regras.ConquistaCodigos.Lancamentos1,
+                    Nome = "Primeiro lançamento",
+                    Descricao = "Registrou seu primeiro lançamento no Cofrin.",
+                    Icone = "receipt-outline",
+                },
+                new
+                {
+                    Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                    Codigo = Regras.ConquistaCodigos.Lancamentos50,
+                    Nome = "50 lançamentos",
+                    Descricao = "Registrou 50 lançamentos no Cofrin.",
+                    Icone = "receipt-outline",
+                },
+                new
+                {
+                    Id = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+                    Codigo = Regras.ConquistaCodigos.Lancamentos500,
+                    Nome = "500 lançamentos",
+                    Descricao = "Registrou 500 lançamentos no Cofrin.",
+                    Icone = "receipt-outline",
+                },
+                new
+                {
+                    Id = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                    Codigo = Regras.ConquistaCodigos.MetasConcluidas10,
+                    Nome = "10 metas concluídas",
+                    Descricao = "Concluiu 10 metas de poupança.",
+                    Icone = "trophy-outline",
+                },
+                new
+                {
+                    Id = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+                    Codigo = Regras.ConquistaCodigos.MetasConcluidas25,
+                    Nome = "25 metas concluídas",
+                    Descricao = "Concluiu 25 metas de poupança.",
+                    Icone = "trophy-outline",
                 });
         });
 
@@ -117,6 +193,12 @@ public class GamificacaoDbContext : DbContext
             e.ToTable("ContadoresConquista");
             e.HasKey(x => new { x.UsuarioId, x.Chave });
             e.Property(x => x.Chave).HasMaxLength(50).IsRequired();
+        });
+
+        modelBuilder.Entity<SequenciaUsuario>(e =>
+        {
+            e.ToTable("SequenciasUsuario");
+            e.HasKey(x => x.UsuarioId); // uma sequência por usuário (upsert), não histórico
         });
     }
 }

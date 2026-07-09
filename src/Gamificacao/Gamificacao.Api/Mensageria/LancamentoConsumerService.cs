@@ -124,9 +124,16 @@ public class LancamentoConsumerService : BackgroundService
                 var calculadora = scope.ServiceProvider.GetRequiredService<CalculadoraDePontuacao>();
                 movimento = calculadora.Calcular(criado);
                 eventId = criado.EventId;
-                avaliarConquistas = (usuarioId, ct2) =>
-                    scope.ServiceProvider.GetRequiredService<ConquistaService>()
+                avaliarConquistas = async (usuarioId, ct2) =>
+                {
+                    await scope.ServiceProvider.GetRequiredService<ConquistaService>()
                         .AvaliarLancamentoAsync(usuarioId, criado.CategoriaId, criado.Tipo, ct2);
+                    // streak (Roadmap 1.0, Sprint 2): mesmo evento, gancho
+                    // separado porque tem estado próprio (dias consecutivos),
+                    // não um contador simples como ConquistaService usa.
+                    await scope.ServiceProvider.GetRequiredService<SequenciaService>()
+                        .RegistrarUsoAsync(usuarioId, criado.OcorreuEm, ct2);
+                };
                 break;
 
             case "objetivo.concluido":

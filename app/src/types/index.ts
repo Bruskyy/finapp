@@ -116,6 +116,11 @@ export interface Conquista {
   desbloqueadaEm: string | null;
 }
 
+export interface Sequencia {
+  diasConsecutivos: number;
+  melhorSequencia: number;
+}
+
 export interface PaginaLancamentos {
   total: number;
   itens: Lancamento[];

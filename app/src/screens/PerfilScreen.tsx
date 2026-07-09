@@ -2,12 +2,12 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { listarConquistas, obterMarcosFinanceiros } from "../api/client";
+import { listarConquistas, obterMarcosFinanceiros, obterSequencia } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import EstadoVazio from "../componentes/EstadoVazio";
-import { Cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
-import { Conquista, MarcosFinanceiros } from "../types";
+import { Conquista, MarcosFinanceiros, Sequencia } from "../types";
 import { iniciais } from "../utils/iniciais";
 
 interface Marco {
@@ -51,6 +51,7 @@ export default function PerfilScreen() {
   const nome = usuario?.nome ?? "";
   const [marcosApi, setMarcosApi] = useState<MarcosFinanceiros | null>(null);
   const [conquistas, setConquistas] = useState<Conquista[]>([]);
+  const [sequencia, setSequencia] = useState<Sequencia | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -60,6 +61,9 @@ export default function PerfilScreen() {
       listarConquistas()
         .then(setConquistas)
         .catch(() => setConquistas([]));
+      obterSequencia()
+        .then(setSequencia)
+        .catch(() => setSequencia(null));
     }, [])
   );
 
@@ -80,6 +84,17 @@ export default function PerfilScreen() {
           <Text style={estilos.diasDeJornada}>
             {diasDeJornada} {diasDeJornada === 1 ? "dia" : "dias"} de jornada no Cofrin
           </Text>
+        )}
+        {sequencia !== null && sequencia.diasConsecutivos > 0 && (
+          <View style={estilos.faixaSequencia}>
+            <Ionicons name="flame" size={16} color={cor.moeda} />
+            <Text style={estilos.textoSequencia}>
+              {sequencia.diasConsecutivos} {sequencia.diasConsecutivos === 1 ? "dia" : "dias"} seguidos
+              {sequencia.melhorSequencia > sequencia.diasConsecutivos
+                ? ` (recorde: ${sequencia.melhorSequencia})`
+                : ""}
+            </Text>
+          </View>
         )}
       </View>
 
@@ -153,6 +168,17 @@ function criarEstilos(cor: Cor) {
     nome: { ...fonte.tituloCard, color: cor.cinza900 },
     email: { fontSize: 13, color: cor.cinza500 },
     diasDeJornada: { fontSize: 13, color: cor.primaria, fontWeight: "600", marginTop: espaco.sm },
+    faixaSequencia: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: espaco.xs,
+      backgroundColor: cor.moedaSuave,
+      borderRadius: raio.chip,
+      paddingHorizontal: espaco.md,
+      paddingVertical: espaco.xs,
+      marginTop: espaco.sm,
+    },
+    textoSequencia: { fontSize: 12, fontWeight: "600", color: cor.cinza900 },
     tituloSecao: { ...fonte.tituloSecao, color: cor.cinza900, alignSelf: "flex-start", marginBottom: espaco.sm, marginTop: espaco.lg },
 
     linhaDoTempo: { width: "100%" },
