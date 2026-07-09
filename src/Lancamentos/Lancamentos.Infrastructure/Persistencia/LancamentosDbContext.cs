@@ -18,6 +18,7 @@ public class LancamentosDbContext : DbContext
     public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
     public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+    public DbSet<ResumoSemanalGerado> ResumosSemanaisGerados => Set<ResumoSemanalGerado>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -147,6 +148,12 @@ public class LancamentosDbContext : DbContext
             e.Property(x => x.Tipo).HasMaxLength(200).IsRequired();
             e.Property(x => x.Payload).IsRequired();
             e.HasIndex(x => new { x.Canal, x.ProcessadoEm }); // cada publicador consulta pendentes do próprio canal
+        });
+
+        modelBuilder.Entity<ResumoSemanalGerado>(e =>
+        {
+            e.ToTable("ResumosSemanaisGerados");
+            e.HasKey(x => x.UsuarioId); // uma linha por usuário (upsert), não histórico
         });
     }
 }

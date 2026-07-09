@@ -18,4 +18,7 @@ public interface ILancamentoRepository
     /// não é fato econômico novo (não gera moedas nem notificação).
     /// </summary>
     Task AdicionarTransferenciaAsync(Lancamento saida, Lancamento entrada, CancellationToken ct);
+
+    /// <summary>UsuarioId distintos com pelo menos um lançamento na janela — usado pelo ResumoSemanalWorker.</summary>
+    Task<IReadOnlyList<Guid>> ListarUsuariosComLancamentoAsync(DateTime inicio, DateTime fim, CancellationToken ct);
 }

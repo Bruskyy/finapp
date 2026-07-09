@@ -182,6 +182,7 @@ export enum TipoNotificacao {
   LancamentoRecorrente = 2,
   ResgateConfirmado = 3,
   ResgateFalhou = 4,
+  ResumoSemanal = 5,
 }
 
 export interface Notificacao {
@@ -190,4 +191,10 @@ export interface Notificacao {
   mensagem: string;
   lida: boolean;
   criadoEm: string;
+  economiaVsSemanaAnterior: number | null;
+  categoriaMaiorGasto: string | null;
+  valorCategoriaMaiorGasto: number | null;
+  diasComLancamento: number | null;
+  nomeObjetivoDestaque: string | null;
+  percentualObjetivoDestaque: number | null;
 }

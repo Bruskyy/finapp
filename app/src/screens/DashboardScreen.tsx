@@ -4,6 +4,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View }
 import { Ionicons } from "@expo/vector-icons";
 import {
   listarLancamentos,
+  listarNotificacoes,
   listarObjetivos,
   listarOrcamentos,
   listarSaldosPorConta,
@@ -13,6 +14,7 @@ import {
   obterSaldoMoedas,
 } from "../api/client";
 import Card from "../componentes/Card";
+import CardResumoSemanal from "../componentes/CardResumoSemanal";
 import GraficoGastosPorCategoria from "../componentes/GraficoGastosPorCategoria";
 import GraficoEvolucaoMensal from "../componentes/GraficoEvolucaoMensal";
 import MetaDestaque from "../componentes/MetaDestaque";
@@ -23,12 +25,19 @@ import {
   EvolucaoMensalPonto,
   GastoPorCategoria,
   Lancamento,
+  Notificacao,
   Objetivo,
   OrcamentoStatus,
   SaldoPorConta,
   TipoLancamento,
+  TipoNotificacao,
 } from "../types";
 import { obterPreferencias, Preferencias } from "../utils/preferencias";
+
+// Um resumo semanal só ainda faz sentido mostrar por um tempo limitado -
+// depois disso, é informação velha (o worker roda a cada 6h, mas o cooldown
+// por usuário é de 7 dias; ~10 dias dá folga sem deixar o card "grudado").
+const DIAS_VALIDADE_RESUMO = 10;
 
 export default function DashboardScreen() {
   const [saldo, setSaldo] = useState<number | null>(null);
@@ -39,6 +48,7 @@ export default function DashboardScreen() {
   const [evolucao, setEvolucao] = useState<EvolucaoMensalPonto[]>([]);
   const [orcamentos, setOrcamentos] = useState<OrcamentoStatus[]>([]);
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
+  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [preferencias, setPreferencias] = useState<Preferencias | null>(null);
@@ -57,6 +67,7 @@ export default function DashboardScreen() {
         resEvolucao,
         resOrcamentos,
         resObjetivos,
+        resNotificacoes,
         resPreferencias,
       ] = await Promise.all([
         obterSaldoFinanceiro(inicio, fim),
@@ -67,6 +78,7 @@ export default function DashboardScreen() {
         obterEvolucaoMensal(6),
         listarOrcamentos(),
         listarObjetivos(),
+        listarNotificacoes(),
         obterPreferencias(),
       ]);
       setSaldo(resSaldo.saldo);
@@ -78,6 +90,7 @@ export default function DashboardScreen() {
       setEvolucao(resEvolucao);
       setOrcamentos(resOrcamentos);
       setObjetivos(resObjetivos);
+      setNotificacoes(resNotificacoes);
       setPreferencias(resPreferencias);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar dados.");
@@ -115,6 +128,13 @@ export default function DashboardScreen() {
   const objetivoDestaque = [...objetivos]
     .filter((o) => !o.concluido)
     .sort((a, b) => b.percentualConcluido - a.percentualConcluido)[0] ?? null;
+
+  // Resumo semanal mais recente, se ainda estiver dentro da validade -
+  // notificações vêm ordenadas por criadoEm desc (ver Notificacoes.Api).
+  const limiteResumo = Date.now() - DIAS_VALIDADE_RESUMO * 86_400_000;
+  const resumoSemanal = notificacoes.find(
+    (n) => n.tipo === TipoNotificacao.ResumoSemanal && new Date(n.criadoEm).getTime() >= limiteResumo
+  ) ?? null;
 
   return (
     <View style={estilos.container}>
@@ -204,6 +224,13 @@ export default function DashboardScreen() {
           <Card estiloExtra={estilos.cartaoSecao}>
             <Text style={estilos.tituloSecao}>{objetivoDestaque.nome}</Text>
             <MetaDestaque destaque={objetivoDestaque} />
+          </Card>
+        )}
+
+        {widgets?.resumoSemanal && resumoSemanal && (
+          <Card estiloExtra={estilos.cartaoSecao}>
+            <Text style={estilos.tituloSecao}>Sua semana</Text>
+            <CardResumoSemanal resumo={resumoSemanal} />
           </Card>
         )}
       </ScrollView>
