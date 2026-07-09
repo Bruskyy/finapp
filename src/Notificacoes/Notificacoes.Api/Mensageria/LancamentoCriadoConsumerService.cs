@@ -146,6 +146,24 @@ public class LancamentoCriadoConsumerService : BackgroundService
                     resumo.PercentualObjetivoDestaque);
                 break;
 
+            case "lancamento.orcamento.estourado":
+                var orcamento = JsonSerializer.Deserialize<OrcamentoEstouradoEvent>(json)
+                    ?? throw new InvalidOperationException("Payload de OrcamentoEstouradoEvent inválido.");
+                var mensagemOrcamento = orcamento.Limiar >= 100
+                    ? $"Seu orçamento de {orcamento.Categoria} estourou: {orcamento.GastoNoMes:C} de {orcamento.ValorLimite:C}."
+                    : $"Seu orçamento de {orcamento.Categoria} já passou de {orcamento.Limiar}%: {orcamento.GastoNoMes:C} de {orcamento.ValorLimite:C}.";
+                notificacao = new Notificacao(orcamento.EventId, TipoNotificacao.OrcamentoEstourado, mensagemOrcamento, orcamento.UsuarioId);
+                break;
+
+            case "lancamento.recorrencia.a-vencer":
+                var aVencer = JsonSerializer.Deserialize<RecorrenciaAVencerEvent>(json)
+                    ?? throw new InvalidOperationException("Payload de RecorrenciaAVencerEvent inválido.");
+                notificacao = new Notificacao(
+                    aVencer.EventId, TipoNotificacao.RecorrenciaAVencer,
+                    $"Sua conta fixa '{aVencer.Descricao}' de {aVencer.Valor:C} vence em {aVencer.DiasParaVencimento} dias.",
+                    aVencer.UsuarioId);
+                break;
+
             default:
                 _logger.LogWarning("Routing key {RoutingKey} sem handler — mensagem descartada.", routingKey);
                 return;

@@ -192,6 +192,8 @@ export enum TipoNotificacao {
   ResgateConfirmado = 3,
   ResgateFalhou = 4,
   ResumoSemanal = 5,
+  OrcamentoEstourado = 6,
+  RecorrenciaAVencer = 7,
 }
 
 export interface Notificacao {

@@ -86,4 +86,35 @@ public class RecorrenciaRepository : IRecorrenciaRepository
             return false;
         }
     }
+
+    public async Task<bool> AlertaJaEnviadoAsync(Guid recorrenciaId, string competencia, CancellationToken ct)
+        => await _db.Set<AlertaRecorrenciaEnviado>().AsNoTracking()
+            .AnyAsync(x => x.RecorrenciaId == recorrenciaId && x.Competencia == competencia, ct);
+
+    public async Task RegistrarAlertaEEnfileirarAsync(Guid recorrenciaId, string descricao, decimal valor, int diasParaVencimento, string competencia, Guid? usuarioId, CancellationToken ct)
+    {
+        _db.Set<AlertaRecorrenciaEnviado>().Add(new AlertaRecorrenciaEnviado(recorrenciaId, competencia));
+
+        var evento = new RecorrenciaAVencerEvent(
+            EventId: Guid.NewGuid(),
+            RecorrenciaId: recorrenciaId,
+            Descricao: descricao,
+            Valor: valor,
+            DiasParaVencimento: diasParaVencimento,
+            Competencia: competencia,
+            OcorreuEm: DateTime.UtcNow,
+            UsuarioId: usuarioId);
+        _db.OutboxMessages.Add(new OutboxMessage(nameof(RecorrenciaAVencerEvent), JsonSerializer.Serialize(evento)));
+
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (
+            ex.InnerException is SqlException { Number: ErroUniqueIndex or ErroUniqueConstraint })
+        {
+            // alerta ja enviado pra essa competencia (worker rodou duas vezes / instancia concorrente)
+            _db.ChangeTracker.Clear();
+        }
+    }
 }
