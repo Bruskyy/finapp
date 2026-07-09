@@ -13,6 +13,7 @@ import {
   obterSaldoFinanceiro,
   obterSaldoMoedas,
 } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import Card from "../componentes/Card";
 import CardResumoSemanal from "../componentes/CardResumoSemanal";
 import GraficoGastosPorCategoria from "../componentes/GraficoGastosPorCategoria";
@@ -40,9 +41,17 @@ import { obterPreferencias, Preferencias } from "../utils/preferencias";
 // por usuário é de 7 dias; ~10 dias dá folga sem deixar o card "grudado").
 const DIAS_VALIDADE_RESUMO = 10;
 
+function saudacaoDoHorario(): string {
+  const hora = new Date().getHours();
+  if (hora < 12) return "Bom dia";
+  if (hora < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export default function DashboardScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
+  const { usuario } = useAuth();
   const [saldo, setSaldo] = useState<number | null>(null);
   const [moedas, setMoedas] = useState<number | null>(null);
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
@@ -139,8 +148,17 @@ export default function DashboardScreen() {
     (n) => n.tipo === TipoNotificacao.ResumoSemanal && new Date(n.criadoEm).getTime() >= limiteResumo
   ) ?? null;
 
+  // Só o primeiro nome: o cabeçalho é um cumprimento, não um formulário.
+  const primeiroNome = usuario?.nome.split(" ")[0];
+
   return (
     <View style={estilos.container}>
+      {primeiroNome && (
+        <Text style={estilos.saudacao}>
+          {saudacaoDoHorario()}, {primeiroNome} 👋
+        </Text>
+      )}
+
       {/* Cartão principal: muito respiro, saldo é o protagonista da tela */}
       {widgets?.saldo && (
         <View style={estilos.cartaoSaldo}>
@@ -245,6 +263,8 @@ function criarEstilos(cor: Cor) {
   return StyleSheet.create({
   container: { flex: 1, paddingHorizontal: espaco.lg, paddingTop: espaco.lg, backgroundColor: cor.fundoTela },
   centro: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: cor.fundoTela },
+
+  saudacao: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
 
   // Cartão de saldo em verde-primavera de marca (hero, inspirado na tela
   // Home/Account Balance do kit Figma de referência) - é o elemento mais

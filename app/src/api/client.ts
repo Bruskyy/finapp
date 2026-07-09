@@ -271,6 +271,10 @@ export function listarSaldosPorConta(): Promise<SaldoPorConta[]> {
   return requisitar("/api/contas/saldos");
 }
 
+export function criarConta(nome: string): Promise<Conta> {
+  return requisitar("/api/contas", { method: "POST", body: JSON.stringify({ nome }) });
+}
+
 export function transferir(contaOrigemId: string, contaDestinoId: string, valor: number): Promise<void> {
   return requisitar("/api/transferencias", {
     method: "POST",

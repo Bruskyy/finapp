@@ -18,6 +18,7 @@ import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from "react-
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
 import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
+import ContasScreen from "./src/screens/ContasScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import ImportarExtratoScreen from "./src/screens/ImportarExtratoScreen";
 import LoginScreen from "./src/screens/LoginScreen";
@@ -202,6 +203,7 @@ function DrawerPrincipal() {
       drawerContent={(props) => <DrawerContent {...props} />}
     >
       <Drawer.Screen name="Início" component={TabsPrincipais} options={{ headerShown: false }} />
+      <Drawer.Screen name="Contas" component={ContasScreen} />
       <Drawer.Screen name="Personalizar" component={PersonalizarInicioScreen} />
       <Drawer.Screen name="Moedas" component={MoedasScreen} />
       <Drawer.Screen name="Notificações" component={NotificacoesScreen} />
