@@ -123,6 +123,16 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// Aplica migrations pendentes no boot - o deploy (Render) só sobe o
+// código a cada push, não roda `dotnet ef database update` sozinho.
+// Sem isso, um PR que inclua migration quebra produção em silêncio até
+// alguém rodar a migration manualmente (ver README, "Migração automática
+// no boot"). Migrate() é idempotente - não faz nada se já estiver em dia.
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<LancamentosDbContext>().Database.Migrate();
+}
+
 // ----- Lançamentos -----
 
 app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ClaimsPrincipal principal, ILancamentoRepository repo, IContaRepository contas, ITagRepository tags, CancellationToken ct) =>

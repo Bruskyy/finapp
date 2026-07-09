@@ -587,6 +587,28 @@ a cada evento relevante (a constraint absorve tentativas repetidas como
 no-op); conquistas de "marco" (10/100/1000, 5 metas) só chamam quando o
 contador pós-incremento bate exatamente o threshold.
 
+### Migração automática no boot (bug real de produção, achado testando o app deployado)
+
+**Bug real:** o Render sobe o código a cada push na `main`, mas nunca
+rodava `dotnet ef database update` sozinho — migrations ficavam pendentes
+em produção até alguém aplicar manualmente. Isso quebrou login (faltava
+`AdicionaRefreshTokens`/`AdicionaPerfilOnboarding` em `Usuarios.Api`) e o
+Dashboard (`GET /objetivos` 500 por faltar `ConcluidoEm`, entre outras) —
+os quatro bancos de produção (Usuarios, Lancamentos, Notificacoes,
+Gamificacao) estavam com migrations de PRs já mergeados e deployados, mas
+nunca aplicadas. Só apareceu testando o app deployado de verdade, não em
+`dotnet test` (que sempre usa banco fresco via Testcontainers, já
+migrado do zero a cada run).
+
+**Fix:** os 4 serviços ganham, logo após `var app = builder.Build();`,
+`scope.ServiceProvider.GetRequiredService<XxxDbContext>().Database.Migrate()`
+— aplicado incondicionalmente (não só em produção) porque `Migrate()` é
+idempotente: não faz nada se o banco já estiver em dia, e mantém o
+comportamento local igual ao que já existia (migration sempre aplicada
+antes do primeiro request). Falha ao migrar derruba o boot do serviço de
+propósito (fail-fast) — melhor um serviço que não sobe do que um que sobe
+servindo um schema incompatível com o código.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
