@@ -334,10 +334,15 @@ conversa de posicionamento antes de ser uma de arquitetura.
   pede o Feed de Evolução (Sprint 4) ou push (Sprint 5), não um evento
   síncrono que não existe.
 
-### Sprint 4 — Feed de Evolução no Perfil
+### Sprint 4 — Feed de Evolução no Perfil — ✅ feito, ver README ("Feed de Evolução no Perfil")
 - Unificar "Sua jornada" + "Conquistas" num feed cronológico reverso,
   agregando no client 3 fontes que já existem: `GET /relatorios/marcos`,
   `GET /conquistas` e as notificações tipadas. Sem backend novo.
+- **Ajuste sobre o plano original:** "Conquistas por desbloquear" virou
+  uma segunda seção, não desapareceu dentro do feed — um feed só do que
+  já aconteceu perderia a visão de "o que falta pra desbloquear", que é
+  justamente o gancho de gamificação que o catálogo de 15 conquistas do
+  Sprint 2 foi ampliado pra sustentar.
 - **Decisão registrada: "Central de Insights" (ideia externa) adiada
   pós-1.0** — sobrepõe demais o resumo semanal; revisitar com dados de
   usuários reais.
