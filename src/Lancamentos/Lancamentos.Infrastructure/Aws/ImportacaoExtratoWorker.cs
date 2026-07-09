@@ -1,42 +1,31 @@
-using Amazon.S3;
-using Amazon.SQS;
 using Lancamentos.Application.Importacao;
 using Lancamentos.Application.Repositorios;
 using Lancamentos.Domain.Entidades;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Lancamentos.Infrastructure.Aws;
 
 /// <summary>
-/// Worker da importação assíncrona: consome a fila SQS (long polling), baixa o
-/// CSV do S3, cria os lançamentos e atualiza o status da importação.
-/// SQS entrega at-least-once — o consumo é idempotente: se a importação já saiu
-/// de Pendente, a mensagem duplicada é removida sem reprocessar.
+/// Worker da importação assíncrona: consome a fila de importações (SQS ou
+/// banco, conforme Importacoes:Modo — o worker só conhece as portas), baixa o
+/// CSV do armazenamento, cria os lançamentos e atualiza o status.
+/// A fila entrega at-least-once — o consumo é idempotente: se a importação já
+/// saiu de Pendente, a mensagem duplicada é removida sem reprocessar.
 /// </summary>
 public class ImportacaoExtratoWorker : BackgroundService
 {
     private static readonly TimeSpan IntervaloAposErro = TimeSpan.FromSeconds(10);
 
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly IAmazonS3 _s3;
-    private readonly IAmazonSQS _sqs;
-    private readonly AwsOptions _options;
     private readonly ILogger<ImportacaoExtratoWorker> _logger;
 
     public ImportacaoExtratoWorker(
         IServiceScopeFactory scopeFactory,
-        IAmazonS3 s3,
-        IAmazonSQS sqs,
-        IOptions<AwsOptions> options,
         ILogger<ImportacaoExtratoWorker> logger)
     {
         _scopeFactory = scopeFactory;
-        _s3 = s3;
-        _sqs = sqs;
-        _options = options.Value;
         _logger = logger;
     }
 
@@ -158,29 +147,12 @@ public class ImportacaoExtratoWorker : BackgroundService
         return carteira.Id;
     }
 
-    /// <summary>Cria bucket e fila se não existirem (idempotente) — em produção isso seria IaC (Terraform/CDK).</summary>
+    /// <summary>Delega a preparação (bucket/fila no modo Aws; nada no modo Banco)
+    /// pros próprios adapters — o worker não sabe qual tecnologia está por trás.</summary>
     private async Task GarantirInfraestruturaAsync(CancellationToken ct)
     {
-        try
-        {
-            await _s3.PutBucketAsync(_options.BucketExtratos, ct);
-        }
-        catch (AmazonS3Exception ex) when (ex.ErrorCode is "BucketAlreadyOwnedByYou" or "BucketAlreadyExists")
-        {
-            // já existe — ok
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Não foi possível garantir o bucket {Bucket} — LocalStack fora do ar?", _options.BucketExtratos);
-        }
-
-        try
-        {
-            await _sqs.CreateQueueAsync(_options.FilaImportacoes, ct); // CreateQueue é idempotente para mesma config
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Não foi possível garantir a fila {Fila} — LocalStack fora do ar?", _options.FilaImportacoes);
-        }
+        using var scope = _scopeFactory.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IArmazenamentoExtrato>().GarantirInfraestruturaAsync(ct);
+        await scope.ServiceProvider.GetRequiredService<IFilaImportacoes>().GarantirInfraestruturaAsync(ct);
     }
 }

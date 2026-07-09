@@ -718,6 +718,56 @@ gráficos) e a sombra única do sistema ficam compartilhadas entre os dois
 temas — já são tons médios/sombra discreta o bastante pra funcionar nos
 dois fundos, não justificou uma segunda lista só por completude.
 
+### UI de importação CSV + modo "Banco" da importação (Roadmap Cofrin 1.0, Sprint 1)
+
+O backend da importação existia completo desde a Etapa 6 (S3 + SQS +
+worker + outbox), mas **nenhuma tela chamava** — a feature era invisível.
+O Sprint 1 do Roadmap 1.0 fecha isso: tela nova "Importar extrato" no
+drawer (+ link contextual em Novo Lançamento), com
+`expo-document-picker` pra escolher o arquivo, `POST /importacoes` e
+polling do status (mesmo padrão da saga de resgate em `MoedasScreen`).
+
+**Bug real achado no caminho: a importação estava quebrada em produção
+desde a Etapa 7.** O deploy no Render nunca teve LocalStack ("só
+localmente", decisão documentada na Etapa 7) — sem S3 pra salvar o
+arquivo, o `POST /importacoes` devolvia 500. Ninguém tinha percebido
+justamente porque não existia UI. Descoberto ao validar a tela nova
+contra o ambiente real.
+
+**A correção mostra o valor do ports & adapters:** as portas
+`IArmazenamentoExtrato`/`IFilaImportacoes` já isolavam a Application da
+tecnologia. Entrou um segundo par de adapters, escolhido por config
+(`Importacoes:Modo`):
+- **"Aws"** (padrão, dev local): S3 + SQS via LocalStack, SDK oficial —
+  intacto, continua sendo a vitrine de SDK AWS do projeto.
+- **"Banco"** (deploy, env var `Importacoes__Modo=Banco` no serviço de
+  Lançamentos do Render): o CSV (≤ 1 MB, limite que o endpoint já
+  validava) vai pra tabela `ExtratosArquivos` no próprio SQL Server, e a
+  "fila" vira polling das importações `Pendente` — uma linha em Pendente
+  É uma mensagem esperando consumo; enfileirar/remover viram no-ops
+  porque o INSERT do POST e a transição de status do worker já fazem
+  esses papéis. A semântica at-least-once e o consumo idempotente do
+  worker (ignora quem já saiu de Pendente) continuam valendo. O delay de
+  5s quando a fila está vazia é o equivalente "de banco" do long polling
+  do SQS — sem ele o worker martelaria o banco com SELECTs vazios.
+
+O worker (`ImportacaoExtratoWorker`) deixou de depender de
+`IAmazonS3`/`IAmazonSQS` direto: a criação de bucket/fila no boot desceu
+pros adapters via `GarantirInfraestruturaAsync` na porta (no-op no modo
+Banco, onde a tabela nasce por migration). Em modo Banco os clients AWS
+nem são registrados no container de DI.
+
+**Conceito de entrevista:** é o caso clássico de "por que programar
+contra portas": a Application e o worker não mudaram uma linha de lógica
+— só entrou adapter novo e um switch de DI. E o corolário de produto:
+feature sem UI é feature que ninguém valida de verdade — o 500 viveu
+meses em produção sem ninguém notar.
+
+4 testes novos (`ImportacaoBancoAdaptersTests`, Testcontainers.MsSql)
+cobrindo o roundtrip salvar/baixar do armazenamento, o polling de
+Pendente da fila (aparece/não aparece conforme status) e os no-ops. 244
+testes verdes no total.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

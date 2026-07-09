@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using Lancamentos.Application.Importacao;
 using Lancamentos.Application.Repositorios;
 using Lancamentos.Infrastructure.Aws;
+using Lancamentos.Infrastructure.Importacao;
 using Lancamentos.Infrastructure.Repositorios;
 using Lancamentos.Api.Contratos;
 using Lancamentos.Api.Validacao;
@@ -45,34 +46,51 @@ builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(Rab
 builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddHostedService<OutboxPublisherService>();
 
-// AWS via LocalStack: SDK oficial apontando pro endpoint local (custo zero).
-// Em produção bastaria remover ServiceUrl da config — o SDK resolve os endpoints reais.
-builder.Services.Configure<AwsOptions>(builder.Configuration.GetSection(AwsOptions.SectionName));
-builder.Services.AddSingleton<IAmazonS3>(sp =>
+// Importação de extrato: dois pares de adapters pras mesmas portas
+// (IArmazenamentoExtrato/IFilaImportacoes), escolhidos por config.
+// - "Aws" (padrão, dev local): S3 + SQS via LocalStack, SDK oficial (custo zero).
+// - "Banco" (deploy no Render, via env var Importacoes__Modo): o CSV vai pra
+//   uma tabela do próprio SQL Server e a fila é o polling das importações
+//   Pendentes — o ambiente deployado não tem LocalStack nem AWS, e sem esse
+//   modo o POST /importacoes devolvia 500 lá (bug real achado no Sprint 1 do
+//   Roadmap 1.0, quando a UI de importação nasceu).
+var modoImportacao = builder.Configuration.GetValue<string>("Importacoes:Modo") ?? "Aws";
+if (modoImportacao.Equals("Banco", StringComparison.OrdinalIgnoreCase))
 {
-    var aws = sp.GetRequiredService<IOptions<AwsOptions>>().Value;
-    return new AmazonS3Client(
-        new BasicAWSCredentials(aws.AccessKey, aws.SecretKey),
-        new AmazonS3Config
-        {
-            ServiceURL = aws.ServiceUrl,
-            AuthenticationRegion = aws.Region,
-            ForcePathStyle = true // LocalStack não resolve bucket como subdomínio
-        });
-});
-builder.Services.AddSingleton<IAmazonSQS>(sp =>
+    builder.Services.AddScoped<IArmazenamentoExtrato, ArmazenamentoExtratoBanco>();
+    builder.Services.AddScoped<IFilaImportacoes, FilaImportacoesBanco>();
+}
+else
 {
-    var aws = sp.GetRequiredService<IOptions<AwsOptions>>().Value;
-    return new AmazonSQSClient(
-        new BasicAWSCredentials(aws.AccessKey, aws.SecretKey),
-        new AmazonSQSConfig
-        {
-            ServiceURL = aws.ServiceUrl,
-            AuthenticationRegion = aws.Region
-        });
-});
-builder.Services.AddScoped<IArmazenamentoExtrato, ArmazenamentoExtratoS3>();
-builder.Services.AddScoped<IFilaImportacoes, FilaImportacoesSqs>();
+    // Em produção AWS de verdade bastaria remover ServiceUrl da config — o SDK
+    // resolve os endpoints reais.
+    builder.Services.Configure<AwsOptions>(builder.Configuration.GetSection(AwsOptions.SectionName));
+    builder.Services.AddSingleton<IAmazonS3>(sp =>
+    {
+        var aws = sp.GetRequiredService<IOptions<AwsOptions>>().Value;
+        return new AmazonS3Client(
+            new BasicAWSCredentials(aws.AccessKey, aws.SecretKey),
+            new AmazonS3Config
+            {
+                ServiceURL = aws.ServiceUrl,
+                AuthenticationRegion = aws.Region,
+                ForcePathStyle = true // LocalStack não resolve bucket como subdomínio
+            });
+    });
+    builder.Services.AddSingleton<IAmazonSQS>(sp =>
+    {
+        var aws = sp.GetRequiredService<IOptions<AwsOptions>>().Value;
+        return new AmazonSQSClient(
+            new BasicAWSCredentials(aws.AccessKey, aws.SecretKey),
+            new AmazonSQSConfig
+            {
+                ServiceURL = aws.ServiceUrl,
+                AuthenticationRegion = aws.Region
+            });
+    });
+    builder.Services.AddScoped<IArmazenamentoExtrato, ArmazenamentoExtratoS3>();
+    builder.Services.AddScoped<IFilaImportacoes, FilaImportacoesSqs>();
+}
 builder.Services.AddScoped<IImportacaoRepository, ImportacaoRepository>();
 builder.Services.AddHostedService<ImportacaoExtratoWorker>();
 builder.Services.AddHostedService<ImportacaoOutboxPublisherService>();
