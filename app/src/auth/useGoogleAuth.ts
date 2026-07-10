@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { Platform } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Crypto from "expo-crypto";
 import { makeRedirectUri, ResponseType, useAuthRequest, useAutoDiscovery } from "expo-auth-session";
@@ -8,6 +9,13 @@ import { makeRedirectUri, ResponseType, useAuthRequest, useAutoDiscovery } from 
 WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = "123292857800-c8v8tjkkbu57opnb5qgdnpgap6r8hqk2.apps.googleusercontent.com";
+
+// O client OAuth do Google é "Web application" (único tipo com redirect URIs
+// configuráveis) - e esse tipo não aceita mais custom scheme como redirect_uri
+// (descontinuado pelo Google por risco de impersonation). Em builds nativas,
+// redirecionamos pro Google via essa página HTTPS estática (public/auth-redirect.html),
+// que por sua vez repassa pro scheme "cofrin" - ver README, "Login com Google".
+const GOOGLE_REDIRECT_BRIDGE_URI = "https://finapp-tawny-nine.vercel.app/auth-redirect.html";
 
 /**
  * Fluxo OIDC implícito (response_type=id_token) puro, sem SDK nativo do
@@ -29,7 +37,7 @@ export function useGoogleAuth(aoObterIdToken: (idToken: string) => void) {
     {
       clientId: GOOGLE_CLIENT_ID,
       scopes: ["openid", "profile", "email"],
-      redirectUri: makeRedirectUri(),
+      redirectUri: Platform.OS === "web" ? makeRedirectUri() : GOOGLE_REDIRECT_BRIDGE_URI,
       responseType: ResponseType.IdToken,
       usePKCE: false,
       extraParams: { nonce },
