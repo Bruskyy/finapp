@@ -167,9 +167,12 @@ entrou no reset — o que ficou de fora, mas vale considerar depois:
   (`app/src/screens/CategoriasScreen.tsx`): grid de tiles com
   `iconeDaCategoria`, só ver/criar (sem editar/excluir — `ICategoriaRepository`
   não tem esses métodos, ver README).
-- **Tela de Análise com segmented Daily/Weekly/Monthly/Year** e gráfico de
-  Receita x Despesa por período, complementar ao `GraficoEvolucaoMensal`
-  que já existe no Dashboard.
+- ~~Tela de Análise com segmented Daily/Weekly/Monthly/Year~~ — **feito**
+  (`AnaliseScreen.tsx` + `GraficoBarrasPeriodo.tsx`): Dia/Semana agregam no
+  cliente a partir de `GET /lancamentos` (mesmo trade-off já documentado em
+  ITEM-TRANSACOES.md); Mês/Ano reaproveitam `GET /relatorios/evolucao-mensal`
+  (Ano soma os meses por ano no cliente, sem endpoint novo). Complementar ao
+  `GraficoEvolucaoMensal` do Dashboard, que continua intocado.
 - **Login biométrico** (`expo-local-authentication`) — feature real (não só
   visual) e gratuita, inspirada no "Use Fingerprint to Access" do kit.
 - ~~Central de notificações in-app~~ — **feito**, mas acabou virando um epic

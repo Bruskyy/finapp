@@ -28,3 +28,12 @@ export function fimDoMes(referencia: Date = new Date()): string {
 export function agoraLocalIso(): string {
   return paraLocalIso(new Date());
 }
+
+export function inicioDoDia(referencia: Date = new Date()): string {
+  return paraLocalIso(new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate(), 0, 0, 0));
+}
+
+// 23:59:59 do próprio dia - mesmo racional de fimDoMes (Data <= Fim no backend).
+export function fimDoDia(referencia: Date = new Date()): string {
+  return paraLocalIso(new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate(), 23, 59, 59));
+}
