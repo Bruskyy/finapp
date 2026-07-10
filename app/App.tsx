@@ -21,6 +21,7 @@ import CategoriasScreen from "./src/screens/CategoriasScreen";
 import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
 import ContasScreen from "./src/screens/ContasScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
+import DesbloqueioPinScreen from "./src/screens/DesbloqueioPinScreen";
 import ImportarExtratoScreen from "./src/screens/ImportarExtratoScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
@@ -36,6 +37,7 @@ import RegisterScreen from "./src/screens/RegisterScreen";
 import TransacoesScreen from "./src/screens/TransacoesScreen";
 import { Cor, espaco, sombra } from "./src/tema";
 import { ThemeProvider, useEstilos, useTema } from "./src/tema/ThemeContext";
+import { obterPin } from "./src/utils/armazenamentoPin";
 import { marcarOnboardingVisto, obterOnboardingVisto } from "./src/utils/onboarding";
 
 const Tab = createBottomTabNavigator();
@@ -253,6 +255,12 @@ function FluxoAuth() {
 function RaizNavegacao() {
   const { status, usuario } = useAuth();
   const [onboardingVisto, setOnboardingVisto] = useState<boolean | null>(null);
+  // PIN de segurança (REFATORACAO-UI.md, Fase 5): undefined = ainda
+  // carregando do SecureStore, null = nenhum PIN definido (gate no-op).
+  // "desbloqueado" vive só em estado local (não persiste) - de propósito,
+  // o gate deve reaparecer toda vez que o app é aberto do zero.
+  const [pin, setPin] = useState<string | null | undefined>(undefined);
+  const [pinDesbloqueado, setPinDesbloqueado] = useState(false);
   // Hook precisa ser chamado incondicionalmente, antes dos returns abaixo -
   // estava depois deles (só no branch final, com o drawer) e violava as
   // Regras dos Hooks: o número de hooks chamados variava entre renders
@@ -265,6 +273,7 @@ function RaizNavegacao() {
 
   useEffect(() => {
     obterOnboardingVisto().then(setOnboardingVisto);
+    obterPin().then(setPin);
   }, []);
 
   if (onboardingVisto === null) return <TelaCarregandoAuth />;
@@ -288,6 +297,11 @@ function RaizNavegacao() {
   // concluir/pular, o que já tira o gate sozinho no próximo render.
   if (usuario && !usuario.onboardingConcluido) {
     return <QuestionarioPerfilScreen />;
+  }
+
+  if (pin === undefined) return <TelaCarregandoAuth />;
+  if (pin && !pinDesbloqueado) {
+    return <DesbloqueioPinScreen pinCorreto={pin} aoDesbloquear={() => setPinDesbloqueado(true)} />;
   }
 
   return (
