@@ -3,6 +3,7 @@
     "name": "Cofrin",
     "slug": "cofrin",
     "version": "1.0.0",
+    "scheme": "cofrin",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
