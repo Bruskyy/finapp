@@ -163,9 +163,10 @@ kit de UI/UX do Figma (fintech, verde-primavera/mint). Nem tudo do kit
 entrou no reset — o que ficou de fora, mas vale considerar depois:
 
 - ~~Onboarding em 2 telas~~ — **feito** (`app/src/screens/OnboardingScreen.tsx`).
-- **Tela de Categorias dedicada** com grid de tiles grandes (gerenciar/ver
-  categorias) — hoje a seleção de categoria só existe via chips dentro do
-  formulário de Novo Lançamento.
+- ~~Tela de Categorias dedicada~~ — **feito**
+  (`app/src/screens/CategoriasScreen.tsx`): grid de tiles com
+  `iconeDaCategoria`, só ver/criar (sem editar/excluir — `ICategoriaRepository`
+  não tem esses métodos, ver README).
 - **Tela de Análise com segmented Daily/Weekly/Monthly/Year** e gráfico de
   Receita x Despesa por período, complementar ao `GraficoEvolucaoMensal`
   que já existe no Dashboard.
