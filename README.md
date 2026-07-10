@@ -1113,6 +1113,35 @@ Google de novo pra entrar, mas destrava o aparelho. Trade-off aceito:
 segurança de um PIN esquecido não pode virar "conta permanentemente
 inacessível neste device".
 
+### Tela de Análise (REFATORACAO-UI.md, Fase 5)
+
+Segmented Dia/Semana/Mês/Ano (novo item no drawer) com gráfico de receita x
+despesa por período, complementar ao `GraficoEvolucaoMensal` que já existe
+no Dashboard (mantido intocado — a Análise é uma tela nova, não um refactor
+do widget existente).
+
+**Fonte de dados por segmento, sem endpoint novo:**
+- **Dia** (últimos 14 dias) e **Semana** (últimas 8 semanas, domingo a
+  sábado): agregação no cliente a partir de `GET /lancamentos` — mesmo
+  trade-off já documentado em `ITEM-TRANSACOES.md` (volume pequeno o
+  bastante pra não justificar mover a agregação pro backend). Janela de 14
+  dias (não 30) e 8 semanas foi decisão deliberada de legibilidade: mais
+  barras que isso viram ilegíveis na largura de um celular.
+- **Mês** (últimos 12) e **Ano** (últimos 24 meses somados por ano):
+  reaproveitam `GET /relatorios/evolucao-mensal`, já agregado no backend —
+  "Ano" soma os meses da mesma virada de ano no cliente, sem procedure nova.
+
+`GraficoBarrasPeriodo.tsx` é a versão genérica (rótulo livre, não fixa em
+ano/mês) do mesmo desenho visual de `GraficoEvolucaoMensal` — duplica o
+componente em vez de generalizar o existente, deliberado: o widget do
+Dashboard já está em produção e testado, e a spec desta tela é
+"complementar", não "substituir".
+
+**Validação:** a lógica de bucketing (limites de dia/semana, exclusão de
+lançamento fora da janela) foi conferida à parte com um script Node
+isolado antes do PR — este ambiente não tem backend rodando pra navegar
+até a tela de verdade e ver o gráfico renderizado com dados reais.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
