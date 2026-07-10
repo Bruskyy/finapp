@@ -373,15 +373,23 @@ conversa de posicionamento antes de ser uma de arquitetura.
   disso — sem esse arquivo, um redeploy do Vercel quebraria a versão web
   publicada inteira.
 
-### Sprint 6 — Lançamento Play Store
-- Polish final (revisão visual nos 2 temas, ícone/splash, performance).
-- Publicação: conta dev Google (**US$25, a exceção documentada no topo**),
-  build AAB via EAS free tier, listing, política de privacidade (página
-  estática no Vercel, R$0).
-- **Atenção**: contas pessoais novas do Google Play exigem teste fechado
-  com um número mínimo de testadores por 14 dias antes do acesso à
-  produção (verificar o número atual na doc do Google na hora) — o Vitor
-  precisa recrutar os testadores; planejar esse prazo.
+### Sprint 6 — Lançamento Play Store — em andamento, ver README ("Lançamento na Play Store")
+- Polish final: ícone/splash já eram profissionais desde antes (porquinho,
+  fundo `#052224`), sem necessidade de refazer.
+- ✅ Política de privacidade: página estática em `app/public/politica-privacidade.html`,
+  servida pelo export web do Expo, linkada em Configurações > Sobre o app.
+  URL: https://finapp-tawny-nine.vercel.app/politica-privacidade.html
+- ✅ Build de desenvolvimento (EAS, Sprint 5) e ✅ build de produção (AAB
+  assinado, `eas build --profile production --platform android`) gerados.
+- ✅ Ficha da loja rascunhada em `PLAY-STORE-LISTING.md` (descrição curta,
+  descrição completa, categoria, e-mail de contato, URL da política).
+- **Pendências que só o Vitor pode fazer** (custam dinheiro real ou
+  exigem posse de conta pessoal): pagar os US$25 da conta dev Google Play
+  (**exceção documentada no topo**), subir o AAB e o listing no Play
+  Console, capturar screenshots reais a partir do development build
+  (preview web não serve pra isso), recrutar os testadores do teste
+  fechado obrigatório de 14 dias pra contas novas (verificar o número
+  mínimo atual na doc do Google na hora de abrir a ficha).
 
 ### Depois do 1.0 (nada disso se perde)
 - **Escritório virtual/coleções (item 7)** — com feedback de usuários

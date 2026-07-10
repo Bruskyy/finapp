@@ -974,6 +974,33 @@ push de verdade até a conta ser criada.
 `NotificacaoPushServiceTests`, com fake de `IProvedorPush` escrito à mão —
 sem lib de mock no projeto; `DispositivosEndpointsTests`, WebApplicationFactory).
 
+### Lançamento na Play Store (Roadmap Cofrin 1.0, Sprint 6, em andamento)
+
+**Política de privacidade**: página estática (`app/public/politica-privacidade.html`),
+não um endpoint de backend — dado que não muda por usuário e a Play Store
+exige uma URL pública, uma página HTML servida junto do build web já
+resolve sem gerar rota nova em nenhum serviço. Descoberta de mecanismo:
+o export web do Expo (`expo export -p web`) copia o conteúdo de
+`app/public/` verbatim pro `dist/` de saída — não aparece no resumo
+"Files (N)" que o CLI imprime ao final (esse resumo lista só os arquivos
+que o *bundler* gerou, não os que foram só copiados), o que exigiu
+conferir o `dist/` diretamente pra confirmar. Linkada em Configurações >
+Sobre o app (`Linking.openURL`), e é a URL usada no listing da loja.
+
+**Build de produção via EAS** (`eas build --profile production --platform android`,
+free tier, mesma conta Expo do Sprint 5): gera o AAB assinado que a Play
+Store exige (builds `development` não servem pra publicação — são
+"debug-signed" e incluem o cliente de dev). Reaproveita o `projectId` e
+as credenciais Android já configuradas no `eas init` do Sprint 5.
+
+**Fora do que dá pra automatizar** (ações que só o Vitor pode fazer,
+custam dinheiro real ou exigem posse de conta pessoal): pagar os US$25 da
+conta de desenvolvedor Google Play, subir o AAB no Play Console, escrever
+o listing final (rascunho pronto em `PLAY-STORE-LISTING.md`), recrutar os
+testadores do teste fechado obrigatório de 14 dias pra contas novas, e
+capturar screenshots de um device/emulador real (o preview web não serve
+pra isso — proporção e qualidade inadequadas pra ficha de loja).
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
