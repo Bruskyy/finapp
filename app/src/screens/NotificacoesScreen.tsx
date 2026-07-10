@@ -49,6 +49,7 @@ export default function NotificacoesScreen() {
   const fundoPorTipoAtual = fundoPorTipo(cor);
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const carregar = useCallback(async () => {
@@ -68,6 +69,15 @@ export default function NotificacoesScreen() {
       carregar();
     }, [carregar])
   );
+
+  // RefreshControl precisa de um estado próprio - "carregando" só cobre o
+  // spinner de tela cheia da carga inicial (nunca volta a true depois),
+  // então o puxar-pra-atualizar não mostrava indicador nenhum.
+  async function atualizar() {
+    setAtualizando(true);
+    await carregar();
+    setAtualizando(false);
+  }
 
   async function marcarComoLida(item: Notificacao) {
     if (item.lida) return;
@@ -99,7 +109,7 @@ export default function NotificacoesScreen() {
       <FlatList
         data={notificacoes}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={carregar} />}
+        refreshControl={<RefreshControl refreshing={atualizando} onRefresh={atualizar} />}
         renderItem={({ item }) => (
           <Pressable
             style={[estilos.item, !item.lida && estilos.itemNaoLido]}

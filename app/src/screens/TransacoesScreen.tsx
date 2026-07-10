@@ -26,6 +26,11 @@ const MESES = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 const MESES_PARA_SELECAO = 24; // 24 meses pra trás + 3 pra frente, a partir de hoje
+// Teto alto o bastante pra cobrir um mês realista mesmo com importação de
+// extrato pesada (o total de receitas/despesas exibido no cabeçalho é somado
+// a partir desta lista - um teto baixo demais faz o total (e a própria lista
+// visível) ficarem incompletos silenciosamente sem paginação real na tela).
+const TAKE_TRANSACOES = 1000;
 
 interface Secao {
   titulo: string;
@@ -67,6 +72,7 @@ export default function TransacoesScreen() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [nomesCategorias, setNomesCategorias] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(true);
+  const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [seletorAberto, setSeletorAberto] = useState(false);
 
@@ -74,7 +80,7 @@ export default function TransacoesScreen() {
     setErro(null);
     try {
       const [resLancamentos, resCategorias] = await Promise.all([
-        listarLancamentos(inicioDoMes(referencia), fimDoMes(referencia), { take: 200 }),
+        listarLancamentos(inicioDoMes(referencia), fimDoMes(referencia), { take: TAKE_TRANSACOES }),
         listarCategorias(),
       ]);
       setLancamentos(resLancamentos.itens);
@@ -92,6 +98,15 @@ export default function TransacoesScreen() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [carregar, mesReferencia])
   );
+
+  // RefreshControl precisa de um estado próprio - "carregando" só cobre o
+  // spinner de tela cheia da carga inicial (nunca volta a true depois),
+  // então o puxar-pra-atualizar não mostrava indicador nenhum.
+  async function atualizar() {
+    setAtualizando(true);
+    await carregar(mesReferencia);
+    setAtualizando(false);
+  }
 
   function mudarMes(delta: number) {
     setMesReferencia((atual) => new Date(atual.getFullYear(), atual.getMonth() + delta, 1));
@@ -186,7 +201,7 @@ export default function TransacoesScreen() {
       <SectionList
         sections={secoes}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={() => carregar(mesReferencia)} />}
+        refreshControl={<RefreshControl refreshing={atualizando} onRefresh={atualizar} />}
         renderSectionHeader={({ section }) => (
           <Text style={estilos.tituloSecao}>{section.titulo}</Text>
         )}

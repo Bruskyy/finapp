@@ -5,7 +5,7 @@ import Botao from "../componentes/Botao";
 import Chip from "../componentes/Chip";
 import Input from "../componentes/Input";
 import { useAuth } from "../auth/AuthContext";
-import { Cor, espaco, fonte } from "../tema";
+import { Cor, espaco, fonte, parseValorMonetario } from "../tema";
 import { useEstilos } from "../tema/ThemeContext";
 import { MaiorDificuldade, MaiorObjetivo, MomentoDeVida, PerfilOnboardingRequest } from "../types";
 
@@ -37,7 +37,7 @@ const OPCOES_DIFICULDADE: { valor: MaiorDificuldade; texto: string }[] = [
 const TOTAL_PERGUNTAS = 5;
 
 function paraNumero(valor: string): number {
-  return Number(valor.replace(",", "."));
+  return parseValorMonetario(valor);
 }
 
 /**

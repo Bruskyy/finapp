@@ -7,7 +7,8 @@ import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
 import Input from "../componentes/Input";
-import { Cor, espaco, fonte, iconeDaCategoria, raio } from "../tema";
+import { agoraLocalIso } from "../constants";
+import { Cor, espaco, fonte, iconeDaCategoria, parseValorMonetario, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Categoria, Conta, TipoLancamento } from "../types";
 
@@ -48,7 +49,7 @@ export default function NovoLancamentoScreen() {
   const dia = Number(diaDoMes);
   const valido =
     descricao.trim().length > 0 &&
-    Number(valor.replace(",", ".")) > 0 &&
+    parseValorMonetario(valor) > 0 &&
     categoriaId !== null &&
     contaId !== null &&
     (!fixa || (dia >= 1 && dia <= 31));
@@ -62,7 +63,7 @@ export default function NovoLancamentoScreen() {
       if (fixa) {
         await criarRecorrencia({
           descricao: descricao.trim(),
-          valor: Number(valor.replace(",", ".")),
+          valor: parseValorMonetario(valor),
           tipo,
           categoriaId,
           contaId,
@@ -77,11 +78,11 @@ export default function NovoLancamentoScreen() {
 
         await criarLancamento({
           descricao: descricao.trim(),
-          valor: Number(valor.replace(",", ".")),
+          valor: parseValorMonetario(valor),
           tipo,
           categoriaId,
           contaId,
-          data: new Date().toISOString(),
+          data: agoraLocalIso(),
           tags: listaTags.length > 0 ? listaTags : undefined,
         });
 

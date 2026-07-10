@@ -3,7 +3,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  listarLancamentos,
   listarNotificacoes,
   listarObjetivos,
   listarOrcamentos,
@@ -27,13 +26,11 @@ import { useEstilos, useTema } from "../tema/ThemeContext";
 import {
   EvolucaoMensalPonto,
   GastoPorCategoria,
-  Lancamento,
   Notificacao,
   Objetivo,
   OrcamentoStatus,
   SaldoPorConta,
   Sequencia,
-  TipoLancamento,
   TipoNotificacao,
 } from "../types";
 import { obterPreferencias, Preferencias } from "../utils/preferencias";
@@ -50,6 +47,10 @@ function saudacaoDoHorario(): string {
   return "Boa noite";
 }
 
+function extrair<T>(resultado: PromiseSettledResult<T>): T | null {
+  return resultado.status === "fulfilled" ? resultado.value : null;
+}
+
 export default function DashboardScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
@@ -57,7 +58,6 @@ export default function DashboardScreen() {
   const [saldo, setSaldo] = useState<number | null>(null);
   const [moedas, setMoedas] = useState<number | null>(null);
   const [sequencia, setSequencia] = useState<Sequencia | null>(null);
-  const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [saldosContas, setSaldosContas] = useState<SaldoPorConta[]>([]);
   const [gastosCategoria, setGastosCategoria] = useState<GastoPorCategoria[]>([]);
   const [evolucao, setEvolucao] = useState<EvolucaoMensalPonto[]>([]);
@@ -65,6 +65,7 @@ export default function DashboardScreen() {
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [preferencias, setPreferencias] = useState<Preferencias | null>(null);
 
@@ -73,11 +74,14 @@ export default function DashboardScreen() {
     try {
       const inicio = inicioDoMes();
       const fim = fimDoMes();
+      // allSettled (não all): um cold start isolado (ex: Render free tier
+      // hibernando um dos 5 serviços) não deve derrubar o Dashboard inteiro
+      // - cada cartão renderiza com o que conseguiu carregar, e os widgets
+      // que falharam mostram fallback vazio em vez da tela virar um erro só.
       const [
         resSaldo,
         resMoedas,
         resSequencia,
-        resLancamentos,
         resSaldosContas,
         resGastos,
         resEvolucao,
@@ -85,11 +89,10 @@ export default function DashboardScreen() {
         resObjetivos,
         resNotificacoes,
         resPreferencias,
-      ] = await Promise.all([
+      ] = await Promise.allSettled([
         obterSaldoFinanceiro(inicio, fim),
         obterSaldoMoedas(),
         obterSequencia(),
-        listarLancamentos(inicio, fim),
         listarSaldosPorConta(),
         obterGastosPorCategoria(inicio, fim),
         obterEvolucaoMensal(6),
@@ -98,18 +101,34 @@ export default function DashboardScreen() {
         listarNotificacoes(),
         obterPreferencias(),
       ]);
-      setSaldo(resSaldo.saldo);
-      setMoedas(resMoedas.saldo);
-      setSequencia(resSequencia);
-      setLancamentos(resLancamentos.itens);
-      setSaldosContas(resSaldosContas);
+
+      setSaldo(extrair(resSaldo)?.saldo ?? null);
+      setMoedas(extrair(resMoedas)?.saldo ?? null);
+      setSequencia(extrair(resSequencia));
+      setSaldosContas(extrair(resSaldosContas) ?? []);
       // transferências entre contas não são gasto real — fora do gráfico
-      setGastosCategoria(resGastos.filter((g) => g.categoria !== "Transferência"));
-      setEvolucao(resEvolucao);
-      setOrcamentos(resOrcamentos);
-      setObjetivos(resObjetivos);
-      setNotificacoes(resNotificacoes);
-      setPreferencias(resPreferencias);
+      setGastosCategoria((extrair(resGastos) ?? []).filter((g) => g.categoria !== "Transferência"));
+      setEvolucao(extrair(resEvolucao) ?? []);
+      setOrcamentos(extrair(resOrcamentos) ?? []);
+      setObjetivos(extrair(resObjetivos) ?? []);
+      setNotificacoes(extrair(resNotificacoes) ?? []);
+      setPreferencias(extrair(resPreferencias));
+
+      const algumaFalha = [
+        resSaldo,
+        resMoedas,
+        resSequencia,
+        resSaldosContas,
+        resGastos,
+        resEvolucao,
+        resOrcamentos,
+        resObjetivos,
+        resNotificacoes,
+        resPreferencias,
+      ].some((r) => r.status === "rejected");
+      if (algumaFalha) {
+        setErro("Alguns dados não puderam ser carregados agora. Puxe pra atualizar.");
+      }
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar dados.");
     } finally {
@@ -123,6 +142,15 @@ export default function DashboardScreen() {
     }, [carregar])
   );
 
+  // RefreshControl precisa de um estado próprio - "carregando" só cobre o
+  // spinner de tela cheia da carga inicial (nunca volta a true depois),
+  // então o puxar-pra-atualizar não mostrava indicador nenhum.
+  async function atualizar() {
+    setAtualizando(true);
+    await carregar();
+    setAtualizando(false);
+  }
+
   if (carregando) {
     return (
       <View style={estilos.centro}>
@@ -131,12 +159,15 @@ export default function DashboardScreen() {
     );
   }
 
-  const receitas = lancamentos
-    .filter((l) => l.tipo === TipoLancamento.Receita)
-    .reduce((soma, l) => soma + l.valor, 0);
-  const despesas = lancamentos
-    .filter((l) => l.tipo === TipoLancamento.Despesa)
-    .reduce((soma, l) => soma + l.valor, 0);
+  // Deriva do ponto do mês corrente na evolução mensal (vw_ResumoMensal, sem
+  // limite de linhas) em vez de somar a lista paginada de lançamentos - essa
+  // lista vem com "take" (padrão 50 no backend), então o total ficava errado
+  // assim que o mês passava de 50 lançamentos (uma importação de extrato
+  // sozinha já chega lá).
+  const agora = new Date();
+  const pontoMesAtual = evolucao.find((p) => p.ano === agora.getFullYear() && p.mes === agora.getMonth() + 1);
+  const receitas = pontoMesAtual?.receitas ?? 0;
+  const despesas = pontoMesAtual?.despesas ?? 0;
 
   const mesAtual = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const widgets = preferencias?.widgetsAtivos;
@@ -216,7 +247,7 @@ export default function DashboardScreen() {
       {erro && <Text style={estilos.erro}>{erro}</Text>}
 
       <ScrollView
-        refreshControl={<RefreshControl refreshing={false} onRefresh={carregar} />}
+        refreshControl={<RefreshControl refreshing={atualizando} onRefresh={atualizar} />}
         contentContainerStyle={estilos.listaConteudo}
       >
         {saldosContas.length > 1 && (

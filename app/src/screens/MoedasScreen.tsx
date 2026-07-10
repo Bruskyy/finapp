@@ -61,17 +61,26 @@ export default function MoedasScreen() {
 
   // A saga (Gamificacao <-> Notificacoes via RabbitMQ) leva alguns segundos
   // pra confirmar ou compensar - aqui o app so fica perguntando o status.
+  // Tolera algumas falhas de rede seguidas (ex: cold start do Render free
+  // tier) antes de desistir - um único erro transitório não deve travar a
+  // tela em "processando..." pra sempre.
   function acompanharResgate(id: string) {
+    let errosSeguidos = 0;
     intervaloRef.current = setInterval(async () => {
       try {
         const atual = await obterResgate(id);
+        errosSeguidos = 0;
         setResgateEmAndamento(atual);
         if (atual.status !== "Pendente") {
           if (intervaloRef.current) clearInterval(intervaloRef.current);
           carregarSaldo();
         }
       } catch {
-        if (intervaloRef.current) clearInterval(intervaloRef.current);
+        errosSeguidos += 1;
+        if (errosSeguidos >= 5 && intervaloRef.current) {
+          clearInterval(intervaloRef.current);
+          setErro("Não foi possível confirmar o status do resgate. Tente novamente mais tarde.");
+        }
       }
     }, 2000);
   }
