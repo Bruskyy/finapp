@@ -179,7 +179,10 @@ entrou no reset — o que ficou de fora, mas vale considerar depois:
   (Postgres + EF Core), rota no Gateway e só então a tela
   (`NotificacoesScreen.tsx`, no menu lateral). Ver "Decisões de
   arquitetura" no README, fases 1 a 5.
-- **PIN de segurança** como camada extra opcional de acesso.
+- ~~PIN de segurança~~ — **feito** (`DesbloqueioPinScreen.tsx` +
+  `utils/armazenamentoPin.ts` + card "Segurança" em Configurações): camada
+  extra opcional de acesso, gate local por sessão de app (não persiste
+  entre aberturas), independente do login/JWT.
 
 ## Filosofia (guia para qualquer decisão ambígua)
 

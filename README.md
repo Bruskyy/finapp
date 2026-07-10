@@ -1084,6 +1084,35 @@ edição/exclusão fica como pendência futura, não parte deste escopo.
 transferência entre contas) é filtrada da lista — mesmo filtro que já
 existia em Novo Lançamento.
 
+### PIN de segurança (REFATORACAO-UI.md, Fase 5)
+
+Camada extra opcional de acesso, local ao aparelho — não substitui o
+login/JWT, protege quem compartilha o celular. Novo card "Segurança" em
+Configurações liga/desliga via `Switch` (mesmo padrão do toggle de
+notificações); ativar abre um formulário inline pra definir o PIN (4-6
+dígitos, confirmação), desativar remove o PIN salvo imediatamente.
+
+**Armazenamento:** `utils/armazenamentoPin.ts` segue exatamente o mesmo
+padrão de `auth/armazenamentoToken.ts` — `expo-secure-store` (Keychain/
+Keystore nativo) em builds nativas, `localStorage` na web. Nenhum hash:
+o PIN já vive atrás do mesmo armazenamento criptografado do próprio JWT,
+então hashear um número de 4-6 dígitos não adicionaria proteção real
+contra alguém com acesso ao storage decriptado — mesmo racional de
+"defesa proporcional à ameaça" já aplicado em outras decisões do projeto.
+
+**Gate por sessão, não persistido:** `RaizNavegacao` (`App.tsx`) carrega o
+PIN salvo uma vez no boot; se existir, renderiza `DesbloqueioPinScreen`
+antes do Drawer até o usuário digitar certo. O estado de "desbloqueado"
+vive só em `useState` local — de propósito, o gate deve reaparecer toda
+vez que o app é aberto do zero, não só na primeira vez após ativar.
+
+**Esqueci meu PIN:** como o PIN é 100% local (nunca chega ao backend, não
+tem como recuperar por e-mail/suporte), a única saída documentada é
+remover o PIN do device e forçar logout — a pessoa precisa da senha ou do
+Google de novo pra entrar, mas destrava o aparelho. Trade-off aceito:
+segurança de um PIN esquecido não pode virar "conta permanentemente
+inacessível neste device".
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

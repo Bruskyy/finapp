@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import { atualizarPerfil, trocarSenha } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -8,8 +9,11 @@ import Card from "../componentes/Card";
 import Input from "../componentes/Input";
 import { Cor, espaco, fonte, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
+import { obterPin, removerPin, salvarPin } from "../utils/armazenamentoPin";
 import { obterPreferencias, Preferencias, salvarPreferencias, TemaPreferido } from "../utils/preferencias";
 import { ativarPush, desativarPush } from "../utils/pushNotifications";
+
+const REGEX_PIN = /^\d{4,6}$/;
 
 const URL_REPOSITORIO = "https://github.com/Bruskyy/finapp";
 const URL_POLITICA_PRIVACIDADE = "https://finapp-tawny-nine.vercel.app/politica-privacidade.html";
@@ -38,8 +42,15 @@ export default function ConfiguracoesScreen() {
 
   const [preferencias, setPreferencias] = useState<Preferencias | null>(null);
 
+  const [pinAtivo, setPinAtivo] = useState(false);
+  const [mostrarFormularioPin, setMostrarFormularioPin] = useState(false);
+  const [novoPin, setNovoPin] = useState("");
+  const [confirmarPin, setConfirmarPin] = useState("");
+  const [salvandoPin, setSalvandoPin] = useState(false);
+
   useEffect(() => {
     obterPreferencias().then(setPreferencias);
+    obterPin().then((pin) => setPinAtivo(!!pin));
   }, []);
 
   const nomeValido = nome.trim().length > 0;
@@ -86,6 +97,35 @@ export default function ConfiguracoesScreen() {
     // Registra/remove o token de push de verdade (Roadmap 1.0, Sprint 5) -
     // a preferência sozinha só controlava a central in-app até aqui.
     await (valor ? ativarPush() : desativarPush());
+  }
+
+  // Ativar não desliga o Switch de fato ainda - só abre o formulário de
+  // definir o PIN; o Switch só reflete pinAtivo quando o PIN é realmente
+  // salvo (evita "ativado" sem PIN nenhum definido).
+  async function alternarPin(valor: boolean) {
+    if (valor) {
+      setMostrarFormularioPin(true);
+      return;
+    }
+    await removerPin();
+    setPinAtivo(false);
+    setMostrarFormularioPin(false);
+  }
+
+  const pinValido = REGEX_PIN.test(novoPin) && novoPin === confirmarPin;
+
+  async function salvarNovoPin() {
+    if (!pinValido) return;
+    setSalvandoPin(true);
+    try {
+      await salvarPin(novoPin);
+      setPinAtivo(true);
+      setMostrarFormularioPin(false);
+      setNovoPin("");
+      setConfirmarPin("");
+    } finally {
+      setSalvandoPin(false);
+    }
   }
 
   return (
@@ -169,6 +209,60 @@ export default function ConfiguracoesScreen() {
       </Card>
 
       <Card estiloExtra={estilos.cartao}>
+        <Text style={estilos.tituloCartao}>Segurança</Text>
+        <View style={estilos.linhaPreferencia}>
+          <Text style={estilos.textoPreferencia}>PIN de segurança</Text>
+          <Switch
+            value={pinAtivo}
+            onValueChange={alternarPin}
+            trackColor={{ true: cor.primaria, false: cor.cinza300 }}
+            accessibilityLabel="Ativar ou desativar PIN de segurança"
+          />
+        </View>
+
+        {mostrarFormularioPin && (
+          <View style={estilos.formularioPin}>
+            <View style={estilos.cabecalhoFormularioPin}>
+              <Text style={estilos.rotuloCampo}>Definir PIN (4 a 6 dígitos)</Text>
+              <Pressable
+                onPress={() => {
+                  setMostrarFormularioPin(false);
+                  setNovoPin("");
+                  setConfirmarPin("");
+                }}
+                hitSlop={8}
+                accessibilityLabel="Cancelar definição de PIN"
+              >
+                <Ionicons name="close" size={20} color={cor.cinza500} />
+              </Pressable>
+            </View>
+            <Input
+              placeholder="Novo PIN"
+              value={novoPin}
+              onChangeText={setNovoPin}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+            />
+            <Input
+              placeholder="Confirmar PIN"
+              value={confirmarPin}
+              onChangeText={setConfirmarPin}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+              erro={
+                confirmarPin.length > 0 && novoPin !== confirmarPin
+                  ? "Os PINs não coincidem."
+                  : undefined
+              }
+            />
+            <Botao texto="Ativar PIN" onPress={salvarNovoPin} disabled={!pinValido} carregando={salvandoPin} />
+          </View>
+        )}
+      </Card>
+
+      <Card estiloExtra={estilos.cartao}>
         <Text style={estilos.tituloCartao}>Sobre o app</Text>
         <Text style={estilos.textoSobre}>Versão {Constants.expoConfig?.version ?? "—"}</Text>
         <Botao
@@ -200,6 +294,15 @@ function criarEstilos(cor: Cor) {
     sucesso: { color: cor.verde, marginBottom: espaco.sm },
     linhaPreferencia: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     textoPreferencia: { fontSize: 15, color: cor.cinza900 },
+
+    formularioPin: { marginTop: espaco.md },
+    cabecalhoFormularioPin: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: espaco.sm,
+    },
+    rotuloCampo: { fontSize: 14, fontWeight: "600", color: cor.cinza900 },
 
     rotuloAparencia: { fontSize: 15, color: cor.cinza900, marginTop: espaco.lg, marginBottom: espaco.sm },
     linhaTema: { flexDirection: "row", gap: espaco.sm },
