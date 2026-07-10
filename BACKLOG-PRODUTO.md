@@ -391,6 +391,46 @@ conversa de posicionamento antes de ser uma de arquitetura.
   fechado obrigatório de 14 dias pra contas novas (verificar o número
   mínimo atual na doc do Google na hora de abrir a ficha).
 
+### Sprint 7 — Apoie o Cofrin (monetização por doação voluntária, pós-1.0)
+
+Decisão de 2026-07-10, depois de um diálogo trazido pelo Vitor propondo
+estratégia de monetização sem anúncio obrigatório. Investigado antes de
+planejar: **hoje não existe nenhuma infraestrutura de pagamento, e-mail
+ou SDK de anúncio no projeto** — é tudo greenfield. Escopo decidido via
+`AskUserQuestion` (não rediscutir):
+
+- **Timing: só depois do lançamento** — o app já está pronto pra
+  submissão (Sprint 6), e o próprio racional do diálogo ("usuário que já
+  viu valor pede apoio melhor") só faz sentido com usuários reais rodando
+  o app há tempo.
+- **Cartão "Apoie o Cofrin"** em Configurações (mesmo padrão do card
+  "Sobre o app" que já tem GitHub e Política de Privacidade via
+  `Linking.openURL`) — **doação por link-out simples** (chave Pix
+  estática ou link tipo Livepix/Apoia.se/PayPal.me), custo R$0, zero
+  backend. Trade-off aceito: sem rastreio de quem doou, então **sem selo
+  automático de "Apoiador"** por enquanto (ficaria só como ideia futura
+  se algum dia houver gateway com webhook).
+- **Notificação de apoio, extremamente espaçada** (uma vez aos 30 dias
+  de uso, depois só meses se ignorada — nunca semanal/mensal): esboço
+  técnico é um novo `BackgroundService` dentro de `Usuarios.Api` (que já
+  guarda `Usuario.CriadoEm`), mesmo padrão do `ResumoSemanalWorker`
+  (timer + tabela de cooldown pra idempotência), publicando evento novo
+  via Outbox (primeira vez em `Usuarios.Api` — já usado em Lancamentos e
+  Gamificacao) consumido por `Notificacoes.Api`, reaproveitando
+  `NotificacaoPushService` (mesmo caminho do Sprint 5).
+- **Anúncio opcional ("assistir pra ajudar", sem recompensa): fora por
+  agora** — exigiria SDK do AdMob, conta Google Ads, possível ajuste de
+  classificação de conteúdo no Play Console, e tensiona com o próprio
+  argumento de marketing "sem anúncios" da ficha da loja. Revisitar se a
+  doação sozinha não cobrir os custos.
+- **Resumo por e-mail em marcos futuros: adiado** — seria a maior peça
+  de infraestrutura nova do pacote inteiro (nenhuma base de e-mail
+  existe hoje) pro menor retorno enquanto a base de usuários é pequena.
+- Frase de marketing ("Sem anúncios invasivos. Sem venda de dados.")
+  incorporada na ficha da loja (`PLAY-STORE-LISTING.md`) desde já — não
+  depende de nenhuma feature nova, só reflete uma postura que o app já
+  cumpre.
+
 ### Depois do 1.0 (nada disso se perde)
 - **Escritório virtual/coleções (item 7)** — com feedback de usuários
   reais e moedas acumuladas pra gastar.
