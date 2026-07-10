@@ -12,6 +12,7 @@ import { obterPreferencias, Preferencias, salvarPreferencias, TemaPreferido } fr
 import { ativarPush, desativarPush } from "../utils/pushNotifications";
 
 const URL_REPOSITORIO = "https://github.com/Bruskyy/finapp";
+const URL_POLITICA_PRIVACIDADE = "https://finapp-tawny-nine.vercel.app/politica-privacidade.html";
 
 const OPCOES_TEMA: { id: TemaPreferido; label: string }[] = [
   { id: "sistema", label: "Sistema" },
@@ -174,6 +175,12 @@ export default function ConfiguracoesScreen() {
           texto="Ver repositório no GitHub"
           variante="texto"
           onPress={() => Linking.openURL(URL_REPOSITORIO)}
+          estiloExtra={estilos.botaoRepositorio}
+        />
+        <Botao
+          texto="Política de Privacidade"
+          variante="texto"
+          onPress={() => Linking.openURL(URL_POLITICA_PRIVACIDADE)}
           estiloExtra={estilos.botaoRepositorio}
         />
       </Card>
