@@ -80,8 +80,7 @@ projeção, Perfil com feed de evolução e conquistas, Orçamentos.
 Resolução recomendada pelo Google: telefone 16:9 ou 9:16, mínimo 320px,
 máximo 3840px no lado maior.
 
-## Ícone da ficha (512x512) e imagem de destaque (1024x500) — pendente
-Podem ser gerados a partir do `app/assets/icon.png` já existente (ícone
-com porquinho, fundo verde-escuro `#052224`) — precisam de redimensionamento
-específico pros dois formatos que o Play Console pede, que são diferentes
-do ícone do app em si.
+## Ícone da ficha (512x512) e imagem de destaque (1024x500) — pronto
+Gerados a partir da nova identidade visual (ícone com anel verde + porquinho,
+fundo verde-escuro `#052224`) — `app/assets/loja-icone-512.png` e
+`app/assets/loja-imagem-destaque.png`. Ver `IDENTIDADE-VISUAL.md`.

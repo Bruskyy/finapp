@@ -18,33 +18,41 @@
 
 ## Paleta de marca (unificada com a paleta funcional do Design System)
 
-**Atualização:** o app foi resetado pra seguir um kit de UI/UX do Figma
-(fintech, verde-primavera/mint) como nova referência visual única — em vez
-de dois sistemas de cor separados (marca preto+dourado vs. produto azul),
-agora marca e produto usam a MESMA paleta (`tokens.ts`), extraída por
-amostragem de pixel do kit. Ver `DESIGN_SYSTEM.md` pra tabela completa.
-Verde de receita/vermelho de despesa continuam intocados (semânticos,
-diferentes do verde de marca/ação).
+**Atualização (2026-07-10):** o Vitor trouxe uma referência visual nova que
+evolui o ícone/logo — o mascote porquinho dourado + moeda continua igual
+(identidade própria, não muda), mas ganha um **anel verde parcial** ao
+redor (motivo de "C"/anel de progresso, ecoa a mecânica de conquistas), e
+o wordmark "Cofrin" passa de dourado sólido pra um degradê verde
+(escuro→menta) — mesma paleta funcional (`tokens.ts`), sem token novo:
+o anel e o degradê do wordmark ficam só nos SVGs de marca (`icon.svg`,
+`icon-simplificado.svg`, `logo-horizontal.svg`), mesmo padrão que já
+valia pro dourado. Ver `DESIGN_SYSTEM.md` pra tabela completa da paleta
+funcional. Verde de receita/vermelho de despesa continuam intocados.
 
 | Uso | Cor | HEX | Token em `tokens.ts` |
 |---|---|---|---|
 | Fundo de marca (ícone, splash, nav inferior inativa, cabeçalho do drawer) | Teal escuro | `#052224` | `cor.marcaEscura` |
 | Verde-primavera (ação, header, nav ativa) | Verde | `#00D09E` | `cor.primaria` |
+| Anel de marca (ponta clara do degradê) | Verde-primavera | `#00D09E` | *(só no SVG do ícone/logo)* |
+| Anel de marca (ponta escura do degradê) | Verde-floresta | `#0B5C3D` | *(só no SVG do ícone/logo)* |
 | Porquinho (topo do gradiente) | Amarelo | `#FFD84D` | *(só no SVG do mascote)* |
 | Porquinho (base do gradiente) | Amarelo escuro | `#F5B800` | *(só no SVG do mascote)* |
 | Moeda (topo do gradiente) | Dourado claro | `#FFE27A` | *(só no SVG do mascote)* |
 | Moeda (base do gradiente) | Dourado escuro | `#E8A63B` | *(só no SVG do mascote)* |
 | Contorno da moeda | Marrom dourado | `#B8860B` | *(só no SVG do mascote)* |
-| Texto do wordmark "Cofrin" | Dourado (mesma cor da moeda/porquinho) | `#F5B800` | *(só no SVG do logo)* |
+| Texto do wordmark "Cofrin" | Degradê verde (mesmas pontas do anel) | `#0B5C3D` → `#00D09E` | *(só no SVG do logo)* |
 | Texto da tagline | Cinza claro | `#9CA3AF` | *(só no SVG do logo)* |
 
 O mascote (porquinho + moeda) continua dourado/amarelo em qualquer
 contexto — é identidade própria do Cofrin, não depende da paleta de
-marca/produto e não muda com o reset.
+marca/produto e não muda com o reset. `assets/mascote.svg` (usado grande
+e sozinho em Moedas/Onboarding/EstadoVazio) não ganhou o anel — o motivo
+foi desenhado pro formato quadrado do ícone/logo, não pra ilustração
+solta.
 
-## Assets SVG prontos (extrair e salvar como arquivos)
+## Assets SVG (já aplicados em `app/assets/`, PNGs regenerados via `sharp`)
 
-### 1. Ícone do app — `assets/icon.svg` (exportar para PNG 1024×1024)
+### 1. Ícone do app — `assets/icon.svg` (rasterizado para `icon.png` 1024×1024)
 
 ```svg
 <svg width="1024" height="1024" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
@@ -57,8 +65,13 @@ marca/produto e não muda com o reset.
       <stop offset="0%" stop-color="#FFD84D"/>
       <stop offset="100%" stop-color="#F5B800"/>
     </linearGradient>
+    <linearGradient id="anelVerde" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0B5C3D"/>
+      <stop offset="100%" stop-color="#00D09E"/>
+    </linearGradient>
   </defs>
   <rect width="180" height="180" rx="40" fill="#052224"/>
+  <path d="M162.9 107.8 A 74 74 0 1 1 102.8 22.1" stroke="url(#anelVerde)" stroke-width="11" fill="none" stroke-linecap="round"/>
   <ellipse cx="90" cy="100" rx="52" ry="40" fill="url(#amarelo)"/>
   <path d="M55 68 Q48 50 68 58 Q64 70 55 68Z" fill="url(#amarelo)"/>
   <path d="M125 68 Q132 50 112 58 Q116 70 125 68Z" fill="url(#amarelo)"/>
@@ -78,13 +91,15 @@ marca/produto e não muda com o reset.
 ```
 
 ### 2. Versão simplificada — `assets/icon-simplificado.svg`
-(usar para `adaptive-icon.png` do Android — a máscara adaptativa do Android
+(usada em `adaptive-icon-foreground.png` do Android — a máscara adaptativa
 corta bordas de forma imprevisível, então ícones com muito detalhe fino
-quebram; esta versão só com as formas principais é mais segura)
+quebram; esta versão só com as formas principais, sem gradiente, é mais
+segura)
 
 ```svg
 <svg width="1024" height="1024" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
   <rect width="180" height="180" rx="40" fill="#052224"/>
+  <path d="M162.9 107.8 A 74 74 0 1 1 102.8 22.1" stroke="#00D09E" stroke-width="11" fill="none" stroke-linecap="round"/>
   <ellipse cx="90" cy="100" rx="52" ry="40" fill="#F5B800"/>
   <path d="M55 68 Q48 50 68 58 Q64 70 55 68Z" fill="#F5B800"/>
   <path d="M125 68 Q132 50 112 58 Q116 70 125 68Z" fill="#F5B800"/>
@@ -94,7 +109,7 @@ quebram; esta versão só com as formas principais é mais segura)
 ```
 
 ### 3. Logo horizontal com wordmark — `assets/logo-horizontal.svg`
-(usar na tela de Login/Registro, acima do formulário)
+(usada nas telas de Login/Registro e no cabeçalho do Drawer)
 
 ```svg
 <svg width="340" height="120" viewBox="0 0 340 120" xmlns="http://www.w3.org/2000/svg">
@@ -107,9 +122,18 @@ quebram; esta versão só com as formas principais é mais segura)
       <stop offset="0%" stop-color="#FFD84D"/>
       <stop offset="100%" stop-color="#F5B800"/>
     </linearGradient>
+    <linearGradient id="anelVerde2" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0B5C3D"/>
+      <stop offset="100%" stop-color="#00D09E"/>
+    </linearGradient>
+    <linearGradient id="verdeWordmark" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0B5C3D"/>
+      <stop offset="100%" stop-color="#00D09E"/>
+    </linearGradient>
   </defs>
   <g transform="translate(10,10)">
     <rect width="100" height="100" rx="24" fill="#052224"/>
+    <path d="M88.85 58.4 A 39 39 0 1 1 53.4 16.15" stroke="url(#anelVerde2)" stroke-width="6" fill="none" stroke-linecap="round"/>
     <ellipse cx="50" cy="56" rx="30" ry="23" fill="url(#amarelo2)"/>
     <path d="M30 38 Q26 27 38 32 Q35 39 30 38Z" fill="url(#amarelo2)"/>
     <path d="M70 38 Q74 27 62 32 Q65 39 70 38Z" fill="url(#amarelo2)"/>
@@ -122,7 +146,7 @@ quebram; esta versão só com as formas principais é mais segura)
     <rect x="44" y="36" width="12" height="3.5" rx="1.75" fill="#052224"/>
     <circle cx="76" cy="30" r="9" fill="url(#ouro2)" stroke="#B8860B" stroke-width="1"/>
   </g>
-  <text x="125" y="68" font-size="42" font-weight="800" fill="#F5B800" font-family="Arial, sans-serif">Cofrin</text>
+  <text x="125" y="68" font-size="42" font-weight="800" fill="url(#verdeWordmark)" font-family="Arial, sans-serif">Cofrin</text>
   <text x="127" y="90" font-size="14" font-weight="500" fill="#9CA3AF" font-family="Arial, sans-serif">Organize. Guarde. Evolua.</text>
 </svg>
 ```
@@ -131,6 +155,13 @@ quebram; esta versão só com as formas principais é mais segura)
 fundo `#052224` sólido, sem o wordmark (padrão de splash screen moderno:
 só o símbolo, sem texto, tela unificada com o fundo do ícone para transição
 suave ícone→splash→app).
+
+### 5. Material de loja — `assets/loja-imagem-destaque.png` (1024×500) e `assets/loja-icone-512.png`
+Gerados via composição dos PNGs acima (`sharp`, script pontual, não
+versionado como código) — reaproveita o layout de banner da referência
+visual (logo à esquerda, ícone maior à direita, divisor fino). Resolve a
+pendência de "ícone 512×512 e imagem de destaque" que estava em aberto em
+`PLAY-STORE-LISTING.md`.
 
 ## O que fazer no projeto (Claude Code)
 
