@@ -1142,6 +1142,25 @@ lançamento fora da janela) foi conferida à parte com um script Node
 isolado antes do PR — este ambiente não tem backend rodando pra navegar
 até a tela de verdade e ver o gráfico renderizado com dados reais.
 
+### Cartão "Apoie o Cofrin" (BACKLOG-PRODUTO.md, Sprint 7 — parcial)
+
+Novo card em Configurações, mesmo padrão visual do card "Sobre o app"
+(`Linking.openURL`): mensagem convidando a apoiar o projeto + botão.
+
+**Duas pendências reais, deliberadamente deixadas em aberto nesta rodada:**
+- **Link de doação:** `URL_APOIO_COFRIN` em `ConfiguracoesScreen.tsx` está
+  vazio de propósito (`// TODO(Vitor)`) — só o Vitor tem a chave Pix ou a
+  conta real numa plataforma tipo Livepix/Apoia.se/PayPal.me, não é algo
+  que se inventa. O botão fica desabilitado ("Link em breve") enquanto a
+  constante estiver vazia, pra nunca abrir uma URL inválida em produção;
+  preencher a constante já ativa o botão, sem nenhuma outra mudança de
+  código necessária.
+- **Notificação de apoio espaçada** (o `BackgroundService` em
+  `Usuarios.Api` descrito no backlog): não implementada nesta rodada —
+  exige Docker/dotnet rodando (Testcontainers, migração, validação
+  ponta a ponta) que este ambiente de execução não tem disponível. Fica
+  registrada como pendência de uma sessão com esse ambiente disponível.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
