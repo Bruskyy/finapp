@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cofrin - Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      background: #052224;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    a { color: #7cffb2; }
+  </style>
+</head>
+<body>
+  <div>
+    <p>Voltando para o Cofrin…</p>
+    <p><a id="fallback" href="#">Toque aqui se não for redirecionado automaticamente</a></p>
+  </div>
+  <script>
+    // O Google devolve access_token/id_token/state no fragmento da URL (fluxo
+    // implícito, response_type=id_token) - repassamos esse mesmo fragmento pro
+    // scheme customizado do app, que o Android intercepta via intent-filter.
+    var destino = "cofrin://" + window.location.hash;
+    document.getElementById("fallback").href = destino;
+    window.location.replace(destino);
+  </script>
+</body>
+</html>
