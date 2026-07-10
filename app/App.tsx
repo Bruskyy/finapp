@@ -251,6 +251,15 @@ function FluxoAuth() {
 function RaizNavegacao() {
   const { status, usuario } = useAuth();
   const [onboardingVisto, setOnboardingVisto] = useState<boolean | null>(null);
+  // Hook precisa ser chamado incondicionalmente, antes dos returns abaixo -
+  // estava depois deles (só no branch final, com o drawer) e violava as
+  // Regras dos Hooks: o número de hooks chamados variava entre renders
+  // conforme o app estava carregando/no onboarding/autenticado, o que o
+  // React detecta e loga como erro ("change in the order of Hooks").
+  // useTema() só depende do ThemeProvider (acima de tudo na árvore), então
+  // é seguro chamar sempre, mesmo nas telas de carregamento/onboarding que
+  // não usam o resultado.
+  const temaNavegacao = useTemaNavegacao();
 
   useEffect(() => {
     obterOnboardingVisto().then(setOnboardingVisto);
@@ -280,7 +289,7 @@ function RaizNavegacao() {
   }
 
   return (
-    <NavigationContainer theme={useTemaNavegacao()}>
+    <NavigationContainer theme={temaNavegacao}>
       <DrawerPrincipal />
     </NavigationContainer>
   );
