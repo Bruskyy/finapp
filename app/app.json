@@ -14,7 +14,8 @@
         "backgroundColor": "#052224",
         "foregroundImage": "./assets/adaptive-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.brusski.cofrin"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,6 +32,12 @@
           "imageWidth": 200
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "107a002e-0958-4e50-8027-8df3e5832d1b"
+      }
+    },
+    "owner": "brusski"
   }
 }
