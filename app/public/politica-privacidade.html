@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Política de Privacidade — Cofrin</title>
+<style>
+  :root {
+    --primaria: #00D09E;
+    --fundo: #F1FFF3;
+    --texto: #263238;
+    --texto-suave: #455a64;
+    --superficie: #ffffff;
+    --borda: #e0e6ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #071D1C;
+      --texto: #E8F3F0;
+      --texto-suave: #A9C4BE;
+      --superficie: #0F2E2B;
+      --borda: #1E3D39;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+    line-height: 1.6;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  header img { width: 40px; height: 40px; border-radius: 12px; }
+  header h1 { font-size: 22px; margin: 0; }
+  .subtitulo { color: var(--texto-suave); font-size: 14px; margin: 0 0 32px; }
+  section {
+    background: var(--superficie);
+    border: 1px solid var(--borda);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  h2 { font-size: 17px; margin: 0 0 8px; color: var(--primaria); }
+  p, li { font-size: 14px; color: var(--texto); }
+  ul { padding-left: 20px; margin: 8px 0; }
+  a { color: var(--primaria); }
+  footer {
+    text-align: center;
+    color: var(--texto-suave);
+    font-size: 12px;
+    margin-top: 32px;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Política de Privacidade do Cofrin</h1>
+    </header>
+    <p class="subtitulo">Última atualização: julho de 2026</p>
+
+    <section>
+      <h2>1. Quem somos</h2>
+      <p>
+        O Cofrin ("nós", "o app") é um aplicativo pessoal de controle financeiro com
+        gamificação. Esta política explica quais dados coletamos, como usamos, e quais
+        são os seus direitos como usuário, em conformidade com a Lei Geral de Proteção
+        de Dados (LGPD — Lei nº 13.709/2018).
+      </p>
+    </section>
+
+    <section>
+      <h2>2. Dados que coletamos</h2>
+      <ul>
+        <li><strong>Dados de conta:</strong> nome e e-mail, usados para criar e identificar sua conta.</li>
+        <li><strong>Dados financeiros que você insere:</strong> lançamentos (receitas e despesas), contas, categorias, orçamentos, metas de poupança e tags. Esses dados são inseridos manualmente por você ou importados de um arquivo CSV que você mesmo envia — nunca acessamos sua conta bancária real nem instituições financeiras.</li>
+        <li><strong>Dados de uso do app:</strong> sequência de dias de uso e conquistas desbloqueadas, usados para os recursos de gamificação (moedas, streak, conquistas).</li>
+        <li><strong>Token de notificação push:</strong> se você ativar notificações, armazenamos um identificador técnico do seu aparelho (fornecido pela Expo) para poder enviar alertas — não é vinculado a nenhuma informação de localização ou identidade do dispositivo além do necessário para o envio.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>3. Como usamos seus dados</h2>
+      <p>Usamos seus dados exclusivamente para:</p>
+      <ul>
+        <li>Fazer o app funcionar (mostrar seus lançamentos, saldos, metas e orçamentos).</li>
+        <li>Gerar notificações relevantes (resumo semanal, orçamento estourado, conta fixa a vencer, confirmação de resgate de moedas).</li>
+        <li>Calcular o progresso de gamificação (moedas, sequência de dias, conquistas).</li>
+      </ul>
+      <p>
+        Não usamos seus dados financeiros para publicidade, não os vendemos e não os
+        compartilhamos com terceiros para fins comerciais.
+      </p>
+    </section>
+
+    <section>
+      <h2>4. Compartilhamento com serviços de terceiros</h2>
+      <p>Usamos os seguintes serviços técnicos para operar o app, cada um recebendo só o mínimo necessário:</p>
+      <ul>
+        <li><strong>Google (login opcional):</strong> se você optar por entrar com sua conta Google, recebemos seu nome e e-mail conforme autorizado por você no momento do login.</li>
+        <li><strong>Expo (notificações push):</strong> processa o envio de notificações usando um token técnico do seu aparelho, sem acesso ao conteúdo dos seus lançamentos.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>5. Segurança</h2>
+      <p>
+        Sua senha nunca é armazenada em texto puro — usamos um algoritmo de hash
+        (PBKDF2/HMAC-SHA256 com salt aleatório). A comunicação entre o app e nossos
+        servidores é feita via HTTPS. O acesso à sua conta usa tokens de autenticação
+        (JWT) de curta duração, renovados automaticamente e revogáveis a qualquer momento
+        através do logout.
+      </p>
+    </section>
+
+    <section>
+      <h2>6. Seus direitos</h2>
+      <p>De acordo com a LGPD, você pode a qualquer momento:</p>
+      <ul>
+        <li>Acessar os dados que temos sobre você.</li>
+        <li>Corrigir dados incorretos (nome, e-mail — diretamente na tela de Configurações do app).</li>
+        <li>Solicitar a exclusão da sua conta e de todos os dados associados.</li>
+        <li>Revogar o consentimento de notificações push a qualquer momento, desativando-as em Configurações.</li>
+      </ul>
+      <p>Para exercer esses direitos, entre em contato pelo e-mail abaixo.</p>
+    </section>
+
+    <section>
+      <h2>7. Retenção de dados</h2>
+      <p>
+        Mantemos seus dados enquanto sua conta estiver ativa. Se você solicitar a
+        exclusão da conta, seus dados pessoais e financeiros são removidos dos nossos
+        sistemas, exceto quando a retenção for exigida por obrigação legal.
+      </p>
+    </section>
+
+    <section>
+      <h2>8. Alterações nesta política</h2>
+      <p>
+        Podemos atualizar esta política periodicamente. Mudanças relevantes serão
+        comunicadas dentro do próprio app.
+      </p>
+    </section>
+
+    <section>
+      <h2>9. Contato</h2>
+      <p>
+        Dúvidas sobre esta política ou sobre seus dados podem ser enviadas para:
+        <a href="mailto:bruschivitor@gmail.com">bruschivitor@gmail.com</a>
+      </p>
+    </section>
+
+    <footer>Cofrin — Organize. Guarde. Evolua.</footer>
+  </div>
+</body>
+</html>
