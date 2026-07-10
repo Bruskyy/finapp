@@ -38,12 +38,19 @@ const PADRAO: Preferencias = {
 export async function obterPreferencias(): Promise<Preferencias> {
   const salvo = await AsyncStorage.getItem(CHAVE);
   if (!salvo) return PADRAO;
-  const salvas = JSON.parse(salvo);
-  return {
-    ...PADRAO,
-    ...salvas,
-    widgetsAtivos: { ...PADRAO.widgetsAtivos, ...salvas.widgetsAtivos },
-  };
+  try {
+    const salvas = JSON.parse(salvo);
+    return {
+      ...PADRAO,
+      ...salvas,
+      widgetsAtivos: { ...PADRAO.widgetsAtivos, ...salvas.widgetsAtivos },
+    };
+  } catch {
+    // Storage corrompido (ex: escrita interrompida) - volta pro padrão em
+    // vez de derrubar a tela inteira (JSON.parse sem catch propagava o erro
+    // pra fora de qualquer .then/await que chamasse isso).
+    return PADRAO;
+  }
 }
 
 export async function salvarPreferencias(preferencias: Preferencias): Promise<void> {

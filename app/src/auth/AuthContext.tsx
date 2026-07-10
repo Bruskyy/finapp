@@ -10,7 +10,7 @@ import {
   registrar as apiRegistrar,
 } from "../api/client";
 import { Usuario } from "../types";
-import { ativarPush } from "../utils/pushNotifications";
+import { ativarPush, desativarPush } from "../utils/pushNotifications";
 import { obterPreferencias } from "../utils/preferencias";
 import {
   obterRefreshToken,
@@ -49,6 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
+    // Precisa rodar ANTES de limparSessao() - desativarPush() chama a API
+    // autenticada pra remover o token do dispositivo, e depende do Bearer
+    // token que limparSessao() zera. Sem isso, quem desloga continua
+    // recebendo push de orçamento/lançamento da conta antiga no aparelho.
+    await desativarPush();
+
     const refreshToken = await obterRefreshToken();
     if (refreshToken) {
       // Best-effort: mesmo se a chamada falhar (ex: sem rede), a sessão

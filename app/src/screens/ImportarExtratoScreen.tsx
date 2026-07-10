@@ -92,15 +92,25 @@ export default function ImportarExtratoScreen() {
   }
 
   function acompanhar(id: string) {
+    // Tolera algumas falhas de rede seguidas (ex: cold start do Render free
+    // tier) antes de desistir - antes, um único erro transitório parava o
+    // polling pra sempre e a tela ficava presa em "Processando..." mesmo com
+    // a importação seguindo normal no backend.
+    let errosSeguidos = 0;
     intervaloRef.current = setInterval(async () => {
       try {
         const atual = await obterImportacao(id);
+        errosSeguidos = 0;
         setImportacao(atual);
         if (atual.status === "Concluida" || atual.status === "Falhou") {
           if (intervaloRef.current) clearInterval(intervaloRef.current);
         }
       } catch {
-        if (intervaloRef.current) clearInterval(intervaloRef.current);
+        errosSeguidos += 1;
+        if (errosSeguidos >= 5 && intervaloRef.current) {
+          clearInterval(intervaloRef.current);
+          setErro("Não foi possível confirmar o status da importação. Tente novamente mais tarde.");
+        }
       }
     }, 2000);
   }

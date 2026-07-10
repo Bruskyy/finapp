@@ -11,7 +11,7 @@ import Confete from "../componentes/Confete";
 import EstadoVazio from "../componentes/EstadoVazio";
 import Input from "../componentes/Input";
 import { confirmar } from "../confirmar";
-import { Cor, espaco, fonte, formatarMoeda, raio } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda, parseValorMonetario, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Conta, Objetivo } from "../types";
 
@@ -59,14 +59,14 @@ export default function ObjetivosScreen() {
   );
 
   const dataValida = /^\d{4}-\d{2}-\d{2}$/.test(dataAlvo);
-  const validoNovo = nome.trim().length > 0 && Number(valorAlvo.replace(",", ".")) > 0 && dataValida;
+  const validoNovo = nome.trim().length > 0 && parseValorMonetario(valorAlvo) > 0 && dataValida;
 
   async function salvarNovo() {
     if (!validoNovo) return;
     setSalvando(true);
     setErro(null);
     try {
-      await criarObjetivo(nome.trim(), Number(valorAlvo.replace(",", ".")), dataAlvo);
+      await criarObjetivo(nome.trim(), parseValorMonetario(valorAlvo), dataAlvo);
       setNome("");
       setValorAlvo("");
       setDataAlvo("");
@@ -92,7 +92,7 @@ export default function ObjetivosScreen() {
   }
 
   async function aportar(objetivo: Objetivo) {
-    const valor = Number(valorAporte.replace(",", "."));
+    const valor = parseValorMonetario(valorAporte);
     if (!valor || valor <= 0 || contaAporte === null) return;
     setAportando(true);
     setErro(null);
@@ -252,7 +252,7 @@ export default function ObjetivosScreen() {
                     <Botao
                       texto="Confirmar aporte"
                       onPress={() => aportar(item)}
-                      disabled={!(Number(valorAporte.replace(",", ".")) > 0) || contaAporte === null}
+                      disabled={!(parseValorMonetario(valorAporte) > 0) || contaAporte === null}
                       carregando={aportando}
                       estiloExtra={estilos.botaoConfirmarAporte}
                     />

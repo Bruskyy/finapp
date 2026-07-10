@@ -8,7 +8,7 @@ import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
 import EstadoVazio from "../componentes/EstadoVazio";
 import Input from "../componentes/Input";
-import { Cor, espaco, fonte, formatarMoeda, raio } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda, parseValorMonetario, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
 import { SaldoPorConta } from "../types";
 
@@ -23,6 +23,7 @@ export default function ContasScreen() {
   const estilos = useEstilos(criarEstilos);
   const [saldos, setSaldos] = useState<SaldoPorConta[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
 
@@ -55,8 +56,17 @@ export default function ContasScreen() {
     }, [carregar])
   );
 
+  // RefreshControl precisa de um estado próprio - "carregando" só cobre o
+  // spinner de tela cheia da carga inicial (nunca volta a true depois),
+  // então o puxar-pra-atualizar não mostrava indicador nenhum.
+  async function atualizar() {
+    setAtualizando(true);
+    await carregar();
+    setAtualizando(false);
+  }
+
   const nomeValido = nomeNovaConta.trim().length > 0;
-  const valorTransferencia = Number(valor.replace(",", "."));
+  const valorTransferencia = parseValorMonetario(valor);
   const transferenciaValida =
     origemId !== null && destinoId !== null && origemId !== destinoId && valorTransferencia > 0;
 
@@ -124,7 +134,7 @@ export default function ContasScreen() {
         style={estilos.lista}
         data={saldos}
         keyExtractor={(item) => item.contaId}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={carregar} />}
+        refreshControl={<RefreshControl refreshing={atualizando} onRefresh={atualizar} />}
         renderItem={({ item }) => (
           <Card estiloExtra={estilos.cartaoConta}>
             <View style={estilos.iconeConta}>

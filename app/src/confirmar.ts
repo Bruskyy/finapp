@@ -8,9 +8,23 @@ export function confirmar(titulo: string, mensagem: string): Promise<boolean> {
   }
 
   return new Promise((resolve) => {
-    Alert.alert(titulo, mensagem, [
-      { text: "Cancelar", style: "cancel", onPress: () => resolve(false) },
-      { text: "Confirmar", style: "destructive", onPress: () => resolve(true) },
-    ]);
+    let resolvido = false;
+    const resolverUmaVez = (valor: boolean) => {
+      if (resolvido) return;
+      resolvido = true;
+      resolve(valor);
+    };
+    Alert.alert(
+      titulo,
+      mensagem,
+      [
+        { text: "Cancelar", style: "cancel", onPress: () => resolverUmaVez(false) },
+        { text: "Confirmar", style: "destructive", onPress: () => resolverUmaVez(true) },
+      ],
+      // Android permite dispensar o diálogo com o botão de voltar, sem
+      // chamar onPress de nenhum botão - sem onDismiss, a Promise nunca
+      // resolvia e o fluxo (ex: exclusão) morria silenciosamente em espera.
+      { cancelable: true, onDismiss: () => resolverUmaVez(false) }
+    );
   });
 }

@@ -15,7 +15,7 @@ import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
 import EstadoVazio from "../componentes/EstadoVazio";
 import Input from "../componentes/Input";
-import { Cor, espaco, fonte, formatarMoeda } from "../tema";
+import { Cor, espaco, fonte, formatarMoeda, parseValorMonetario } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
 import { Categoria, OrcamentoStatus } from "../types";
 
@@ -25,6 +25,7 @@ export default function OrcamentosScreen() {
   const [orcamentos, setOrcamentos] = useState<OrcamentoStatus[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   // formulário de novo/edição - colapsado por padrão (Ajuste 4 do
@@ -43,7 +44,10 @@ export default function OrcamentosScreen() {
         listarCategorias(),
       ]);
       setOrcamentos(resOrcamentos);
-      setCategorias(resCategorias);
+      // "Transferência" é categoria técnica (só usada pelos lançamentos
+      // gerados por transferência entre contas) - não faz sentido definir um
+      // teto de gastos pra ela; mesmo filtro já aplicado em NovoLancamentoScreen.
+      setCategorias(resCategorias.filter((c) => c.nome !== "Transferência"));
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar orçamentos.");
     } finally {
@@ -57,7 +61,16 @@ export default function OrcamentosScreen() {
     }, [carregar])
   );
 
-  const valido = categoriaId !== null && Number(limite.replace(",", ".")) > 0;
+  // RefreshControl precisa de um estado próprio - "carregando" só cobre o
+  // spinner de tela cheia da carga inicial (nunca volta a true depois),
+  // então o puxar-pra-atualizar não mostrava indicador nenhum.
+  async function atualizar() {
+    setAtualizando(true);
+    await carregar();
+    setAtualizando(false);
+  }
+
+  const valido = categoriaId !== null && parseValorMonetario(limite) > 0;
 
   async function salvar() {
     if (!valido || categoriaId === null) return;
@@ -65,7 +78,7 @@ export default function OrcamentosScreen() {
     setSalvando(true);
     setErro(null);
     try {
-      await definirOrcamento(categoriaId, Number(limite.replace(",", ".")));
+      await definirOrcamento(categoriaId, parseValorMonetario(limite));
       setCategoriaId(null);
       setLimite("");
       setMostrarFormulario(false);
@@ -110,7 +123,7 @@ export default function OrcamentosScreen() {
         style={estilos.lista}
         data={orcamentos}
         keyExtractor={(item) => item.categoriaId}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={carregar} />}
+        refreshControl={<RefreshControl refreshing={atualizando} onRefresh={atualizar} />}
         renderItem={({ item }) => <CartaoOrcamento item={item} onRemover={() => remover(item)} />}
         ListEmptyComponent={
           <EstadoVazio
