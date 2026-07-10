@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from "react-native";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
+import CategoriasScreen from "./src/screens/CategoriasScreen";
 import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
 import ContasScreen from "./src/screens/ContasScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
@@ -204,6 +205,7 @@ function DrawerPrincipal() {
     >
       <Drawer.Screen name="Início" component={TabsPrincipais} options={{ headerShown: false }} />
       <Drawer.Screen name="Contas" component={ContasScreen} />
+      <Drawer.Screen name="Categorias" component={CategoriasScreen} />
       <Drawer.Screen name="Personalizar" component={PersonalizarInicioScreen} />
       <Drawer.Screen name="Moedas" component={MoedasScreen} />
       <Drawer.Screen name="Notificações" component={NotificacoesScreen} />

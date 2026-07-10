@@ -262,6 +262,10 @@ export function listarCategorias(): Promise<Categoria[]> {
   return requisitar("/api/categorias");
 }
 
+export function criarCategoria(nome: string): Promise<Categoria> {
+  return requisitar("/api/categorias", { method: "POST", body: JSON.stringify({ nome }) });
+}
+
 // ----- Contas -----
 
 export function listarContas(): Promise<Conta[]> {

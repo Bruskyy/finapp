@@ -1064,6 +1064,26 @@ política de privacidade ou dos textos, que são conteúdo web/runtime), o
 AAB de produção precisou ser **regenerado** depois desta mudança — o
 primeiro AAB gerado no Sprint 6 tinha o visual antigo.
 
+### Tela de Categorias dedicada (REFATORACAO-UI.md, Fase 5)
+
+Até aqui, a única forma de "ver" uma categoria era como chip dentro do
+formulário de Novo Lançamento — não existia nenhuma tela que listasse as
+categorias em si. `CategoriasScreen.tsx` (novo item no drawer, entre Contas
+e Personalizar início) resolve isso com um grid de tiles (3 colunas,
+`FlatList` com `numColumns`) reaproveitando `iconeDaCategoria` (mesmo mapa
+ícone/cor por categoria já usado em `ItemLancamento`/Novo Lançamento) e o
+mesmo padrão de formulário colapsável "+ Nova categoria" já usado em
+Contas/Orçamentos.
+
+**Só ver/criar, sem editar/excluir:** `ICategoriaRepository` (backend) não
+tem método de atualizar nem remover — mesma situação já documentada em
+`RecorrenciasScreen` (pausar/reativar existem, excluir não). Como o
+trabalho desta tela é 100% frontend, estender o backend pra suportar
+edição/exclusão fica como pendência futura, não parte deste escopo.
+"Transferência" (categoria técnica, usada só pelos lançamentos gerados por
+transferência entre contas) é filtrada da lista — mesmo filtro que já
+existia em Novo Lançamento.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
