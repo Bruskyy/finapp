@@ -1001,6 +1001,65 @@ testadores do teste fechado obrigatório de 14 dias pra contas novas, e
 capturar screenshots de um device/emulador real (o preview web não serve
 pra isso — proporção e qualidade inadequadas pra ficha de loja).
 
+### Revisão de bugs pré-lançamento (Sprint 6, 2026-07-10)
+
+Revisão completa de todas as telas, componentes e do `api/client.ts` antes
+de submeter na Play Store — achou 8 bugs reais, nenhum coberto pelos
+testes automatizados existentes (são todos de frontend, fora do escopo do
+xUnit/Testcontainers do backend). Os 4 críticos mexiam com integridade de
+dado financeiro:
+
+- `fimDoMes()` cortava o filtro `Data <= Fim` na meia-noite do último dia
+  do mês (não no fim do dia) — lançamentos feitos depois das 00h do
+  último dia sumiam de Transações/saldo/gastos por categoria. Corrigido
+  pra `fim = ...T23:59:59` em horário local.
+- Lançamento novo gravava `data: new Date().toISOString()` — instante
+  **UTC**. Um lançamento às 22h no Brasil virava `01h` do dia seguinte em
+  UTC, caindo no dia (e às vezes no mês) errado quando salvo direto no
+  `DATETIME2` (sem timezone) do SQL Server. Corrigido: `app/src/constants.ts`
+  ganhou `agoraLocalIso()`/`inicioDoMes()`/`fimDoMes()` formatando data
+  local "ingênua" (sem `Z`), mesma convenção já usada em `SequenciaService`
+  pra `Data` (distinta de `OcorreuEm`, que é o instante do evento).
+- `Number(texto.replace(",", "."))` pra campos de dinheiro quebrava
+  silenciosamente com separador de milhar (`"1.500"` virava `1,5`) — novo
+  `parseValorMonetario()` (`app/src/tema/index.ts`) com heurística
+  determinística (vírgula sempre decimal; ponto só é milhar com exatos 3
+  dígitos depois), aplicado nos 8 pontos que tratavam valor.
+- Dashboard somava Receitas/Despesas a partir da lista paginada de
+  lançamentos (`take` padrão 50 no backend) — a partir de 50 lançamentos
+  no mês (uma importação CSV chega lá fácil) o total ficava errado.
+  Corrigido: deriva do ponto do mês corrente em `obterEvolucaoMensal`
+  (`vw_ResumoMensal`, sem limite de linhas) — endpoint que o Dashboard já
+  buscava pro gráfico, só não usava pro total.
+
+Moderados: logout não removia o token de push (notificação da conta
+antiga continuava chegando), `confirmar()` podia travar a Promise pra
+sempre se o `Alert` do Android fosse dispensado pelo botão voltar (sem
+`onDismiss`), polling de importação/resgate desistia no primeiro erro de
+rede transitório (agora tolera 5 falhas seguidas), e o Dashboard usava
+`Promise.all` (uma falha isolada — ex: cold start de um serviço no Render
+free tier — derrubava a tela inteira; virou `Promise.allSettled`, cada
+widget renderiza com o que conseguiu carregar).
+
+### Nova identidade visual (Sprint 6, 2026-07-10)
+
+O Vitor trouxe uma referência visual nova evoluindo a marca documentada
+em `IDENTIDADE-VISUAL.md`: o mascote porquinho dourado + moeda continua
+igual, ganhando um **anel verde parcial** ao redor (motivo de "C"/anel de
+progresso — ecoa a mecânica de conquistas já existente) e o wordmark
+"Cofrin" muda de dourado sólido pra um degradê verde. `tokens.ts` não
+mudou — cor de marca (anel, degradê) fica só nos SVGs (`icon.svg`,
+`icon-simplificado.svg`, `logo-horizontal.svg`), mesmo padrão que já
+valia pro dourado. PNGs regenerados via `sharp` (script pontual) nas
+mesmas resoluções já usadas — não precisou mexer em `app.json`, os
+caminhos de arquivo continuam os mesmos. Gerou também material de loja
+que estava pendente (`loja-icone-512.png`, `loja-imagem-destaque.png`).
+
+**Como ícone/splash são compilados no binário nativo** (diferente da
+política de privacidade ou dos textos, que são conteúdo web/runtime), o
+AAB de produção precisou ser **regenerado** depois desta mudança — o
+primeiro AAB gerado no Sprint 6 tinha o visual antigo.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

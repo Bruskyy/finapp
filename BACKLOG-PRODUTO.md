@@ -374,20 +374,32 @@ conversa de posicionamento antes de ser uma de arquitetura.
   publicada inteira.
 
 ### Sprint 6 — Lançamento Play Store — em andamento, ver README ("Lançamento na Play Store")
-- Polish final: ícone/splash já eram profissionais desde antes (porquinho,
-  fundo `#052224`), sem necessidade de refazer.
+- ✅ **Revisão completa de bugs** (2026-07-10, PR #68): revisão de todas as
+  telas/componentes/API client antes do lançamento achou 8 bugs (4
+  críticos de integridade de dados + 4 moderados) e 3 itens menores —
+  ver README ("Revisão de bugs pré-lançamento") pro detalhe de cada um.
+  Validado contra o backend local via curl depois de corrigido.
+- ✅ **Nova identidade visual** (2026-07-10, PR #69): ícone/splash/logo
+  ganharam o anel verde ao redor do mascote + wordmark em degradê verde,
+  a partir de referência trazida pelo Vitor — ver `IDENTIDADE-VISUAL.md`.
+  Ícone/splash antigos (dourado, sem anel) já eram profissionais, mas o
+  Vitor pediu a evolução pra essa identidade nova.
 - ✅ Política de privacidade: página estática em `app/public/politica-privacidade.html`,
   servida pelo export web do Expo, linkada em Configurações > Sobre o app.
   URL: https://finapp-tawny-nine.vercel.app/politica-privacidade.html
 - ✅ Build de desenvolvimento (EAS, Sprint 5) e ✅ build de produção (AAB
-  assinado, `eas build --profile production --platform android`) gerados.
+  assinado, `eas build --profile production --platform android`) gerados
+  — **regenerados em 2026-07-10** depois da PR #69, já que ícone/splash
+  são compilados no binário nativo (o AAB antigo tinha o visual anterior).
 - ✅ Ficha da loja rascunhada em `PLAY-STORE-LISTING.md` (descrição curta,
-  descrição completa, categoria, e-mail de contato, URL da política).
+  descrição completa, categoria, e-mail de contato, URL da política) +
+  ícone 512×512 e imagem de destaque 1024×500 gerados junto com a PR #69.
 - **Pendências que só o Vitor pode fazer** (custam dinheiro real ou
   exigem posse de conta pessoal): pagar os US$25 da conta dev Google Play
   (**exceção documentada no topo**), subir o AAB e o listing no Play
   Console, capturar screenshots reais a partir do development build
-  (preview web não serve pra isso), recrutar os testadores do teste
+  (preview web não serve pra isso — build novo com ícone/correções
+  atualizados disparado em 2026-07-10), recrutar os testadores do teste
   fechado obrigatório de 14 dias pra contas novas (verificar o número
   mínimo atual na doc do Google na hora de abrir a ficha).
 
