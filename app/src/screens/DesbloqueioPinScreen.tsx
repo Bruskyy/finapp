@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import Botao from "../componentes/Botao";
@@ -6,6 +6,8 @@ import Input from "../componentes/Input";
 import { Cor, espaco, fonte } from "../tema";
 import { useEstilos } from "../tema/ThemeContext";
 import { removerPin } from "../utils/armazenamentoPin";
+import { autenticarComBiometria, biometriaDisponivel } from "../utils/biometria";
+import { obterPreferencias } from "../utils/preferencias";
 
 interface Props {
   pinCorreto: string;
@@ -25,6 +27,25 @@ export default function DesbloqueioPinScreen({ pinCorreto, aoDesbloquear }: Prop
   const { logout } = useAuth();
   const [pin, setPin] = useState("");
   const [erro, setErro] = useState<string | null>(null);
+  const [biometriaAtiva, setBiometriaAtiva] = useState(false);
+
+  // Atalho biométrico (opt-in em Configurações, só com PIN ativo): tenta
+  // direto ao abrir o gate; falha/cancelamento cai no PIN sem mensagem de
+  // erro - cancelar biometria pra digitar o PIN é fluxo normal, não falha.
+  async function tentarBiometria() {
+    if (await autenticarComBiometria()) aoDesbloquear();
+  }
+
+  useEffect(() => {
+    (async () => {
+      const [preferencias, disponivel] = await Promise.all([obterPreferencias(), biometriaDisponivel()]);
+      if (preferencias.desbloqueioBiometrico && disponivel) {
+        setBiometriaAtiva(true);
+        tentarBiometria();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function confirmar() {
     if (pin === pinCorreto) {
@@ -63,6 +84,15 @@ export default function DesbloqueioPinScreen({ pinCorreto, aoDesbloquear }: Prop
 
       <Botao texto="Desbloquear" onPress={confirmar} disabled={pin.length < 4} />
 
+      {biometriaAtiva && (
+        <Botao
+          texto="Usar biometria"
+          variante="secundario"
+          onPress={tentarBiometria}
+          estiloExtra={estilos.botaoBiometria}
+        />
+      )}
+
       <Botao
         texto="Esqueci meu PIN"
         variante="texto"
@@ -91,6 +121,7 @@ function criarEstilos(cor: Cor) {
       marginBottom: espaco.xxl,
     },
     erro: { color: cor.vermelho, textAlign: "center", marginBottom: espaco.md },
+    botaoBiometria: { marginTop: espaco.sm },
     botaoEsqueci: { alignSelf: "center", marginTop: espaco.sm },
   });
 }

@@ -26,6 +26,12 @@
       "expo-web-browser",
       "expo-notifications",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permitir que o Cofrin use o Face ID para desbloquear o app."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#052224",

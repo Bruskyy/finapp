@@ -10,6 +10,7 @@ import Input from "../componentes/Input";
 import { Cor, espaco, fonte, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
 import { obterPin, removerPin, salvarPin } from "../utils/armazenamentoPin";
+import { biometriaDisponivel } from "../utils/biometria";
 import { obterPreferencias, Preferencias, salvarPreferencias, TemaPreferido } from "../utils/preferencias";
 import { ativarPush, desativarPush } from "../utils/pushNotifications";
 
@@ -52,10 +53,12 @@ export default function ConfiguracoesScreen() {
   const [novoPin, setNovoPin] = useState("");
   const [confirmarPin, setConfirmarPin] = useState("");
   const [salvandoPin, setSalvandoPin] = useState(false);
+  const [temBiometria, setTemBiometria] = useState(false);
 
   useEffect(() => {
     obterPreferencias().then(setPreferencias);
     obterPin().then((pin) => setPinAtivo(!!pin));
+    biometriaDisponivel().then(setTemBiometria);
   }, []);
 
   const nomeValido = nome.trim().length > 0;
@@ -115,6 +118,16 @@ export default function ConfiguracoesScreen() {
     await removerPin();
     setPinAtivo(false);
     setMostrarFormularioPin(false);
+    // Biometria é atalho do PIN - sem PIN, o gate não existe e a
+    // preferência ficaria órfã ("ativa" sem efeito nenhum).
+    if (preferencias?.desbloqueioBiometrico) await alternarBiometria(false);
+  }
+
+  async function alternarBiometria(valor: boolean) {
+    if (!preferencias) return;
+    const atualizadas: Preferencias = { ...preferencias, desbloqueioBiometrico: valor };
+    setPreferencias(atualizadas);
+    await salvarPreferencias(atualizadas);
   }
 
   const pinValido = REGEX_PIN.test(novoPin) && novoPin === confirmarPin;
@@ -225,6 +238,23 @@ export default function ConfiguracoesScreen() {
           />
         </View>
 
+        {pinAtivo && temBiometria && (
+          <View style={[estilos.linhaPreferencia, estilos.linhaBiometria]}>
+            <View style={estilos.textoBiometriaWrapper}>
+              <Text style={estilos.textoPreferencia}>Desbloquear com biometria</Text>
+              <Text style={estilos.legendaBiometria}>
+                Digital ou rosto como atalho — o PIN continua valendo como alternativa.
+              </Text>
+            </View>
+            <Switch
+              value={preferencias?.desbloqueioBiometrico ?? false}
+              onValueChange={alternarBiometria}
+              trackColor={{ true: cor.primaria, false: cor.cinza300 }}
+              accessibilityLabel="Ativar ou desativar desbloqueio por biometria"
+            />
+          </View>
+        )}
+
         {mostrarFormularioPin && (
           <View style={estilos.formularioPin}>
             <View style={estilos.cabecalhoFormularioPin}>
@@ -313,6 +343,9 @@ function criarEstilos(cor: Cor) {
     linhaPreferencia: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     textoPreferencia: { fontSize: 15, color: cor.cinza900 },
 
+    linhaBiometria: { marginTop: espaco.md },
+    textoBiometriaWrapper: { flex: 1, marginRight: espaco.md },
+    legendaBiometria: { fontSize: 12, color: cor.cinza500, marginTop: espaco.xs },
     formularioPin: { marginTop: espaco.md },
     cabecalhoFormularioPin: {
       flexDirection: "row",
