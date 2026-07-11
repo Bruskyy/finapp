@@ -128,9 +128,15 @@ export default function ComprasDetectadasScreen() {
       {suportada && !permitida && (
         <Card estiloExtra={estilos.aviso}>
           <Ionicons name="notifications-off-outline" size={20} color={cor.laranja} />
+          {/* Disclosure em destaque exigido pela User Data policy do Google:
+              o quê é lido, pra quê, onde é processado - antes da concessão. */}
           <Text style={estilos.textoAviso}>
-            O Cofrin ainda não tem acesso às notificações. Ele lê apenas notificações de compra dos
-            bancos suportados - nada é enviado a terceiros.
+            Para detectar compras automaticamente, o Cofrin lê{" "}
+            <Text style={estilos.textoAvisoForte}>apenas notificações dos bancos suportados</Text> — as
+            de qualquer outro app são ignoradas. O valor e o estabelecimento são extraídos{" "}
+            <Text style={estilos.textoAvisoForte}>no seu aparelho</Text>: nada é enviado aos nossos
+            servidores nem a terceiros até você confirmar uma despesa aqui. Você pode revogar o acesso
+            a qualquer momento nas configurações do Android.
           </Text>
           <Botao texto="Permitir acesso" variante="secundario" onPress={abrirConfiguracoesDeAcesso} />
         </Card>
@@ -242,6 +248,7 @@ function criarEstilos(cor: Cor) {
 
     aviso: { gap: espaco.sm, marginBottom: espaco.md },
     textoAviso: { fontSize: 13, color: cor.cinza700 },
+    textoAvisoForte: { fontWeight: "700", color: cor.cinza900 },
 
     lista: { flex: 1 },
     listaConteudo: { paddingBottom: espaco.md },
