@@ -1182,6 +1182,28 @@ por banco precisam de calibração com notificações reais no device. **Antes
 de liberar em produção**: disclosure na política de privacidade (acesso a
 notificações lê dado sensível — exigência do Play Store).
 
+### Captura de notificações, fase 2 — módulo Expo local com fila nativa persistente
+
+A limitação documentada da fase 1 (notificação perdida se o processo do app
+estivesse morto — a lib npm só emitia evento pro JS vivo) foi eliminada
+vendorizando o listener como **módulo Expo local**
+(`app/modules/captura-notificacoes/`, Kotlin + Expo Modules API, descoberto
+pelo autolinking sem config plugin). Três mudanças em relação à lib
+substituída: o serviço **sempre** grava a notificação numa fila persistente
+em arquivo (JSONL no armazenamento interno, teto de 200 linhas) que o JS
+drena ao abrir o app; a allowlist de bancos vive em SharedPreferences (o
+filtro funciona mesmo quando o Android renasce o processo só pro serviço,
+sem React Native inicializado); e o evento pro JS virou um "ping" sem
+payload ("onFilaAtualizada") — a fonte de verdade é sempre o arquivo, nunca
+o evento, eliminando o caminho duplo dado-no-evento vs. dado-na-fila.
+Conceito de entrevista: é outbox de novo, agora entre um serviço nativo
+Android e o runtime JS — mesma razão de existir (produtor e consumidor com
+ciclos de vida independentes, entrega garantida via armazenamento durável).
+
+O Kotlin só compila no build EAS (este repositório não tem toolchain
+Android) — o risco fica no log do EAS, e o teste da fase 2 está descrito em
+`PENDENCIAS-LOCAIS.md`.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

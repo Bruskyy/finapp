@@ -1,19 +1,22 @@
 import { Platform } from "react-native";
 import { adicionarCompraDetectada } from "./comprasDetectadas";
-import { PACKAGES_SUPORTADOS, parseNotificacaoBancaria } from "./parserNotificacaoBancaria";
+import { NotificacaoBruta, PACKAGES_SUPORTADOS, parseNotificacaoBancaria } from "./parserNotificacaoBancaria";
 
-// Captura de compras via notificações dos bancos (ITEM-CAPTURA-NOTIFICACOES.md).
-// O módulo nativo só existe em build EAS Android - requireNativeModule lança
-// na importação em Expo Go/preview, então o require é preguiçoso e guardado
-// (mesmo padrão do pushNotifications: a feature vira no-op onde não é
-// suportada, sem quebrar o resto do app). Na web este arquivo inteiro é
-// substituído pelo capturaNotificacoes.web.ts (resolução .web.ts do Metro).
+// Captura de compras via notificações dos bancos (ITEM-CAPTURA-NOTIFICACOES.md,
+// fase 2): o módulo Expo LOCAL (modules/captura-notificacoes) mantém uma fila
+// persistente NATIVA - o serviço escreve nela mesmo com o app morto, e aqui a
+// gente drena ao iniciar e a cada aviso de "fila atualizada". O módulo só
+// existe em build EAS Android - requireNativeModule lança na importação em
+// Expo Go/preview, então o require é preguiçoso e guardado (mesmo padrão do
+// pushNotifications). Na web este arquivo inteiro é substituído pelo
+// capturaNotificacoes.web.ts (resolução .web.ts do Metro).
 
 interface ModuloNativo {
   isNotificationPermissionGranted(): boolean;
   openNotificationListenerSettings(): void;
   setAllowedPackages(packages: string[]): void;
-  addListener(evento: "onNotificationReceived", listener: (n: unknown) => void): { remove(): void };
+  drenarFila(): string[];
+  addListener(evento: "onFilaAtualizada", listener: () => void): { remove(): void };
 }
 
 let modulo: ModuloNativo | null | undefined;
@@ -25,7 +28,7 @@ function obterModulo(): ModuloNativo | null {
     return modulo;
   }
   try {
-    modulo = require("expo-android-notification-listener-service").default as ModuloNativo;
+    modulo = require("../../modules/captura-notificacoes").default as ModuloNativo;
   } catch {
     // Expo Go / build sem o módulo nativo.
     modulo = null;
@@ -47,24 +50,34 @@ export function abrirConfiguracoesDeAcesso(): void {
   obterModulo()?.openNotificationListenerSettings();
 }
 
+/** Drena a fila persistente nativa: cada linha JSON vira uma tentativa de
+ * parse; compras reconhecidas entram na fila de revisão (AsyncStorage). */
+async function drenarFilaNativa(nativo: ModuloNativo): Promise<void> {
+  for (const linha of nativo.drenarFila()) {
+    try {
+      const compra = parseNotificacaoBancaria(JSON.parse(linha) as NotificacaoBruta);
+      if (compra) await adicionarCompraDetectada(compra);
+      else if (__DEV__) console.log("[captura] notificação de banco não reconhecida:", linha);
+    } catch {
+      // linha corrompida ou parse falhou - nunca pode derrubar a drenagem
+    }
+  }
+}
+
 let assinatura: { remove(): void } | null = null;
 
-/** Liga o listener (idempotente). Cada notificação de banco reconhecida como
- * compra entra na fila local de revisão - nada vira lançamento sem confirmação. */
+/** Liga a captura (idempotente): configura a allowlist do serviço, drena o
+ * que acumulou com o app fechado e fica ouvindo novos avisos. Nada vira
+ * lançamento sem confirmação na tela "Compras detectadas". */
 export function iniciarCaptura(): void {
   const nativo = obterModulo();
   if (!nativo || assinatura) return;
 
   nativo.setAllowedPackages(PACKAGES_SUPORTADOS);
-  assinatura = nativo.addListener("onNotificationReceived", async (evento) => {
-    try {
-      const compra = parseNotificacaoBancaria(evento as Parameters<typeof parseNotificacaoBancaria>[0]);
-      if (compra) await adicionarCompraDetectada(compra);
-      else if (__DEV__) console.log("[captura] notificação de banco não reconhecida:", evento);
-    } catch {
-      // parse/fila nunca podem derrubar o listener
-    }
+  assinatura = nativo.addListener("onFilaAtualizada", () => {
+    drenarFilaNativa(nativo);
   });
+  drenarFilaNativa(nativo);
 }
 
 export function pararCaptura(): void {
