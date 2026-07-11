@@ -17,6 +17,8 @@ export interface Preferencias {
   notificacoesAtivas: boolean;
   widgetsAtivos: Record<WidgetDashboard, boolean>;
   temaPreferido: TemaPreferido;
+  /** Atalho biométrico do gate de PIN - só tem efeito com PIN ativo. */
+  desbloqueioBiometrico: boolean;
 }
 
 const PADRAO: Preferencias = {
@@ -30,6 +32,7 @@ const PADRAO: Preferencias = {
     resumoSemanal: true,
   },
   temaPreferido: "sistema",
+  desbloqueioBiometrico: false,
 };
 
 // Preferências não-sensíveis (ao contrário do token de auth, que usa

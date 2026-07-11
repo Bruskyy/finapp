@@ -1204,6 +1204,23 @@ O Kotlin só compila no build EAS (este repositório não tem toolchain
 Android) — o risco fica no log do EAS, e o teste da fase 2 está descrito em
 `PENDENCIAS-LOCAIS.md`.
 
+### Login biométrico (REFATORACAO-UI.md, Fase 5 — fecha a Fase 5 inteira)
+
+Desbloqueio por digital/rosto via `expo-local-authentication`, desenhado
+como **atalho do gate de PIN, nunca substituto**: o toggle (Configurações >
+Segurança) só aparece com PIN ativo e hardware biométrico cadastrado, e
+desativar o PIN desliga a biometria junto (senão a preferência ficaria
+"ativa" sem gate nenhum pra atalhar). No `DesbloqueioPinScreen`, o prompt
+nativo abre sozinho quando a biometria está ativa; falha ou cancelamento
+caem no PIN silenciosamente — cancelar pra digitar o PIN é fluxo normal,
+não erro. `disableDeviceFallback: true` deliberado: o fallback do app é o
+PIN próprio, não a credencial de tela de bloqueio do aparelho.
+
+Diferente dos módulos nativos custom, `expo-local-authentication` é SDK
+oficial com no-op seguro na web (`hasHardwareAsync` → false), então não
+precisou do padrão `.web.ts`/require guardado. Validação real da biometria
+exige celular físico com digital cadastrada (ver `PENDENCIAS-LOCAIS.md`).
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

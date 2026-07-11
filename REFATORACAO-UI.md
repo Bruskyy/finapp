@@ -173,8 +173,10 @@ entrou no reset — o que ficou de fora, mas vale considerar depois:
   ITEM-TRANSACOES.md); Mês/Ano reaproveitam `GET /relatorios/evolucao-mensal`
   (Ano soma os meses por ano no cliente, sem endpoint novo). Complementar ao
   `GraficoEvolucaoMensal` do Dashboard, que continua intocado.
-- **Login biométrico** (`expo-local-authentication`) — feature real (não só
-  visual) e gratuita, inspirada no "Use Fingerprint to Access" do kit.
+- ~~Login biométrico~~ — **feito** (`utils/biometria.ts` +
+  `expo-local-authentication`): atalho do gate de PIN (só configurável com
+  PIN ativo — PIN é o fallback garantido), toggle em Configurações >
+  Segurança, prompt automático ao abrir o gate. Fecha a Fase 5 inteira.
 - ~~Central de notificações in-app~~ — **feito**, mas acabou virando um epic
   de 5 fases em vez de feature de UI (exatamente o escopo maior previsto
   abaixo): `UsuarioId` de verdade em Lançamentos e Gamificação (antes o app

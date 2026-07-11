@@ -46,6 +46,10 @@
 - [ ] Fluxos novos que não deu pra navegar sem backend no ambiente remoto:
   tela **Categorias**, **PIN de segurança** (ativar em Configurações,
   fechar e reabrir o app), tela **Análise** (4 segmentos com dados reais).
+- [ ] **Login biométrico** (exige digital/rosto cadastrado no aparelho):
+  ativar PIN → toggle "Desbloquear com biometria" em Configurações >
+  Segurança → fechar e reabrir o app → prompt biométrico abre sozinho;
+  cancelar deve cair no PIN sem mensagem de erro.
 
 ## 4. Configurações rápidas na máquina local
 
