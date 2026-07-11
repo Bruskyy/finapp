@@ -37,6 +37,12 @@
   loga no console notificações de banco que não reconheceu; conferir também
   os package names reais dos bancos (a lista atual foi escrita de memória —
   ver ITEM-CAPTURA-NOTIFICACOES.md).
+- [ ] **Fase 2 da captura (módulo nativo local)**: o Kotlin de
+  `app/modules/captura-notificacoes/` só compila no build EAS — se o build
+  falhar, o erro estará no log do EAS (gradle/Kotlin). Testar o cenário que
+  motivou a fase 2: app completamente fechado → fazer uma compra → abrir o
+  app → a compra deve aparecer em "Compras detectadas" (drenada da fila
+  nativa persistente).
 - [ ] Fluxos novos que não deu pra navegar sem backend no ambiente remoto:
   tela **Categorias**, **PIN de segurança** (ativar em Configurações,
   fechar e reabrir o app), tela **Análise** (4 segmentos com dados reais).

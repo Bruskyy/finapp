@@ -71,8 +71,14 @@ Package names a confirmar no device (Configurações > Apps): Nubank
 - **Fase 1 (este item)**: parser + fila + tela de revisão + opt-in + captura
   ligada quando o módulo nativo existir. Validável aqui até o limite do
   typecheck/preview; teste de captura real fica pro Vitor no APK.
-- **Fase 2 (se necessário)**: módulo local com fila nativa persistente
-  (elimina perda com app morto).
+- **Fase 2 — ✅ feita (antes mesmo do teste da fase 1, decisão do Vitor)**:
+  módulo Expo local (`app/modules/captura-notificacoes/`) substitui a lib
+  npm. Mudanças em relação a ela: fila persistente em arquivo no lado nativo
+  (`FilaNotificacoes.kt`, JSONL com teto de 200 linhas, drenada pelo JS ao
+  abrir o app e a cada evento "onFilaAtualizada"), allowlist persistida em
+  SharedPreferences (o serviço filtra mesmo com o processo renascendo sem o
+  React Native), e sem extração de ícone (o parser só usa texto). A fonte de
+  verdade é sempre o arquivo - o evento é só um "ping" sem payload.
 - **Fase 3 (opcional)**: auto-confirmação pra estabelecimentos recorrentes
   já categorizados antes ("aprendizado" por regra simples, sem IA).
 
