@@ -18,14 +18,22 @@ export async function listarComprasDetectadas(): Promise<CompraDetectada[]> {
   }
 }
 
+// Serializa as escritas: duas notificações quase simultâneas fariam os dois
+// handlers lerem a mesma lista antiga (read-modify-write intercalado nos
+// awaits) e a segunda escrita engoliria a primeira compra.
+let escritaPendente: Promise<void> = Promise.resolve();
+
 /** Adiciona com dedup pela chave da notificação (repostagens do Android). */
-export async function adicionarCompraDetectada(compra: CompraDetectada): Promise<void> {
-  const lista = await listarComprasDetectadas();
-  if (lista.some((c) => c.chaveNotificacao === compra.chaveNotificacao)) return;
-  // Mais recente primeiro; LIMITE evita crescimento sem fim se o usuário
-  // nunca revisar a fila.
-  const nova = [compra, ...lista].slice(0, LIMITE);
-  await AsyncStorage.setItem(CHAVE, JSON.stringify(nova));
+export function adicionarCompraDetectada(compra: CompraDetectada): Promise<void> {
+  escritaPendente = escritaPendente.then(async () => {
+    const lista = await listarComprasDetectadas();
+    if (lista.some((c) => c.chaveNotificacao === compra.chaveNotificacao)) return;
+    // Mais recente primeiro; LIMITE evita crescimento sem fim se o usuário
+    // nunca revisar a fila.
+    const nova = [compra, ...lista].slice(0, LIMITE);
+    await AsyncStorage.setItem(CHAVE, JSON.stringify(nova));
+  });
+  return escritaPendente;
 }
 
 export async function removerCompraDetectada(chaveNotificacao: string): Promise<void> {

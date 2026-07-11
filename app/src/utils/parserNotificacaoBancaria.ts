@@ -134,8 +134,10 @@ export function parseNotificacaoBancaria(notificacao: NotificacaoBruta): CompraD
   }
 
   // Fallback: só pra packages conhecidos (não transformar qualquer app com
-  // "R$ X em Y" no texto em compra) e só quando o texto menciona compra.
-  if (estrategia && /compra/i.test(textoCompleto)) {
+  // "R$ X em Y" no texto em compra), só quando o texto menciona compra e
+  // nunca quando é compra recusada/cancelada/estornada - esses avisos têm o
+  // mesmo formato "R$ X em Y" e virariam despesa falsa na fila.
+  if (estrategia && /compra/i.test(textoCompleto) && !/recusad|negad|cancelad|estornad/i.test(textoCompleto)) {
     const resultado = PADRAO_GENERICO.exec(textoCompleto);
     if (resultado) return montarCompra(notificacao, estrategia.nome, resultado[1], resultado[2]);
   }
