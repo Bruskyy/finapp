@@ -172,6 +172,49 @@ namespace Lancamentos.Infrastructure.Migrations
                     b.ToTable("Categorias", (string)null);
                 });
 
+            modelBuilder.Entity("Lancamentos.Domain.Entidades.CompraParcelada", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CategoriaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ContaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DataCompra")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("NumeroParcelas")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.HasIndex("ContaId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("ComprasParceladas", (string)null);
+                });
+
             modelBuilder.Entity("Lancamentos.Domain.Entidades.Conta", b =>
                 {
                     b.Property<Guid>("Id")
@@ -181,10 +224,22 @@ namespace Lancamentos.Infrastructure.Migrations
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("DiaFechamento")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DiaVencimento")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("Limite")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
 
                     b.Property<Guid?>("UsuarioId")
                         .HasColumnType("uniqueidentifier");
@@ -247,6 +302,12 @@ namespace Lancamentos.Infrastructure.Migrations
                     b.Property<Guid>("CategoriaId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("Competencia")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CompraParceladaId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("ContaId")
                         .HasColumnType("uniqueidentifier");
 
@@ -260,6 +321,9 @@ namespace Lancamentos.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("NumeroParcela")
+                        .HasColumnType("int");
 
                     b.Property<Guid?>("RecorrenciaId")
                         .HasColumnType("uniqueidentifier");
@@ -275,11 +339,15 @@ namespace Lancamentos.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CompraParceladaId");
+
                     b.HasIndex("ContaId");
 
                     b.HasIndex("Data");
 
                     b.HasIndex("UsuarioId");
+
+                    b.HasIndex("ContaId", "Competencia");
 
                     b.ToTable("Lancamentos", (string)null);
                 });
@@ -527,6 +595,21 @@ namespace Lancamentos.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Lancamentos.Domain.Entidades.CompraParcelada", b =>
+                {
+                    b.HasOne("Lancamentos.Domain.Entidades.Conta", null)
+                        .WithMany()
+                        .HasForeignKey("ContaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Lancamentos.Domain.Entidades.Categoria", null)
+                        .WithMany()
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Lancamentos.Domain.Entidades.Lancamento", b =>
                 {
                     b.HasOne("Lancamentos.Domain.Entidades.Conta", null)
@@ -534,6 +617,11 @@ namespace Lancamentos.Infrastructure.Migrations
                         .HasForeignKey("ContaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Lancamentos.Domain.Entidades.CompraParcelada", null)
+                        .WithMany()
+                        .HasForeignKey("CompraParceladaId")
+                        .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("Lancamentos.Domain.Entidades.LancamentoRecorrente", b =>

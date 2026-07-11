@@ -45,6 +45,13 @@ public class RecorrenciaRepository : IRecorrenciaRepository
 
     public async Task<bool> MaterializarAsync(LancamentoRecorrente recorrencia, Lancamento lancamento, string competencia, CancellationToken ct)
     {
+        // Assinatura/conta fixa num CARTÃO precisa da competência da fatura,
+        // igual a lançamento criado pelo endpoint - sem isto, a materialização
+        // do worker ficaria invisível pra fatura derivada (ITEM-CARTAO-CREDITO.md).
+        var conta = await _db.Contas.AsNoTracking().FirstOrDefaultAsync(c => c.Id == lancamento.ContaId, ct);
+        if (conta is not null)
+            lancamento.AtribuirCompetencia(conta);
+
         _db.Lancamentos.Add(lancamento);
         _db.Set<RecorrenciaExecucao>().Add(new RecorrenciaExecucao(recorrencia.Id, competencia, lancamento.Id));
 

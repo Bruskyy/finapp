@@ -21,6 +21,17 @@ public class Lancamento
     /// <summary>Preenchido quando o lançamento foi materializado por uma conta fixa (badge "recorrente" no app).</summary>
     public Guid? RecorrenciaId { get; private set; }
 
+    /// <summary>
+    /// Mês da fatura (sempre dia 1) - só existe quando a conta é cartão de
+    /// crédito. A fatura é derivada da soma das competências, nunca
+    /// materializada (ITEM-CARTAO-CREDITO.md, decisão 2).
+    /// </summary>
+    public DateTime? Competencia { get; private set; }
+
+    /// <summary>Vínculo com a compra-mãe quando este lançamento é uma parcela.</summary>
+    public Guid? CompraParceladaId { get; private set; }
+    public int? NumeroParcela { get; private set; }
+
     private readonly List<Tag> _tags = new();
 
     /// <summary>Etiquetas livres (N:N via skip navigation do EF Core).</summary>
@@ -76,6 +87,45 @@ public class Lancamento
         CategoriaId = categoriaId;
         ContaId = contaId;
         Data = data;
+    }
+
+    /// <summary>
+    /// Factory pra parcela de compra parcelada (sempre despesa) - chamada só
+    /// por <see cref="CompraParcelada.GerarParcelas"/>, que é quem conhece a
+    /// regra de divisão/competência.
+    /// </summary>
+    public static Lancamento CriarParcela(
+        string descricao, decimal valor, Guid categoriaId, Guid contaId, DateTime data,
+        DateTime competencia, Guid compraParceladaId, int numeroParcela, Guid? usuarioId)
+    {
+        Validar(descricao, valor, contaId);
+
+        return new Lancamento
+        {
+            Id = Guid.NewGuid(),
+            Descricao = descricao.Trim(),
+            Valor = valor,
+            Tipo = TipoLancamento.Despesa,
+            CategoriaId = categoriaId,
+            ContaId = contaId,
+            Data = data,
+            UsuarioId = usuarioId,
+            CriadoEm = DateTime.UtcNow,
+            Competencia = competencia,
+            CompraParceladaId = compraParceladaId,
+            NumeroParcela = numeroParcela,
+        };
+    }
+
+    /// <summary>
+    /// Recalcula a competência a partir da conta (chamar na criação e sempre
+    /// que Data/Conta mudarem): vira null quando a conta não é cartão.
+    /// </summary>
+    public void AtribuirCompetencia(Conta conta)
+    {
+        if (conta.Id != ContaId)
+            throw new InvalidOperationException("Conta informada não é a conta do lançamento.");
+        Competencia = conta.CompetenciaPara(Data);
     }
 
     /// <summary>Substitui o conjunto de tags do lançamento.</summary>
