@@ -53,9 +53,11 @@ cobram.
 
 **Privacidade em primeiro lugar:**
 O Cofrin nunca acessa sua conta bancária real — todo dado financeiro é
-inserido por você ou importado de um arquivo que você mesmo escolhe.
-Sem anúncios invasivos. Sem venda de dados. Política de privacidade
-completa disponível no app (Configurações > Sobre o app).
+inserido por você, importado de um arquivo que você mesmo escolhe, ou
+detectado das notificações de compra dos seus bancos (recurso opcional,
+processado inteiramente no seu aparelho e sempre sujeito à sua
+confirmação). Sem anúncios invasivos. Sem venda de dados. Política de
+privacidade completa disponível no app (Configurações > Sobre o app).
 
 Organize. Guarde. Evolua. — esse é o Cofrin.
 

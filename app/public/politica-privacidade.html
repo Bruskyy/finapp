@@ -86,6 +86,7 @@
       <ul>
         <li><strong>Dados de conta:</strong> nome e e-mail, usados para criar e identificar sua conta.</li>
         <li><strong>Dados financeiros que você insere:</strong> lançamentos (receitas e despesas), contas, categorias, orçamentos, metas de poupança e tags. Esses dados são inseridos manualmente por você ou importados de um arquivo CSV que você mesmo envia — nunca acessamos sua conta bancária real nem instituições financeiras.</li>
+        <li><strong>Notificações de compra dos seus bancos (opcional, Android):</strong> se você conceder o acesso a notificações nas configurações do Android, o app lê <strong>apenas</strong> notificações dos aplicativos de banco suportados (uma lista fixa — notificações de qualquer outro app são ignoradas) para extrair o valor e o estabelecimento de compras. Esse processamento acontece <strong>inteiramente no seu aparelho</strong>: o conteúdo das notificações nunca é enviado aos nossos servidores nem a terceiros. As compras detectadas ficam numa fila local de revisão, e só viram um lançamento nos nossos servidores se você confirmar manualmente — a partir daí, são um lançamento como qualquer outro que você digitou.</li>
         <li><strong>Dados de uso do app:</strong> sequência de dias de uso e conquistas desbloqueadas, usados para os recursos de gamificação (moedas, streak, conquistas).</li>
         <li><strong>Token de notificação push:</strong> se você ativar notificações, armazenamos um identificador técnico do seu aparelho (fornecido pela Expo) para poder enviar alertas — não é vinculado a nenhuma informação de localização ou identidade do dispositivo além do necessário para o envio.</li>
       </ul>
@@ -98,6 +99,7 @@
         <li>Fazer o app funcionar (mostrar seus lançamentos, saldos, metas e orçamentos).</li>
         <li>Gerar notificações relevantes (resumo semanal, orçamento estourado, conta fixa a vencer, confirmação de resgate de moedas).</li>
         <li>Calcular o progresso de gamificação (moedas, sequência de dias, conquistas).</li>
+        <li>Sugerir despesas para sua confirmação, quando você ativa a captura de notificações de compra (o dado só sai do seu aparelho se você confirmar a despesa).</li>
       </ul>
       <p>
         Não usamos seus dados financeiros para publicidade, não os vendemos e não os
@@ -133,6 +135,7 @@
         <li>Corrigir dados incorretos (nome, e-mail — diretamente na tela de Configurações do app).</li>
         <li>Solicitar a exclusão da sua conta e de todos os dados associados.</li>
         <li>Revogar o consentimento de notificações push a qualquer momento, desativando-as em Configurações.</li>
+        <li>Revogar o acesso às notificações de compra a qualquer momento, removendo a permissão do Cofrin em Configurações do Android &gt; Acesso a notificações — as compras ainda não confirmadas podem ser descartadas na tela "Compras detectadas".</li>
       </ul>
       <p>Para exercer esses direitos, entre em contato pelo e-mail abaixo.</p>
     </section>
