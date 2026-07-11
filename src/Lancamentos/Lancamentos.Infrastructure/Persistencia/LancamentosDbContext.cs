@@ -17,6 +17,7 @@ public class LancamentosDbContext : DbContext
     public DbSet<Objetivo> Objetivos => Set<Objetivo>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<Orcamento> Orcamentos => Set<Orcamento>();
+    public DbSet<CompraParcelada> ComprasParceladas => Set<CompraParcelada>();
     public DbSet<ImportacaoExtrato> Importacoes => Set<ImportacaoExtrato>();
     public DbSet<ExtratoArquivo> ExtratosArquivos => Set<ExtratoArquivo>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
@@ -35,7 +36,14 @@ public class LancamentosDbContext : DbContext
             e.HasIndex(x => x.Data); // consultas por período são o acesso mais comum
             e.HasIndex(x => x.ContaId); // saldo por conta agrupa por ContaId
             e.HasIndex(x => x.UsuarioId); // todo endpoint de leitura filtra por dono
+            // a fatura do cartão é SUM por (ContaId, Competencia) - índice composto dedicado
+            e.HasIndex(x => new { x.ContaId, x.Competencia });
             e.HasOne<Conta>().WithMany().HasForeignKey(x => x.ContaId);
+            // NoAction: Lancamento já cascateia de Conta - um segundo caminho de
+            // cascade (Conta -> CompraParcelada -> Lancamento) é rejeitado pelo
+            // SQL Server ("multiple cascade paths"); a exclusão da compra-mãe
+            // remove as parcelas explicitamente no endpoint.
+            e.HasOne<CompraParcelada>().WithMany().HasForeignKey(x => x.CompraParceladaId).OnDelete(DeleteBehavior.NoAction);
 
             // N:N com tabela de juncao implicita (LancamentoTags) — skip navigation
             e.HasMany(x => x.Tags)
@@ -58,8 +66,21 @@ public class LancamentosDbContext : DbContext
             e.ToTable("Contas");
             e.HasKey(x => x.Id);
             e.Property(x => x.Nome).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Limite).HasColumnType("decimal(18,2)");
             // idem: unicidade por usuário (dois usuários podem ter "Carteira").
             e.HasIndex(x => new { x.UsuarioId, x.Nome }).IsUnique();
+        });
+
+        modelBuilder.Entity<CompraParcelada>(e =>
+        {
+            e.ToTable("ComprasParceladas");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Descricao).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ValorTotal).HasColumnType("decimal(18,2)");
+            e.HasIndex(x => x.UsuarioId);
+            // NoAction pelos mesmos caminhos múltiplos de cascade do SQL Server.
+            e.HasOne<Conta>().WithMany().HasForeignKey(x => x.ContaId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne<Categoria>().WithMany().HasForeignKey(x => x.CategoriaId).OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<LancamentoRecorrente>(e =>

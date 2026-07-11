@@ -1,10 +1,10 @@
 # ITEM-CARTAO-CREDITO.md — Cartão de crédito (fatura, limite, parcelamento)
 
 > Para o Claude Code: leia junto com CLAUDE.md e BACKLOG-PRODUTO.md (Onda 3,
-> item 10). **Status: PROPOSTA DE MODELAGEM, aguardando revisão do Vitor** —
-> núcleo de domínio, nada de código antes do OK (modo de trabalho do
-> CLAUDE.md). Cada decisão abaixo tem o racional e o trade-off explícitos
-> porque este é o item mais rico de entrevista do backlog restante.
+> item 10). **Status: modelagem aprovada pelo Vitor (11/07/2026, decisão 4 =
+> opção b); PR 1 (domínio+migration+testes) implementado.** Cada decisão
+> abaixo tem o racional e o trade-off explícitos porque este é o item mais
+> rico de entrevista do backlog restante.
 
 ## O problema em uma frase
 

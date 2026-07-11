@@ -160,10 +160,13 @@ app.MapPost("/lancamentos", async (CriarLancamentoRequest req, ClaimsPrincipal p
 {
     var usuarioId = IdDoUsuario(principal);
 
-    if (await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct) is null)
+    if (await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct) is not { } conta)
         return Results.BadRequest(new { erro = "Conta não encontrada." });
 
     var lancamento = new Lancamento(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data, usuarioId);
+    // Competência (mês da fatura) só existe quando a conta é cartão - o
+    // cliente nunca manda: é derivada da regra de fechamento no domínio.
+    lancamento.AtribuirCompetencia(conta);
     if (req.Tags is { Count: > 0 })
         lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, usuarioId, ct));
 
@@ -225,10 +228,12 @@ app.MapPut("/lancamentos/{id:guid}", async (Guid id, AtualizarLancamentoRequest 
     if (lancamento is null)
         return Results.NotFound();
 
-    if (await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct) is null)
+    if (await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct) is not { } conta)
         return Results.BadRequest(new { erro = "Conta não encontrada." });
 
     lancamento.Atualizar(req.Descricao, req.Valor, req.Tipo, req.CategoriaId, req.ContaId, req.Data);
+    // Data e/ou conta podem ter mudado - recalcula (ou zera) a competência.
+    lancamento.AtribuirCompetencia(conta);
     if (req.Tags is not null)
         lancamento.DefinirTags(await tags.ObterOuCriarAsync(req.Tags, usuarioId, ct));
 

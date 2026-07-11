@@ -1221,6 +1221,30 @@ oficial com no-op seguro na web (`hasHardwareAsync` → false), então não
 precisou do padrão `.web.ts`/require guardado. Validação real da biometria
 exige celular físico com digital cadastrada (ver `PENDENCIAS-LOCAIS.md`).
 
+### Cartão de crédito, PR 1 — domínio, migration e testes (ITEM-CARTAO-CREDITO.md)
+
+Primeiro dos 3 PRs do item 10 da Onda 3. `Conta` ganha o discriminador
+`TipoConta` (Corrente/Cartao) + limite e dias de fechamento/vencimento
+(factory `CriarCartao` com invariantes; dias limitados a 1-28 —
+simplificação deliberada que elimina a classe de bugs de dia 29/30/31 +
+fevereiro). `Lancamento` ganha `Competencia` (mês da fatura, sempre dia 1,
+derivada no domínio por `Conta.CompetenciaPara` — compra depois do
+fechamento cai na fatura do mês seguinte) e o vínculo de parcela.
+`CompraParcelada` (compra-mãe) materializa as N parcelas **num único
+`SaveChanges`** com ajuste de centavos na primeira (33,34 + 33,33 + 33,33) —
+lógica pura testada sem banco, incluindo bordas (dia exato do fechamento,
+virada de ano, clamp de 31 pra 28 em fevereiro). O `RecorrenciaWorker`
+também atribui competência ao materializar (assinatura em cartão entra na
+fatura como qualquer compra).
+
+**Migration escrita à mão** (ambiente remoto sem `dotnet ef`): atributos
+`[DbContext]`/`[Migration]` na própria classe (sem Designer) e
+`ModelSnapshot` editado manualmente — o CI (Testcontainers aplica
+`MigrateAsync` num SQL Server real) é quem valida. FKs novas com
+`NoAction` deliberado: `Lancamento` já cascateia de `Conta`, e um segundo
+caminho (Conta → CompraParcelada → Lancamento) seria rejeitado pelo SQL
+Server ("multiple cascade paths") — pergunta clássica de entrevista.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
