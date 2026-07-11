@@ -7,7 +7,7 @@
 // desalinharia lançamentos/filtros com esse contrato: um lançamento feito
 // às 22h no Brasil viraria 01h UTC do dia seguinte, caindo no dia (e às
 // vezes no mês) errado.
-function paraLocalIso(data: Date): string {
+export function paraLocalIso(data: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}T${pad(data.getHours())}:${pad(data.getMinutes())}:${pad(data.getSeconds())}`;
 }

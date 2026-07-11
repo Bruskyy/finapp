@@ -19,6 +19,7 @@ import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
 import AnaliseScreen from "./src/screens/AnaliseScreen";
 import CategoriasScreen from "./src/screens/CategoriasScreen";
+import ComprasDetectadasScreen from "./src/screens/ComprasDetectadasScreen";
 import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
 import ContasScreen from "./src/screens/ContasScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
@@ -39,6 +40,7 @@ import TransacoesScreen from "./src/screens/TransacoesScreen";
 import { Cor, espaco, sombra } from "./src/tema";
 import { ThemeProvider, useEstilos, useTema } from "./src/tema/ThemeContext";
 import { obterPin } from "./src/utils/armazenamentoPin";
+import { capturaPermitida, iniciarCaptura } from "./src/utils/capturaNotificacoes";
 import { marcarOnboardingVisto, obterOnboardingVisto } from "./src/utils/onboarding";
 
 const Tab = createBottomTabNavigator();
@@ -210,6 +212,7 @@ function DrawerPrincipal() {
       <Drawer.Screen name="Contas" component={ContasScreen} />
       <Drawer.Screen name="Categorias" component={CategoriasScreen} />
       <Drawer.Screen name="Análise" component={AnaliseScreen} />
+      <Drawer.Screen name="Compras detectadas" component={ComprasDetectadasScreen} />
       <Drawer.Screen name="Personalizar" component={PersonalizarInicioScreen} />
       <Drawer.Screen name="Moedas" component={MoedasScreen} />
       <Drawer.Screen name="Notificações" component={NotificacoesScreen} />
@@ -276,6 +279,10 @@ function RaizNavegacao() {
   useEffect(() => {
     obterOnboardingVisto().then(setOnboardingVisto);
     obterPin().then(setPin);
+    // Captura de compras via notificações (ITEM-CAPTURA-NOTIFICACOES.md):
+    // conceder o acesso nas configurações do Android É o opt-in - se o
+    // usuário nunca concedeu, isto é um no-op (idem web/Expo Go).
+    if (capturaPermitida()) iniciarCaptura();
   }, []);
 
   if (onboardingVisto === null) return <TelaCarregandoAuth />;

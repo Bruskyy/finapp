@@ -449,6 +449,15 @@ ou SDK de anúncio no projeto** — é tudo greenfield. Escopo decidido via
   depende de nenhuma feature nova, só reflete uma postura que o app já
   cumpre.
 
+### Captura de compras via notificações (pedido do Vitor, 07/2026)
+
+Fase 1 implementada — ver `ITEM-CAPTURA-NOTIFICACOES.md` (viabilidade,
+arquitetura, limitações) e README. Fases 2 (fila nativa persistente) e 3
+(auto-confirmação por regra) ficam aqui como backlog. Pendente do Vitor:
+testar num build EAS real, calibrar os regexes com notificações reais dos
+bancos que usa, e atualizar a política de privacidade antes de liberar em
+produção.
+
 ### Depois do 1.0 (nada disso se perde)
 - **Escritório virtual/coleções (item 7)** — com feedback de usuários
   reais e moedas acumuladas pra gastar.

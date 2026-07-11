@@ -1161,6 +1161,27 @@ Novo card em Configurações, mesmo padrão visual do card "Sobre o app"
   ponta a ponta) que este ambiente de execução não tem disponível. Fica
   registrada como pendência de uma sessão com esse ambiente disponível.
 
+### Captura de compras via notificações dos bancos (ITEM-CAPTURA-NOTIFICACOES.md, fase 1)
+
+"Open Finance dos pobres": um `NotificationListenerService` do Android lê as
+notificações de compra dos apps de banco e alimenta uma fila local de
+revisão — nada vira lançamento sem confirmação do usuário (a notificação não
+informa categoria/conta, e parse errado não pode sujar o extrato). Fluxo:
+captura (lib `expo-android-notification-listener-service`, módulo Expo
+nativo) → parser puro (`parserNotificacaoBancaria.ts`, Strategy por banco +
+fallback genérico, validado com 8 casos incluindo negativos) → fila
+AsyncStorage com dedup → tela "Compras detectadas" (drawer) → `POST
+/lancamentos` de sempre. Sem backend novo.
+
+Restrições documentadas na spec: Android-only (iOS não tem API equivalente),
+permissão especial concedida manualmente nas configurações do Android (isso
+É o opt-in), não funciona em Expo Go/web (guardas no padrão do
+`pushNotifications.web.ts`), notificação com o app morto é perdida (fila
+nativa persistente fica pra fase 2 se incomodar no uso real), e os regexes
+por banco precisam de calibração com notificações reais no device. **Antes
+de liberar em produção**: disclosure na política de privacidade (acesso a
+notificações lê dado sensível — exigência do Play Store).
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

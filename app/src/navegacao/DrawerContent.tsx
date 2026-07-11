@@ -23,6 +23,7 @@ const ITENS: ItemDrawer[] = [
   { rota: "Contas", label: "Contas", icone: "wallet-outline" },
   { rota: "Categorias", label: "Categorias", icone: "pricetags-outline" },
   { rota: "Análise", label: "Análise", icone: "stats-chart-outline" },
+  { rota: "Compras detectadas", label: "Compras detectadas", icone: "flash-outline" },
   { rota: "Personalizar", label: "Personalizar início", icone: "options-outline" },
   { rota: "Moedas", label: "Moedas", icone: "medal-outline" },
   { rota: "Notificações", label: "Notificações", icone: "notifications-outline" },
