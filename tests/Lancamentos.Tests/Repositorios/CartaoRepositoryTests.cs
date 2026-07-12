@@ -111,7 +111,7 @@ public class CartaoRepositoryTests : IClassFixture<SqlServerFixture>
         }
 
         await using var verificacao = CriarDbContext();
-        var persistidas = await verificacao.Lancamentos.Where(l => l.CompraParceladaId == compra.Id).ToListAsync();
+        var persistidas = await verificacao.Lancamentos.AsNoTracking().Where(l => l.CompraParceladaId == compra.Id).ToListAsync();
         Assert.Equal(3, persistidas.Count);
         Assert.Equal(1000m, persistidas.Sum(p => p.Valor));
 

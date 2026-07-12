@@ -44,8 +44,16 @@ public class CompraParceladaRepository : ICompraParceladaRepository
 
     public async Task RemoverComParcelasAsync(CompraParcelada compra, CancellationToken ct)
     {
+        // Tudo via ExecuteDelete (sem change tracker - mesmo padrão do DELETE
+        // /lancamentos): misturar ExecuteDelete das parcelas com
+        // Remove+SaveChanges da mãe estoura DbUpdateConcurrencyException
+        // quando o contexto tem parcelas rastreadas (o EF tenta tocar
+        // dependentes que o ExecuteDelete já apagou no banco). Cada
+        // ExecuteDelete é um statement isolado, então a transação explícita
+        // garante a atomicidade mãe+parcelas.
+        await using var transacao = await _db.Database.BeginTransactionAsync(ct);
         await _db.Lancamentos.Where(l => l.CompraParceladaId == compra.Id).ExecuteDeleteAsync(ct);
-        _db.ComprasParceladas.Remove(compra);
-        await _db.SaveChangesAsync(ct);
+        await _db.ComprasParceladas.Where(c => c.Id == compra.Id).ExecuteDeleteAsync(ct);
+        await transacao.CommitAsync(ct);
     }
 }
