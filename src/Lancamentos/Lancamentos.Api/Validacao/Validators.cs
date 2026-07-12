@@ -34,6 +34,31 @@ public class CriarContaRequestValidator : AbstractValidator<CriarContaRequest>
     public CriarContaRequestValidator()
     {
         RuleFor(x => x.Nome).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Tipo).IsInEnum();
+
+        // Validação condicional por tipo (clássico de entrevista com Fluent
+        // Validation): os campos de cartão são obrigatórios SÓ quando o tipo
+        // é cartão - o domínio (Conta.CriarCartao) revalida as invariantes,
+        // duas camadas de defesa como no resto do projeto.
+        When(x => x.Tipo == Lancamentos.Domain.Entidades.TipoConta.Cartao, () =>
+        {
+            RuleFor(x => x.Limite).NotNull().GreaterThan(0);
+            RuleFor(x => x.DiaFechamento).NotNull().InclusiveBetween(1, 28);
+            RuleFor(x => x.DiaVencimento).NotNull().InclusiveBetween(1, 28)
+                .NotEqual(x => x.DiaFechamento).WithMessage("Fechamento e vencimento não podem ser no mesmo dia.");
+        });
+    }
+}
+
+public class CriarCompraParceladaRequestValidator : AbstractValidator<CriarCompraParceladaRequest>
+{
+    public CriarCompraParceladaRequestValidator()
+    {
+        RuleFor(x => x.Descricao).NotEmpty().MaximumLength(180); // sobra espaço pro sufixo " (NN/NN)" dentro dos 200 da coluna
+        RuleFor(x => x.ValorTotal).GreaterThan(0);
+        RuleFor(x => x.NumeroParcelas).InclusiveBetween(2, 48);
+        RuleFor(x => x.CategoriaId).NotEmpty();
+        RuleFor(x => x.ContaId).NotEmpty();
     }
 }
 

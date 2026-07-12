@@ -2,9 +2,10 @@
 
 > Para o Claude Code: leia junto com CLAUDE.md e BACKLOG-PRODUTO.md (Onda 3,
 > item 10). **Status: modelagem aprovada pelo Vitor (11/07/2026, decisão 4 =
-> opção b); PR 1 (domínio+migration+testes) implementado.** Cada decisão
-> abaixo tem o racional e o trade-off explícitos porque este é o item mais
-> rico de entrevista do backlog restante.
+> opção b); PR 1 (domínio+migration+testes) e PR 2 (views+endpoints+testes
+> de integração) implementados. Falta o PR 3 (app).** Cada decisão abaixo
+> tem o racional e o trade-off explícitos porque este é o item mais rico de
+> entrevista do backlog restante.
 
 ## O problema em uma frase
 
