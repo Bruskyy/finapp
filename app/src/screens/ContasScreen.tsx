@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { criarConta, listarSaldosPorConta, transferir } from "../api/client";
+import { criarCartao, criarConta, listarCartoes, listarSaldosPorConta, transferir } from "../api/client";
 import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
@@ -10,7 +10,7 @@ import EstadoVazio from "../componentes/EstadoVazio";
 import Input from "../componentes/Input";
 import { Cor, espaco, fonte, formatarMoeda, parseValorMonetario, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
-import { SaldoPorConta } from "../types";
+import { CartaoResumo, SaldoPorConta } from "../types";
 
 /**
  * Gestão de contas (Sprint 1 do Roadmap 1.0): o backend de contas e o
@@ -21,7 +21,9 @@ import { SaldoPorConta } from "../types";
 export default function ContasScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
+  const navigation = useNavigation();
   const [saldos, setSaldos] = useState<SaldoPorConta[]>([]);
+  const [cartoes, setCartoes] = useState<CartaoResumo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -31,6 +33,14 @@ export default function ContasScreen() {
   const [mostrarNovaConta, setMostrarNovaConta] = useState(false);
   const [nomeNovaConta, setNomeNovaConta] = useState("");
   const [criandoConta, setCriandoConta] = useState(false);
+
+  // formulário de novo cartão de crédito (ITEM-CARTAO-CREDITO.md, PR 3)
+  const [mostrarNovoCartao, setMostrarNovoCartao] = useState(false);
+  const [nomeCartao, setNomeCartao] = useState("");
+  const [limiteCartao, setLimiteCartao] = useState("");
+  const [diaFechamento, setDiaFechamento] = useState("");
+  const [diaVencimento, setDiaVencimento] = useState("");
+  const [criandoCartao, setCriandoCartao] = useState(false);
 
   // formulário de transferência
   const [mostrarTransferencia, setMostrarTransferencia] = useState(false);
@@ -42,7 +52,9 @@ export default function ContasScreen() {
   const carregar = useCallback(async () => {
     setErro(null);
     try {
-      setSaldos(await listarSaldosPorConta());
+      const [resSaldos, resCartoes] = await Promise.all([listarSaldosPorConta(), listarCartoes()]);
+      setSaldos(resSaldos);
+      setCartoes(resCartoes);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar contas.");
     } finally {
@@ -84,6 +96,35 @@ export default function ContasScreen() {
       setErro(e instanceof Error ? e.message : "Erro ao criar a conta.");
     } finally {
       setCriandoConta(false);
+    }
+  }
+
+  const diaFechamentoNum = Number(diaFechamento);
+  const diaVencimentoNum = Number(diaVencimento);
+  const cartaoValido =
+    nomeCartao.trim().length > 0 &&
+    parseValorMonetario(limiteCartao) > 0 &&
+    diaFechamentoNum >= 1 && diaFechamentoNum <= 28 &&
+    diaVencimentoNum >= 1 && diaVencimentoNum <= 28 &&
+    diaFechamentoNum !== diaVencimentoNum;
+
+  async function salvarNovoCartao() {
+    if (!cartaoValido) return;
+    setCriandoCartao(true);
+    setErro(null);
+    setSucesso(null);
+    try {
+      await criarCartao(nomeCartao.trim(), parseValorMonetario(limiteCartao), diaFechamentoNum, diaVencimentoNum);
+      setNomeCartao("");
+      setLimiteCartao("");
+      setDiaFechamento("");
+      setDiaVencimento("");
+      setMostrarNovoCartao(false);
+      await carregar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro ao criar o cartão.");
+    } finally {
+      setCriandoCartao(false);
     }
   }
 
@@ -152,15 +193,61 @@ export default function ContasScreen() {
             mensagem='Nenhuma conta ainda. Crie a primeira em "Nova conta".'
           />
         }
+        ListFooterComponent={
+          cartoes.length > 0 ? (
+            <View>
+              <Text style={estilos.tituloSecaoCartoes}>Cartões de crédito</Text>
+              {cartoes.map((cartao) => (
+                <Pressable
+                  key={cartao.id}
+                  onPress={() =>
+                    // navigator sem tipagem de rotas (mesmo caso do "Fixas as never"
+                    // em NovoLancamento) - aqui o cast é na função por causa dos params
+                    (navigation.navigate as (rota: string, params?: object) => void)(
+                      "Fatura",
+                      { cartaoId: cartao.id, nome: cartao.nome }
+                    )
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={`Ver fatura do cartão ${cartao.nome}`}
+                >
+                  <Card estiloExtra={estilos.cartaoCredito}>
+                    <View style={estilos.linhaCartao}>
+                      <View style={[estilos.iconeConta, { backgroundColor: cor.vermelhoSuave }]}>
+                        <Ionicons name="card-outline" size={18} color={cor.vermelho} />
+                      </View>
+                      <View style={estilos.infoCartao}>
+                        <Text style={estilos.nomeConta}>{cartao.nome}</Text>
+                        <Text style={estilos.detalheCartao}>
+                          Limite disponível: {formatarMoeda(cartao.limiteDisponivel)}
+                        </Text>
+                      </View>
+                      <View style={estilos.faturaCartao}>
+                        <Text style={estilos.detalheCartao}>Fatura atual</Text>
+                        <Text style={estilos.valorFaturaCartao}>{formatarMoeda(cartao.faturaAtual)}</Text>
+                      </View>
+                    </View>
+                  </Card>
+                </Pressable>
+              ))}
+            </View>
+          ) : null
+        }
         contentContainerStyle={estilos.listaConteudo}
       />
 
-      {!mostrarNovaConta && !mostrarTransferencia && (
+      {!mostrarNovaConta && !mostrarTransferencia && !mostrarNovoCartao && (
         <View style={estilos.linhaAcoes}>
           <Botao
             texto="+ Nova conta"
             variante="secundario"
             onPress={() => setMostrarNovaConta(true)}
+            estiloExtra={estilos.botaoAcao}
+          />
+          <Botao
+            texto="+ Novo cartão"
+            variante="secundario"
+            onPress={() => setMostrarNovoCartao(true)}
             estiloExtra={estilos.botaoAcao}
           />
           {saldos.length >= 2 && (
@@ -172,6 +259,46 @@ export default function ContasScreen() {
             />
           )}
         </View>
+      )}
+
+      {mostrarNovoCartao && (
+        <Card estiloExtra={estilos.formulario}>
+          <View style={estilos.cabecalhoFormulario}>
+            <Text style={estilos.rotuloFormulario}>Novo cartão de crédito</Text>
+            <Pressable
+              onPress={() => setMostrarNovoCartao(false)}
+              hitSlop={8}
+              accessibilityLabel="Fechar formulário de novo cartão"
+            >
+              <Ionicons name="close" size={20} color={cor.cinza500} />
+            </Pressable>
+          </View>
+          <Input placeholder="Nome (ex: Nubank, Inter)" value={nomeCartao} onChangeText={setNomeCartao} />
+          <Input
+            placeholder="Limite (ex: 2500,00)"
+            value={limiteCartao}
+            onChangeText={setLimiteCartao}
+            keyboardType="decimal-pad"
+          />
+          <Input
+            placeholder="Dia do fechamento (1-28)"
+            value={diaFechamento}
+            onChangeText={setDiaFechamento}
+            keyboardType="number-pad"
+            erro={
+              diaFechamento.length > 0 && diaFechamentoNum === diaVencimentoNum
+                ? "Fechamento e vencimento não podem ser no mesmo dia."
+                : undefined
+            }
+          />
+          <Input
+            placeholder="Dia do vencimento (1-28)"
+            value={diaVencimento}
+            onChangeText={setDiaVencimento}
+            keyboardType="number-pad"
+          />
+          <Botao texto="Criar cartão" onPress={salvarNovoCartao} disabled={!cartaoValido} carregando={criandoCartao} />
+        </Card>
       )}
 
       {mostrarNovaConta && (
@@ -296,6 +423,14 @@ function criarEstilos(cor: Cor) {
     },
     nomeConta: { flex: 1, fontSize: 15, color: cor.cinza900, fontWeight: "500" },
     saldoConta: { fontSize: 15, fontWeight: "600", color: cor.cinza900 },
+
+    tituloSecaoCartoes: { ...fonte.tituloCard, color: cor.cinza900, marginTop: espaco.lg, marginBottom: espaco.sm },
+    cartaoCredito: { marginBottom: espaco.sm },
+    linhaCartao: { flexDirection: "row", alignItems: "center", gap: espaco.md },
+    infoCartao: { flex: 1 },
+    detalheCartao: { fontSize: 12, color: cor.cinza500, marginTop: espaco.xs },
+    faturaCartao: { alignItems: "flex-end" },
+    valorFaturaCartao: { fontSize: 15, fontWeight: "600", color: cor.vermelho },
 
     linhaAcoes: { flexDirection: "row", gap: espaco.sm, marginTop: espaco.sm },
     botaoAcao: { flex: 1 },

@@ -24,6 +24,7 @@ import ConfiguracoesScreen from "./src/screens/ConfiguracoesScreen";
 import ContasScreen from "./src/screens/ContasScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import DesbloqueioPinScreen from "./src/screens/DesbloqueioPinScreen";
+import FaturaCartaoScreen from "./src/screens/FaturaCartaoScreen";
 import ImportarExtratoScreen from "./src/screens/ImportarExtratoScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import MoedasScreen from "./src/screens/MoedasScreen";
@@ -221,6 +222,9 @@ function DrawerPrincipal() {
           navigation.navigate("Fixas") a partir do link contextual em
           NovoLancamentoScreen. */}
       <Drawer.Screen name="Fixas" component={RecorrenciasScreen} />
+      {/* Mesmo padrão de "Fixas": não aparece na lista do DrawerContent -
+          só é alcançada tocando num cartão na tela de Contas. */}
+      <Drawer.Screen name="Fatura" component={FaturaCartaoScreen} />
       <Drawer.Screen name="Importar" component={ImportarExtratoScreen} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} />
       <Drawer.Screen name="Configurações" component={ConfiguracoesScreen} />
