@@ -50,6 +50,16 @@
   ativar PIN → toggle "Desbloquear com biometria" em Configurações >
   Segurança → fechar e reabrir o app → prompt biométrico abre sozinho;
   cancelar deve cair no PIN sem mensagem de erro.
+- [ ] **Cartão de crédito** (item 10 da Onda 3, `ITEM-CARTAO-CREDITO.md`,
+  completo mas nunca rodado contra um backend real): criar um cartão em
+  Contas (nome, limite, dia de fechamento, dia de vencimento) → lançar uma
+  compra parcelada em 3x no Novo Lançamento → abrir a fatura do cartão e
+  conferir que as 3 parcelas caem em competências (meses de fatura)
+  consecutivas, a 1ª na competência certa conforme o dia do fechamento →
+  fazer uma transferência da conta corrente pro cartão e conferir que o
+  limite disponível sobe (pagamento) sem mexer no total da fatura já
+  fechada → conferir que o cartão NÃO aparece na lista de saldos por conta
+  (só contas correntes aparecem lá).
 
 ## 4. Configurações rápidas na máquina local
 
