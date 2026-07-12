@@ -83,8 +83,12 @@ public class ApoioRepositoryTests : IClassFixture<PostgresFixture>
         var cooldown = await verificacao.ApoiosNotificados.SingleAsync(a => a.UsuarioId == usuario.Id);
         Assert.True(cooldown.UltimoEnvioEm > agora.AddMinutes(-1));
 
-        var outbox = await verificacao.OutboxMessages.SingleAsync();
-        Assert.Equal("ApoioSolicitadoEvent", outbox.Tipo);
+        // Filtrado pelo payload contendo o UsuarioId - o container Postgres é
+        // compartilhado por TODOS os testes desta classe (IClassFixture), então
+        // a tabela pode ter linhas de outros testes que também chamam
+        // RegistrarEnvioEEnfileirarAsync; sem o filtro, SingleAsync() quebra.
+        var outbox = await verificacao.OutboxMessages
+            .SingleAsync(o => o.Tipo == "ApoioSolicitadoEvent" && o.Payload.Contains(usuario.Id.ToString()));
         Assert.Null(outbox.ProcessadoEm);
     }
 
