@@ -1245,6 +1245,33 @@ fatura como qualquer compra).
 caminho (Conta → CompraParcelada → Lancamento) seria rejeitado pelo SQL
 Server ("multiple cascade paths") — pergunta clássica de entrevista.
 
+### Cartão de crédito, PR 2 — views SQL, endpoints e testes de integração
+
+A fatura vira consumível: `vw_FaturaPorCompetencia` (view nova — mais um
+requisito literal de SQL nativo da vaga) agrega por (conta, competência);
+receita **com** competência (estorno) abate a fatura, enquanto pagamento
+(transferência, sem competência) abate só o **saldo devedor total** — que é
+a base do limite disponível. `vw_SaldoPorConta` passa a excluir cartões:
+saldo de cartão não é dinheiro em caixa; a visão certa dele é
+fatura + limite, servida por `GET /cartoes` (resumo por cartão) e
+`GET /cartoes/{id}/fatura?competencia=yyyy-MM` (itens + total + vencimento).
+
+`POST /compras-parceladas` cria compra-mãe + N parcelas num único
+`SaveChanges`, publicando **UM** evento de outbox por compra (decisão de
+produto: a gamificação premia o ato de registrar — 12 parcelas não são 12
+registros). `DELETE /compras-parceladas/{id}` remove mãe + parcelas
+explicitamente (o FK é `NoAction` de propósito, ver PR 1). Transferência
+**a partir de** cartão passou a ser 400 — cartão não é fonte de dinheiro;
+transferência **pra** cartão é o pagamento de fatura. Validação condicional
+por tipo no `POST /contas` (Fluent Validation `When` — campos de cartão só
+obrigatórios quando `Tipo = Cartao`), com o domínio revalidando as
+invariantes: duas camadas de defesa, como no resto do projeto.
+
+Testes de integração (Testcontainers, SQL Server real): view da fatura
+agregando só a competência certa, pagamento abatendo o saldo devedor,
+cartão fora da `vw_SaldoPorConta`, parcelamento atômico com um único
+evento e exclusão completa.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

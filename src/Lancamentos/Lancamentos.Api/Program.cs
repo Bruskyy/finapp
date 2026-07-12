@@ -33,6 +33,8 @@ builder.Services.AddScoped<ILancamentoRepository, LancamentoRepository>();
 builder.Services.AddScoped<IContaRepository, ContaRepository>();
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
 builder.Services.AddScoped<IOrcamentoRepository, OrcamentoRepository>();
+builder.Services.AddScoped<ICartaoRepository, CartaoRepository>();
+builder.Services.AddScoped<ICompraParceladaRepository, CompraParceladaRepository>();
 builder.Services.AddScoped<IOrcamentoAlertaRepository, OrcamentoAlertaRepository>();
 builder.Services.AddScoped<OrcamentoAlertaService>();
 builder.Services.AddScoped<IRecorrenciaRepository, RecorrenciaRepository>();
@@ -101,6 +103,7 @@ builder.Services.AddSingleton<IValidator<AtualizarLancamentoRequest>, AtualizarL
 builder.Services.AddSingleton<IValidator<CriarCategoriaRequest>, CriarCategoriaRequestValidator>();
 builder.Services.AddSingleton<IValidator<DefinirOrcamentoRequest>, DefinirOrcamentoRequestValidator>();
 builder.Services.AddSingleton<IValidator<CriarContaRequest>, CriarContaRequestValidator>();
+builder.Services.AddSingleton<IValidator<CriarCompraParceladaRequest>, CriarCompraParceladaRequestValidator>();
 builder.Services.AddSingleton<IValidator<CriarRecorrenciaRequest>, CriarRecorrenciaRequestValidator>();
 builder.Services.AddSingleton<IValidator<CriarObjetivoRequest>, CriarObjetivoRequestValidator>();
 builder.Services.AddSingleton<IValidator<AporteRequest>, AporteRequestValidator>();
@@ -257,7 +260,7 @@ app.MapGet("/tags", async (ClaimsPrincipal principal, ITagRepository repo, Cance
 app.MapGet("/contas", async (ClaimsPrincipal principal, IContaRepository repo, CancellationToken ct) =>
 {
     var contas = await repo.ListarAsync(IdDoUsuario(principal), ct);
-    return Results.Ok(contas.Select(c => new ContaResponse(c.Id, c.Nome)));
+    return Results.Ok(contas.Select(ParaContaResponse));
 });
 
 app.MapPost("/contas", async (CriarContaRequest req, ClaimsPrincipal principal, IContaRepository repo, CancellationToken ct) =>
@@ -266,9 +269,13 @@ app.MapPost("/contas", async (CriarContaRequest req, ClaimsPrincipal principal, 
     if (await repo.ExisteComNomeAsync(req.Nome, usuarioId, ct))
         return Results.Conflict(new { erro = $"Conta '{req.Nome.Trim()}' já existe." });
 
-    var conta = new Conta(req.Nome, usuarioId);
+    // Campos de cartão validados pelo validator (condicional por tipo) e
+    // revalidados pelas invariantes da factory - duas camadas de defesa.
+    var conta = req.Tipo == TipoConta.Cartao
+        ? Conta.CriarCartao(req.Nome, req.Limite!.Value, req.DiaFechamento!.Value, req.DiaVencimento!.Value, usuarioId)
+        : new Conta(req.Nome, usuarioId);
     await repo.AdicionarAsync(conta, ct);
-    return Results.Created($"/contas/{conta.Id}", new ContaResponse(conta.Id, conta.Nome));
+    return Results.Created($"/contas/{conta.Id}", ParaContaResponse(conta));
 }).AddEndpointFilter<ValidationFilter<CriarContaRequest>>();
 
 // saldo por conta via view SQL nativa (vw_SaldoPorConta) — requisito de SQL da vaga
@@ -288,6 +295,11 @@ app.MapPost("/transferencias", async (TransferenciaRequest req, ClaimsPrincipal 
     if (origem is null || destino is null)
         return Results.BadRequest(new { erro = "Conta de origem ou destino não encontrada." });
 
+    // Cartão não é fonte de dinheiro: transferência PRA ele é pagamento de
+    // fatura (permitido); a partir dele, não faz sentido no modelo.
+    if (origem.EhCartao)
+        return Results.BadRequest(new { erro = "Cartão de crédito não pode ser origem de transferência." });
+
     var saida = new Lancamento($"Transferência para {destino.Nome}", req.Valor,
         TipoLancamento.Despesa, Categoria.TransferenciaId, origem.Id, DateTime.UtcNow, usuarioId);
     var entrada = new Lancamento($"Transferência de {origem.Nome}", req.Valor,
@@ -300,6 +312,93 @@ app.MapPost("/transferencias", async (TransferenciaRequest req, ClaimsPrincipal 
 
     return Results.Created("/transferencias", new TransferenciaResponse(saida.Id, entrada.Id));
 }).AddEndpointFilter<ValidationFilter<TransferenciaRequest>>();
+
+// ----- Cartão de crédito (fatura derivada por competência + parcelamento) -----
+
+// Resumo de todos os cartões do usuário: fatura da competência atual +
+// limite disponível (limite - saldo devedor total). Cartões ficam fora da
+// vw_SaldoPorConta de propósito - saldo de cartão não é dinheiro que se tem.
+app.MapGet("/cartoes", async (ClaimsPrincipal principal, IContaRepository contas, ICartaoRepository cartoes, CancellationToken ct) =>
+{
+    var usuarioId = IdDoUsuario(principal);
+    var lista = (await contas.ListarAsync(usuarioId, ct)).Where(c => c.EhCartao).ToList();
+
+    var respostas = new List<CartaoResumoResponse>(lista.Count);
+    foreach (var cartao in lista)
+    {
+        var competencia = cartao.CompetenciaPara(DateTime.Today)!.Value;
+        var resumo = await cartoes.ResumoFaturaAsync(cartao.Id, usuarioId, competencia, ct);
+        var saldoDevedor = await cartoes.SaldoDevedorAsync(cartao.Id, ct);
+        respostas.Add(new CartaoResumoResponse(
+            cartao.Id, cartao.Nome, cartao.Limite!.Value,
+            resumo?.TotalCompras ?? 0m,
+            cartao.Limite.Value - saldoDevedor,
+            competencia));
+    }
+
+    return Results.Ok(respostas);
+});
+
+app.MapGet("/cartoes/{id:guid}/fatura", async (Guid id, string? competencia, ClaimsPrincipal principal, IContaRepository contas, ICartaoRepository cartoes, CancellationToken ct) =>
+{
+    var usuarioId = IdDoUsuario(principal);
+    var cartao = await contas.ObterPorIdAsync(id, usuarioId, ct);
+    if (cartao is null)
+        return Results.NotFound();
+    if (!cartao.EhCartao)
+        return Results.BadRequest(new { erro = "Conta não é um cartão de crédito." });
+
+    // competência opcional no formato "2026-08"; sem ela, a fatura "atual"
+    // (a competência em que uma compra de hoje cairia)
+    DateTime mesFatura;
+    if (competencia is null)
+        mesFatura = cartao.CompetenciaPara(DateTime.Today)!.Value;
+    else if (DateTime.TryParseExact($"{competencia}-01", "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var parseada))
+        mesFatura = parseada;
+    else
+        return Results.BadRequest(new { erro = "Competência inválida - use o formato yyyy-MM." });
+
+    var itens = await cartoes.ItensFaturaAsync(cartao.Id, usuarioId, mesFatura, ct);
+    var resumo = await cartoes.ResumoFaturaAsync(cartao.Id, usuarioId, mesFatura, ct);
+    var saldoDevedor = await cartoes.SaldoDevedorAsync(cartao.Id, ct);
+
+    return Results.Ok(new FaturaResponse(
+        Competencia: mesFatura,
+        Vencimento: new DateTime(mesFatura.Year, mesFatura.Month, cartao.DiaVencimento!.Value),
+        Total: resumo?.TotalCompras ?? 0m,
+        Limite: cartao.Limite!.Value,
+        LimiteDisponivel: cartao.Limite.Value - saldoDevedor,
+        Itens: itens.Select(ParaResponse).ToList()));
+});
+
+app.MapPost("/compras-parceladas", async (CriarCompraParceladaRequest req, ClaimsPrincipal principal, IContaRepository contas, ICompraParceladaRepository compras, CancellationToken ct) =>
+{
+    var usuarioId = IdDoUsuario(principal);
+    var conta = await contas.ObterPorIdAsync(req.ContaId, usuarioId, ct);
+    if (conta is null)
+        return Results.BadRequest(new { erro = "Conta não encontrada." });
+    if (!conta.EhCartao)
+        return Results.BadRequest(new { erro = "Compra parcelada só existe em cartão de crédito." });
+
+    var compra = new CompraParcelada(req.Descricao, req.ValorTotal, req.NumeroParcelas, req.ContaId, req.CategoriaId, req.Data, usuarioId);
+    var parcelas = compra.GerarParcelas(conta);
+
+    // compra-mãe + N parcelas num único SaveChanges (transação local)
+    await compras.AdicionarComParcelasAsync(compra, parcelas, ct);
+
+    return Results.Created($"/compras-parceladas/{compra.Id}",
+        new CompraParceladaResponse(compra.Id, compra.Descricao, compra.ValorTotal, compra.NumeroParcelas, compra.CategoriaId, compra.ContaId, compra.DataCompra));
+}).AddEndpointFilter<ValidationFilter<CriarCompraParceladaRequest>>();
+
+app.MapDelete("/compras-parceladas/{id:guid}", async (Guid id, ClaimsPrincipal principal, ICompraParceladaRepository compras, CancellationToken ct) =>
+{
+    var compra = await compras.ObterPorIdAsync(id, IdDoUsuario(principal), ct);
+    if (compra is null)
+        return Results.NotFound();
+
+    await compras.RemoverComParcelasAsync(compra, ct);
+    return Results.NoContent();
+});
 
 // ----- Recorrências (contas fixas, estilo Mobills) -----
 
@@ -541,6 +640,9 @@ app.Run();
 static LancamentoResponse ParaResponse(Lancamento l) =>
     new(l.Id, l.Descricao, l.Valor, l.Tipo, l.CategoriaId, l.ContaId, l.Data, l.RecorrenciaId,
         l.Tags.Select(t => t.Nome).OrderBy(n => n).ToList());
+
+static ContaResponse ParaContaResponse(Conta c) =>
+    new(c.Id, c.Nome, c.Tipo, c.Limite, c.DiaFechamento, c.DiaVencimento);
 
 static RecorrenciaResponse ParaRecorrenciaResponse(LancamentoRecorrente r) =>
     new(r.Id, r.Descricao, r.Valor, r.Tipo, r.CategoriaId, r.ContaId, r.DiaDoMes, r.Ativa);
