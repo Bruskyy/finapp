@@ -60,6 +60,17 @@
   limite disponível sobe (pagamento) sem mexer no total da fatura já
   fechada → conferir que o cartão NÃO aparece na lista de saldos por conta
   (só contas correntes aparecem lá).
+- [ ] **Notificação de apoio** (Sprint 7, fecha o backlog do sprint):
+  validada só pelos testes de integração (Testcontainers) - nunca rodou
+  contra o RabbitMQ/push real. Pra testar de verdade: criar um usuário,
+  alterar `CriadoEm` pra 31+ dias atrás direto no Postgres (`UPDATE
+  "Usuarios" SET "CriadoEm" = ...`), rodar o `Usuarios.Api` com o
+  `ApoioWorker` ativo (timer de 12h - vale reduzir o intervalo
+  temporariamente pra testar sem esperar) e conferir que a notificação
+  chega em `Notificacoes.Api` (central in-app + push, se o device tiver
+  token registrado). Também dá pra checar direto no RabbitMQ Management
+  (localhost:15672) se a exchange `finapp.usuarios` e a fila
+  `notificacoes.apoio` foram criadas.
 
 ## 4. Configurações rápidas na máquina local
 
@@ -81,6 +92,18 @@
 - [ ] Política de privacidade publicada com a seção nova de notificações:
   https://finapp-tawny-nine.vercel.app/politica-privacidade.html
   (o ambiente remoto não conseguia acessar domínios vercel.app pra conferir).
+
+## 5.1 Produção (Render) — passo real, não só teste local
+
+- [ ] **`Usuarios.Api` no Render precisa ganhar as variáveis de ambiente do
+  RabbitMQ** (`RabbitMq__HostName`, `RabbitMq__Port`, `RabbitMq__UserName`,
+  `RabbitMq__Password`, `RabbitMq__VirtualHost`, `RabbitMq__UsarTls=true`)
+  — mesmas credenciais da CloudAMQP já usadas por `Gamificacao.Api` e
+  `Notificacoes.Api` (ver `DEPLOY-SECRETS.local.md`). Sem isso, o
+  `ApoioWorker`/`OutboxPublisherService` novos tentam conectar em
+  `localhost:5672` em produção e falham silenciosamente (logam warning e
+  ficam tentando reconectar - não derruba o serviço, mas o convite de
+  apoio nunca sai do outbox).
 
 ## 6. Play Store (Sprint 6 — inalterado, consolidado aqui)
 

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 
-namespace Notificacoes.Api.Mensageria;
+namespace Usuarios.Api.Mensageria;
 
 public class RabbitMqConnection : IAsyncDisposable
 {
@@ -18,8 +18,6 @@ public class RabbitMqConnection : IAsyncDisposable
     {
         var conexao = await ObterConexaoAsync(ct);
         var canal = await conexao.CreateChannelAsync(cancellationToken: ct);
-        await canal.ExchangeDeclareAsync(_options.ExchangeGamificacao, ExchangeType.Topic, durable: true, cancellationToken: ct);
-        await canal.ExchangeDeclareAsync(_options.ExchangeLancamentos, ExchangeType.Topic, durable: true, cancellationToken: ct);
         await canal.ExchangeDeclareAsync(_options.ExchangeUsuarios, ExchangeType.Topic, durable: true, cancellationToken: ct);
         return canal;
     }

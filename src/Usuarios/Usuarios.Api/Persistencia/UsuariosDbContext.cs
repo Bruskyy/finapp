@@ -9,6 +9,8 @@ public class UsuariosDbContext : DbContext
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ApoioNotificado> ApoiosNotificados => Set<ApoioNotificado>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +34,18 @@ public class UsuariosDbContext : DbContext
             e.Property(x => x.TokenHash).HasMaxLength(64).IsRequired(); // SHA-256 em hex = 64 chars
             e.HasIndex(x => x.TokenHash).IsUnique();
             e.HasIndex(x => x.UsuarioId); // suporta "sair de todos os dispositivos"
+        });
+
+        modelBuilder.Entity<ApoioNotificado>(e =>
+        {
+            e.ToTable("ApoiosNotificados");
+            e.HasKey(x => x.UsuarioId); // upsert por usuário, não histórico
+        });
+
+        modelBuilder.Entity<OutboxMessage>(e =>
+        {
+            e.ToTable("OutboxMessages");
+            e.HasKey(x => x.Id);
         });
     }
 }

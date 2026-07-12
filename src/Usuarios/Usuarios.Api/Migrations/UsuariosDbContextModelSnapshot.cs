@@ -22,6 +22,19 @@ namespace Usuarios.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Usuarios.Api.Dominio.ApoioNotificado", b =>
+                {
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UltimoEnvioEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UsuarioId");
+
+                    b.ToTable("ApoiosNotificados", (string)null);
+                });
+
             modelBuilder.Entity("Usuarios.Api.Dominio.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -108,6 +121,31 @@ namespace Usuarios.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Usuarios", (string)null);
+                });
+
+            modelBuilder.Entity("Usuarios.Api.Persistencia.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ProcessadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OutboxMessages", (string)null);
                 });
 #pragma warning restore 612, 618
         }
