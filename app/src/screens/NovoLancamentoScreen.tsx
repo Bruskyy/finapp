@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { criarLancamento, criarRecorrencia, listarCategorias, listarContas, obterSequencia } from "../api/client";
+import { criarCompraParcelada, criarLancamento, criarRecorrencia, listarCategorias, listarContas, obterSequencia } from "../api/client";
 import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import Chip from "../componentes/Chip";
@@ -10,7 +10,7 @@ import Input from "../componentes/Input";
 import { agoraLocalIso } from "../constants";
 import { Cor, espaco, fonte, iconeDaCategoria, parseValorMonetario, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
-import { Categoria, Conta, TipoLancamento } from "../types";
+import { Categoria, Conta, TipoConta, TipoLancamento } from "../types";
 
 export default function NovoLancamentoScreen() {
   const { cor, tema } = useTema();
@@ -26,6 +26,7 @@ export default function NovoLancamentoScreen() {
   const [tags, setTags] = useState("");
   const [fixa, setFixa] = useState(false);
   const [diaDoMes, setDiaDoMes] = useState("");
+  const [parcelas, setParcelas] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<{ texto: string; erro: boolean } | null>(null);
 
@@ -47,12 +48,18 @@ export default function NovoLancamentoScreen() {
   );
 
   const dia = Number(diaDoMes);
+  // Parcelamento só existe em cartão + despesa + não-fixa (ITEM-CARTAO-CREDITO.md, PR 3).
+  const contaSelecionada = contas.find((c) => c.id === contaId);
+  const ehCartao = contaSelecionada?.tipo === TipoConta.Cartao;
+  const numeroParcelas = parcelas.trim() === "" ? 1 : Number(parcelas);
+  const mostrarParcelas = ehCartao && !fixa && tipo === TipoLancamento.Despesa;
   const valido =
     descricao.trim().length > 0 &&
     parseValorMonetario(valor) > 0 &&
     categoriaId !== null &&
     contaId !== null &&
-    (!fixa || (dia >= 1 && dia <= 31));
+    (!fixa || (dia >= 1 && dia <= 31)) &&
+    (!mostrarParcelas || (Number.isInteger(numeroParcelas) && numeroParcelas >= 1 && numeroParcelas <= 48));
 
   async function salvar() {
     if (!valido || categoriaId === null || contaId === null) return;
@@ -70,6 +77,21 @@ export default function NovoLancamentoScreen() {
           diaDoMes: dia,
         });
         setMensagem({ texto: "Conta fixa criada! Ela será lançada automaticamente todo mês.", erro: false });
+      } else if (mostrarParcelas && numeroParcelas >= 2) {
+        // Compra parcelada: a mãe + N parcelas nascem juntas no backend
+        // (transação única), cada parcela na sua competência de fatura.
+        await criarCompraParcelada({
+          descricao: descricao.trim(),
+          valorTotal: parseValorMonetario(valor),
+          numeroParcelas,
+          categoriaId,
+          contaId,
+          data: agoraLocalIso(),
+        });
+        setMensagem({
+          texto: `Compra parcelada registrada! ${numeroParcelas} parcelas distribuídas nas próximas faturas.`,
+          erro: false,
+        });
       } else {
         const listaTags = tags
           .split(",")
@@ -110,6 +132,7 @@ export default function NovoLancamentoScreen() {
       setValor("");
       setTags("");
       setDiaDoMes("");
+      setParcelas("");
       setFixa(false);
     } catch (e) {
       setMensagem({
@@ -187,6 +210,15 @@ export default function NovoLancamentoScreen() {
           value={tags}
           onChangeText={setTags}
           autoCapitalize="none"
+        />
+      )}
+
+      {mostrarParcelas && (
+        <Input
+          placeholder="Parcelas (opcional: 2 a 48; vazio = à vista)"
+          value={parcelas}
+          onChangeText={setParcelas}
+          keyboardType="number-pad"
         />
       )}
 

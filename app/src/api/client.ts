@@ -1,9 +1,11 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import {
+  CartaoResumo,
   Categoria,
   Conquista,
   Conta,
+  Fatura,
   CriarLancamentoRequest,
   EvolucaoMensalPonto,
   GastoPorCategoria,
@@ -23,6 +25,7 @@ import {
   Resgate,
   SaldoPorConta,
   Sequencia,
+  TipoConta,
   TipoLancamento,
   TokenResponse,
   Usuario,
@@ -278,6 +281,41 @@ export function listarSaldosPorConta(): Promise<SaldoPorConta[]> {
 
 export function criarConta(nome: string): Promise<Conta> {
   return requisitar("/api/contas", { method: "POST", body: JSON.stringify({ nome }) });
+}
+
+// ----- Cartão de crédito (ITEM-CARTAO-CREDITO.md, PR 3) -----
+
+export function criarCartao(
+  nome: string,
+  limite: number,
+  diaFechamento: number,
+  diaVencimento: number
+): Promise<Conta> {
+  return requisitar("/api/contas", {
+    method: "POST",
+    body: JSON.stringify({ nome, tipo: TipoConta.Cartao, limite, diaFechamento, diaVencimento }),
+  });
+}
+
+export function listarCartoes(): Promise<CartaoResumo[]> {
+  return requisitar("/api/cartoes");
+}
+
+/** competencia no formato "2026-08"; sem ela, a fatura atual. */
+export function obterFatura(cartaoId: string, competencia?: string): Promise<Fatura> {
+  const sufixo = competencia ? `?competencia=${competencia}` : "";
+  return requisitar(`/api/cartoes/${cartaoId}/fatura${sufixo}`);
+}
+
+export function criarCompraParcelada(dto: {
+  descricao: string;
+  valorTotal: number;
+  numeroParcelas: number;
+  categoriaId: string;
+  contaId: string;
+  data: string;
+}): Promise<void> {
+  return requisitar("/api/compras-parceladas", { method: "POST", body: JSON.stringify(dto) });
 }
 
 export function transferir(contaOrigemId: string, contaDestinoId: string, valor: number): Promise<void> {

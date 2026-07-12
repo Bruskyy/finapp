@@ -1272,6 +1272,20 @@ agregando só a competência certa, pagamento abatendo o saldo devedor,
 cartão fora da `vw_SaldoPorConta`, parcelamento atômico com um único
 evento e exclusão completa.
 
+### Cartão de crédito, PR 3 — app (fecha o item 10 da Onda 3)
+
+A tela de Contas ganha a seção "Cartões de crédito" (`GET /cartoes`: fatura
+atual + limite disponível por cartão, cada um levando à fatura) e o
+formulário "+ Novo cartão" (nome, limite, dias de fechamento/vencimento
+1-28 — validação espelhada da do backend). `FaturaCartaoScreen` (rota
+oculta do drawer, mesmo padrão de "Fixas") navega **por competência** com
+as setas do padrão de Transações — a diferença conceitual fica explícita
+na tela: o eixo é o mês da FATURA, não a data de caixa. No Novo
+Lançamento, o campo "Parcelas" só aparece com cartão selecionado + despesa
++ não-fixa; 2 ou mais parcelas chamam `POST /compras-parceladas` (vazio =
+à vista, lançamento normal). Fecha o item 10 da Onda 3 — cartão de
+crédito completo de ponta a ponta (domínio → SQL → API → app).
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

@@ -41,9 +41,36 @@ export interface Tag {
   nome: string;
 }
 
+export enum TipoConta {
+  Corrente = 1,
+  Cartao = 2,
+}
+
 export interface Conta {
   id: string;
   nome: string;
+  tipo: TipoConta;
+  limite: number | null;
+  diaFechamento: number | null;
+  diaVencimento: number | null;
+}
+
+export interface CartaoResumo {
+  id: string;
+  nome: string;
+  limite: number;
+  faturaAtual: number;
+  limiteDisponivel: number;
+  competenciaAtual: string;
+}
+
+export interface Fatura {
+  competencia: string;
+  vencimento: string;
+  total: number;
+  limite: number;
+  limiteDisponivel: number;
+  itens: Lancamento[];
 }
 
 export interface SaldoPorConta {
