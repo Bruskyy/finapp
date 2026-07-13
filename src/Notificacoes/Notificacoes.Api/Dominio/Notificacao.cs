@@ -9,6 +9,7 @@ public enum TipoNotificacao
     ResumoSemanal = 5,
     OrcamentoEstourado = 6,
     RecorrenciaAVencer = 7,
+    ApoioSolicitado = 8,
 }
 
 public class Notificacao

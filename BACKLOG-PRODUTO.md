@@ -405,11 +405,11 @@ conversa de posicionamento antes de ser uma de arquitetura.
 
 ### Sprint 7 — Apoie o Cofrin (monetização por doação voluntária, pós-1.0)
 
-**Status (2026-07-10): frontend do cartão feito, 2 pendências reais em aberto** —
-ver "Cartão Apoie o Cofrin" no README pro detalhe do que foi implementado
-e do que falta (link real de doação, a cargo do Vitor; notificação de
-apoio via backend, não implementada nesta rodada por exigir Docker/dotnet
-rodando).
+**Status (2026-07-12): Sprint 7 completo no código** — cartão "Apoie o
+Cofrin" (frontend) e notificação de apoio (backend, `ApoioWorker` em
+`Usuarios.Api`) implementados; ver "Notificação de apoio" no README pro
+detalhe. Única pendência real: o link de doação em si
+(`URL_APOIO_COFRIN`), a cargo do Vitor.
 
 Decisão de 2026-07-10, depois de um diálogo trazido pelo Vitor propondo
 estratégia de monetização sem anúncio obrigatório. Investigado antes de

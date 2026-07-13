@@ -23,6 +23,7 @@ builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddSingleton<INotificacaoProvider, NotificacaoProviderSimulado>();
 builder.Services.AddHostedService<ResgateSolicitadoConsumerService>();
 builder.Services.AddHostedService<LancamentoCriadoConsumerService>();
+builder.Services.AddHostedService<ApoioSolicitadoConsumerService>();
 
 // Push real (Roadmap 1.0, Sprint 5) - AddHttpClient dá o HttpClient pooled
 // (IHttpClientFactory) que ProvedorPushExpo usa pra falar com a Expo Push API.

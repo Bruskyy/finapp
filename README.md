@@ -1286,6 +1286,30 @@ Lançamento, o campo "Parcelas" só aparece com cartão selecionado + despesa
 à vista, lançamento normal). Fecha o item 10 da Onda 3 — cartão de
 crédito completo de ponta a ponta (domínio → SQL → API → app).
 
+### Notificação de apoio — fecha o Sprint 7 (BACKLOG-PRODUTO.md)
+
+Convite de apoio extremamente espaçado: primeira vez aos 30 dias de conta
+criada, depois só a cada ~3 meses se ignorado — nunca semanal/mensal.
+`ApoioWorker` (novo `BackgroundService` em `Usuarios.Api`, timer de 12h,
+mesmo padrão do `ResumoSemanalWorker` de Lançamentos) consulta usuários
+elegíveis (`CriadoEm` além do limite E nunca notificado ou cooldown
+vencido) e grava o cooldown (`ApoiosNotificados`, upsert por usuário, não
+histórico) + o comando de publicar no **mesmo `SaveChanges`** — atômico.
+
+**Primeira vez que `Usuarios.Api` publica um evento** (até aqui só
+consumia via JWT/Gateway): outbox própria (`OutboxMessage` +
+`OutboxPublisherService`, cópia local do padrão já usado em Lançamentos e
+Gamificação — `BuildingBlocks.Contracts` continua só com os records de
+evento, nunca lógica) publicando `ApoioSolicitadoEvent` na exchange nova
+`finapp.usuarios`. `Notificacoes.Api` ganha um consumidor dedicado
+(`ApoioSolicitadoConsumerService`, fila própria, idempotência pela mesma
+constraint única de `EventId`) que gera a notificação e reaproveita o
+`NotificacaoPushService` do Sprint 5 — nenhuma peça nova de push.
+
+Testes de integração (Testcontainers/Postgres) cobrem as quatro regras de
+elegibilidade: conta nova demais, primeiro envio aos 30 dias, dentro do
+cooldown, e cooldown vencido.
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

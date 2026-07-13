@@ -1,4 +1,4 @@
-namespace Notificacoes.Api.Mensageria;
+namespace Usuarios.Api.Mensageria;
 
 public class RabbitMqOptions
 {
@@ -14,9 +14,7 @@ public class RabbitMqOptions
     public string VirtualHost { get; set; } = "/";
     // Broker local (Docker Compose) não usa TLS; provedores gerenciados exigem.
     public bool UsarTls { get; set; } = false;
-    public string ExchangeGamificacao { get; set; } = "finapp.gamificacao";
-    public string ExchangeLancamentos { get; set; } = "finapp.lancamentos";
 
-    /// <summary>Exchange de Usuarios.Api - primeira vez que esse serviço publica (convite de apoio, Sprint 7).</summary>
+    /// <summary>Exchange própria de Usuarios.Api - primeira vez que este serviço publica (antes só consumia).</summary>
     public string ExchangeUsuarios { get; set; } = "finapp.usuarios";
 }

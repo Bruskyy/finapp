@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Usuarios.Api.Aplicacao;
 using Usuarios.Api.Contratos;
 using Usuarios.Api.Dominio;
+using Usuarios.Api.Mensageria;
 using Usuarios.Api.Persistencia;
 using Usuarios.Api.Validacao;
 
@@ -25,6 +26,14 @@ builder.Services.AddSingleton<JwtTokenGenerator>();
 builder.Services.AddSingleton<IGoogleIdTokenValidator, GoogleIdTokenValidator>();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<AuthService>();
+
+// Convite de apoio (BACKLOG-PRODUTO.md, Sprint 7) - primeira vez que
+// Usuarios.Api publica evento (antes só consumia via Gateway/JWT).
+builder.Services.AddScoped<IApoioRepository, ApoioRepository>();
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+builder.Services.AddSingleton<RabbitMqConnection>();
+builder.Services.AddHostedService<ApoioWorker>();
+builder.Services.AddHostedService<OutboxPublisherService>();
 
 // Validators são stateless — singleton evita recriar a cada request.
 builder.Services.AddSingleton<IValidator<RegistrarRequest>, RegistrarRequestValidator>();
