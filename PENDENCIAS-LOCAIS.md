@@ -104,14 +104,12 @@
 
 ## 4. Configurações rápidas na máquina local
 
-- [ ] **Hook do git**: em `~/.claude/stop-hook-git-check.sh`, trocar a linha
-  do `unverifiable=` por:
-  ```bash
-  unverifiable=$(git log --format='%h %G? %ce' "$upstream..HEAD" 2>/dev/null | awk '$3 == "noreply@github.com" {next} $2 == "N" || $3 != "noreply@anthropic.com"')
-  ```
-  (ignora merge commits criados pelo próprio GitHub — falso positivo que
-  reaparece a cada merge de PR via API; o ambiente remoto não tinha
-  permissão pra editar o arquivo).
+- [x] **Hook do git — não aplicável nesta máquina.** Conferido em
+  14/07/2026: `~/.claude/stop-hook-git-check.sh` não existe na máquina
+  local do Vitor, nem há hook `Stop` configurado em nenhum `settings.json`
+  (global ou do projeto). O item provavelmente se referia a uma
+  configuração específica do ambiente da sessão remota, não a algo já
+  existente aqui. Nada a ajustar.
 - [x] **Link de doação**: `URL_APOIO_COFRIN` preenchido em 14/07/2026 com
   https://apoia.se/cofrin — botão "Apoiar o Cofrin" já habilitado em
   Configurações.
