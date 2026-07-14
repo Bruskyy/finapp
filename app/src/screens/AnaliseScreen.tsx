@@ -2,12 +2,14 @@ import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { listarLancamentos, obterEvolucaoMensal } from "../api/client";
+import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
 import GraficoBarrasPeriodo, { PontoPeriodo } from "../componentes/GraficoBarrasPeriodo";
-import { fimDoDia, inicioDoDia } from "../constants";
+import { fimDoDia, fimDoMes, inicioDoDia, inicioDoMes } from "../constants";
 import { Cor, espaco, fonte, formatarMoeda, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
 import { TipoLancamento } from "../types";
+import { exportarRelatorio } from "../utils/exportarRelatorio";
 
 const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const TAKE_ANALISE = 1000;
@@ -113,6 +115,25 @@ const CARREGADORES: Record<Segmento, () => Promise<PontoPeriodo[]>> = {
   ano: carregarAnual,
 };
 
+/** Mesma janela de datas usada por cada CARREGADOR (ver acima), só que como
+ * inicio/fim explícitos - é o que GET /relatorios/exportar/* espera. Mês e
+ * ano usam GET /relatorios/evolucao-mensal (parâmetro `meses`, sem
+ * inicio/fim) pro gráfico, então a janela aqui é equivalente, não idêntica
+ * por construção. */
+function janelaDeExportacao(seg: Segmento): { inicio: string; fim: string } {
+  const hoje = diaLocal(new Date());
+
+  if (seg === "dia") return { inicio: inicioDoDia(diaLocal(hoje, -13)), fim: fimDoDia(hoje) };
+
+  if (seg === "semana") {
+    const domingoAtual = diaLocal(hoje, -hoje.getDay());
+    return { inicio: inicioDoDia(diaLocal(domingoAtual, -7 * 7)), fim: fimDoDia(hoje) };
+  }
+
+  const mesesAtras = seg === "mes" ? 11 : 23;
+  return { inicio: inicioDoMes(new Date(hoje.getFullYear(), hoje.getMonth() - mesesAtras, 1)), fim: fimDoMes(hoje) };
+}
+
 /**
  * Tela de Análise (REFATORACAO-UI.md, Fase 5): segmented Dia/Semana/Mês/Ano
  * com gráfico de receita x despesa por período, complementar ao
@@ -129,6 +150,23 @@ export default function AnaliseScreen() {
   const [pontos, setPontos] = useState<PontoPeriodo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [exportando, setExportando] = useState<"pdf" | "excel" | null>(null);
+
+  const exportar = useCallback(
+    async (formato: "pdf" | "excel") => {
+      setErro(null);
+      setExportando(formato);
+      try {
+        const { inicio, fim } = janelaDeExportacao(segmento);
+        await exportarRelatorio(formato, inicio, fim);
+      } catch (e) {
+        setErro(e instanceof Error ? e.message : "Erro ao exportar o relatório.");
+      } finally {
+        setExportando(null);
+      }
+    },
+    [segmento]
+  );
 
   const carregar = useCallback(async (seg: Segmento) => {
     setErro(null);
@@ -202,6 +240,29 @@ export default function AnaliseScreen() {
           <Text style={estilos.semDados}>Sem lançamentos neste período.</Text>
         )}
       </Card>
+
+      <Card estiloExtra={estilos.cartaoExportacao}>
+        <Text style={estilos.tituloExportacao}>Exportar relatório</Text>
+        <Text style={estilos.subtituloExportacao}>Mesmo período do gráfico acima, em PDF ou Excel.</Text>
+        <View style={estilos.linhaExportacao}>
+          <Botao
+            texto="PDF"
+            variante="secundario"
+            carregando={exportando === "pdf"}
+            disabled={exportando !== null && exportando !== "pdf"}
+            onPress={() => exportar("pdf")}
+            estiloExtra={estilos.botaoExportacao}
+          />
+          <Botao
+            texto="Excel"
+            variante="secundario"
+            carregando={exportando === "excel"}
+            disabled={exportando !== null && exportando !== "excel"}
+            onPress={() => exportar("excel")}
+            estiloExtra={estilos.botaoExportacao}
+          />
+        </View>
+      </Card>
     </ScrollView>
   );
 }
@@ -233,5 +294,11 @@ function criarEstilos(cor: Cor) {
     resumoRotulo: { fontSize: 12, color: cor.cinza500 },
     resumoValor: { fontSize: 18, fontWeight: "700", marginTop: espaco.xs },
     semDados: { fontSize: 14, color: cor.cinza500, textAlign: "center", paddingVertical: espaco.xl },
+
+    cartaoExportacao: { marginBottom: espaco.xl },
+    tituloExportacao: { fontSize: 15, fontWeight: "700", color: cor.cinza900 },
+    subtituloExportacao: { fontSize: 13, color: cor.cinza500, marginTop: espaco.xs, marginBottom: espaco.md },
+    linhaExportacao: { flexDirection: "row", gap: espaco.sm },
+    botaoExportacao: { flex: 1 },
   });
 }
