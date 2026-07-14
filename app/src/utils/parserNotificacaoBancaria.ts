@@ -124,6 +124,14 @@ export function parseNotificacaoBancaria(notificacao: NotificacaoBruta): CompraD
     .filter(Boolean)
     .join(" ");
 
+  // Nunca vira compra se o texto indicar recusa/cancelamento/estorno - checado
+  // ANTES de tentar qualquer padrão (não só o fallback). A maioria das
+  // estratégias por banco já exige a palavra "aprovada", que naturalmente
+  // filtra isso, mas PicPay e Mercado Pago não exigem - sem este corte no
+  // topo, um "Pagamento de R$ 35,50 para X foi recusado" casava normalmente
+  // e virava despesa falsa na fila.
+  if (/recusad|negad|cancelad|estornad/i.test(textoCompleto)) return null;
+
   const estrategia = ESTRATEGIAS.find((e) => e.packages.includes(notificacao.packageName));
 
   if (estrategia) {
@@ -134,10 +142,8 @@ export function parseNotificacaoBancaria(notificacao: NotificacaoBruta): CompraD
   }
 
   // Fallback: só pra packages conhecidos (não transformar qualquer app com
-  // "R$ X em Y" no texto em compra), só quando o texto menciona compra e
-  // nunca quando é compra recusada/cancelada/estornada - esses avisos têm o
-  // mesmo formato "R$ X em Y" e virariam despesa falsa na fila.
-  if (estrategia && /compra/i.test(textoCompleto) && !/recusad|negad|cancelad|estornad/i.test(textoCompleto)) {
+  // "R$ X em Y" no texto em compra), só quando o texto menciona compra.
+  if (estrategia && /compra/i.test(textoCompleto)) {
     const resultado = PADRAO_GENERICO.exec(textoCompleto);
     if (resultado) return montarCompra(notificacao, estrategia.nome, resultado[1], resultado[2]);
   }

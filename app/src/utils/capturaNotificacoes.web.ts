@@ -12,6 +12,8 @@ export function capturaPermitida(): boolean {
 
 export function abrirConfiguracoesDeAcesso(): void {}
 
-export function iniciarCaptura(): void {}
+export function iniciarCaptura(): Promise<void> {
+  return Promise.resolve();
+}
 
 export function pararCaptura(): void {}

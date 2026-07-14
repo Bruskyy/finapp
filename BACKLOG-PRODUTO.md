@@ -451,12 +451,14 @@ ou SDK de anúncio no projeto** — é tudo greenfield. Escopo decidido via
 
 ### Captura de compras via notificações (pedido do Vitor, 07/2026)
 
-Fase 1 implementada — ver `ITEM-CAPTURA-NOTIFICACOES.md` (viabilidade,
-arquitetura, limitações) e README. Fases 2 (fila nativa persistente) e 3
-(auto-confirmação por regra) ficam aqui como backlog. Pendente do Vitor:
-testar num build EAS real, calibrar os regexes com notificações reais dos
-bancos que usa, e atualizar a política de privacidade antes de liberar em
-produção.
+Fases 1 e 2 implementadas — ver `ITEM-CAPTURA-NOTIFICACOES.md` (viabilidade,
+arquitetura, limitações) e README. Fase 3 (auto-confirmação por regra) fica
+como backlog futuro. Pendente do Vitor: validar em device real que o
+serviço nativo liga de verdade (`PENDENCIAS-LOCAIS.md`, item 0 — risco
+identificado na revisão de 14/07: `android:exported="false"` pode impedir
+o Android de bindar o listener), calibrar os regexes com notificações
+reais dos bancos que usa, e conferir a política de privacidade já
+atualizada com a seção de disclosure antes de liberar em produção.
 
 ### Depois do 1.0 (nada disso se perde)
 - **Escritório virtual/coleções (item 7)** — com feedback de usuários

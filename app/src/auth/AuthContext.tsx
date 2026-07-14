@@ -10,6 +10,7 @@ import {
   registrar as apiRegistrar,
 } from "../api/client";
 import { Usuario } from "../types";
+import { removerPin } from "../utils/armazenamentoPin";
 import { ativarPush, desativarPush } from "../utils/pushNotifications";
 import { obterPreferencias } from "../utils/preferencias";
 import {
@@ -41,7 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
 
   async function limparSessao() {
-    await Promise.all([removerToken(), removerRefreshToken()]);
+    // removerPin() aqui (não só em logout()) cobre TODO caminho de volta pra
+    // "não-autenticado" - inclui logout forçado por refresh token
+    // expirado/revogado e falha ao restaurar sessão no boot, não só o botão
+    // "Sair". Sem isso, o PIN de segurança (local ao device, não ao
+    // usuário) sobrevivia à troca de conta: usuário A ativava PIN, saía,
+    // usuário B logava com a própria conta nesse mesmo aparelho e herdava
+    // o gate de PIN de A, sem saber a senha - só destravava via "Esqueci
+    // meu PIN", que força um logout que B nem pediu.
+    await Promise.all([removerToken(), removerRefreshToken(), removerPin()]);
     definirToken(null);
     definirRefreshToken(null);
     setUsuario(null);

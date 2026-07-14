@@ -1,3 +1,4 @@
+using System.Globalization;
 using Lancamentos.Application.Relatorios;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -11,6 +12,11 @@ namespace Lancamentos.Infrastructure.Relatorios;
 /// </summary>
 public class ExportadorRelatorioPdfQuestPdf : IExportadorRelatorioPdf
 {
+    // ToString("C") sozinho usa a cultura do THREAD/processo, não fixa - em
+    // produção (Render, Linux, container sem locale pt-BR garantido) isso
+    // arrisca sair "$"/"¤" em vez de "R$" no PDF. Cultura explícita, sempre.
+    private static readonly CultureInfo CulturaPtBr = CultureInfo.GetCultureInfo("pt-BR");
+
     public byte[] Gerar(RelatorioExportacao relatorio)
     {
         var documento = Document.Create(container =>
@@ -29,7 +35,7 @@ public class ExportadorRelatorioPdfQuestPdf : IExportadorRelatorioPdf
                 {
                     coluna.Spacing(12);
 
-                    coluna.Item().Text($"Saldo do período: {relatorio.SaldoPeriodo:C}").FontSize(12).SemiBold();
+                    coluna.Item().Text($"Saldo do período: {relatorio.SaldoPeriodo.ToString("C", CulturaPtBr)}").FontSize(12).SemiBold();
 
                     coluna.Item().Text("Gastos por categoria").SemiBold().FontSize(11);
                     coluna.Item().Table(tabela =>
@@ -47,7 +53,7 @@ public class ExportadorRelatorioPdfQuestPdf : IExportadorRelatorioPdf
                         foreach (var gasto in relatorio.GastosPorCategoria)
                         {
                             tabela.Cell().Text(gasto.Categoria);
-                            tabela.Cell().AlignRight().Text(gasto.Total.ToString("C"));
+                            tabela.Cell().AlignRight().Text(gasto.Total.ToString("C", CulturaPtBr));
                         }
                     });
 
@@ -79,7 +85,7 @@ public class ExportadorRelatorioPdfQuestPdf : IExportadorRelatorioPdf
                             tabela.Cell().Text(linha.Categoria);
                             tabela.Cell().Text(linha.Conta);
                             tabela.Cell().Text(linha.Tipo);
-                            tabela.Cell().AlignRight().Text(linha.Valor.ToString("C"));
+                            tabela.Cell().AlignRight().Text(linha.Valor.ToString("C", CulturaPtBr));
                         }
                     });
                 });

@@ -68,16 +68,23 @@ let assinatura: { remove(): void } | null = null;
 
 /** Liga a captura (idempotente): configura a allowlist do serviço, drena o
  * que acumulou com o app fechado e fica ouvindo novos avisos. Nada vira
- * lançamento sem confirmação na tela "Compras detectadas". */
-export function iniciarCaptura(): void {
+ * lançamento sem confirmação na tela "Compras detectadas".
+ *
+ * Devolve uma Promise que só resolve depois da drenagem inicial - a tela
+ * "Compras detectadas" precisa aguardar isto antes de ler a fila local,
+ * senão compras acumuladas com o app fechado podem não aparecer na
+ * primeira renderização (a escrita na fila e a leitura corriam sem ordem
+ * garantida). Chamadas subsequentes (já com assinatura ativa) resolvem na
+ * hora - a drenagem contínua já é coberta pelo listener. */
+export function iniciarCaptura(): Promise<void> {
   const nativo = obterModulo();
-  if (!nativo || assinatura) return;
+  if (!nativo || assinatura) return Promise.resolve();
 
   nativo.setAllowedPackages(PACKAGES_SUPORTADOS);
   assinatura = nativo.addListener("onFilaAtualizada", () => {
     drenarFilaNativa(nativo);
   });
-  drenarFilaNativa(nativo);
+  return drenarFilaNativa(nativo);
 }
 
 export function pararCaptura(): void {
