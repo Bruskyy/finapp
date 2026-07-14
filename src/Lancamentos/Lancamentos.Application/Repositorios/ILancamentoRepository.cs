@@ -21,4 +21,11 @@ public interface ILancamentoRepository
 
     /// <summary>UsuarioId distintos com pelo menos um lançamento na janela — usado pelo ResumoSemanalWorker.</summary>
     Task<IReadOnlyList<Guid>> ListarUsuariosComLancamentoAsync(DateTime inicio, DateTime fim, CancellationToken ct);
+
+    /// <summary>
+    /// Todos os lançamentos do período, sem paginação (ao contrário de
+    /// ListarAsync/FiltroLancamentos.TakeMaximo) — uso exclusivo da
+    /// exportação de relatórios, que precisa do período inteiro num arquivo só.
+    /// </summary>
+    Task<IReadOnlyList<Lancamento>> ListarParaExportacaoAsync(DateTime inicio, DateTime fim, Guid usuarioId, CancellationToken ct);
 }

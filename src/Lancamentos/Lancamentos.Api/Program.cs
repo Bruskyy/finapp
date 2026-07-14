@@ -23,6 +23,9 @@ using Lancamentos.Application.Relatorios;
 using Lancamentos.Infrastructure.Mensageria;
 using Lancamentos.Infrastructure.Recorrencias;
 using Lancamentos.Infrastructure.Relatorios;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +45,9 @@ builder.Services.AddScoped<IObjetivoRepository, ObjetivoRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddHostedService<RecorrenciaWorker>();
 builder.Services.AddScoped<IRelatorioRepository, RelatorioRepository>();
+builder.Services.AddScoped<RelatorioExportacaoService>();
+builder.Services.AddScoped<IExportadorRelatorioPdf, ExportadorRelatorioPdfQuestPdf>();
+builder.Services.AddScoped<IExportadorRelatorioExcel, ExportadorRelatorioExcelClosedXml>();
 builder.Services.AddScoped<IResumoSemanalRepository, ResumoSemanalRepository>();
 builder.Services.AddHostedService<ResumoSemanalWorker>();
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
@@ -614,6 +620,26 @@ app.MapGet("/relatorios/evolucao-mensal", async (int? meses, ClaimsPrincipal pri
 
 app.MapGet("/relatorios/marcos", async (ClaimsPrincipal principal, IRelatorioRepository repo, CancellationToken ct) =>
     Results.Ok(await repo.MarcosAsync(IdDoUsuario(principal), ct)));
+
+app.MapGet("/relatorios/exportar/pdf", async (
+    DateTime inicio, DateTime fim, ClaimsPrincipal principal,
+    RelatorioExportacaoService servico, IExportadorRelatorioPdf exportador, CancellationToken ct) =>
+{
+    var relatorio = await servico.MontarAsync(inicio, fim, IdDoUsuario(principal), ct);
+    var pdf = exportador.Gerar(relatorio);
+    return Results.File(pdf, "application/pdf", $"relatorio-{inicio:yyyy-MM-dd}-a-{fim:yyyy-MM-dd}.pdf");
+});
+
+app.MapGet("/relatorios/exportar/excel", async (
+    DateTime inicio, DateTime fim, ClaimsPrincipal principal,
+    RelatorioExportacaoService servico, IExportadorRelatorioExcel exportador, CancellationToken ct) =>
+{
+    var relatorio = await servico.MontarAsync(inicio, fim, IdDoUsuario(principal), ct);
+    var excel = exportador.Gerar(relatorio);
+    return Results.File(
+        excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        $"relatorio-{inicio:yyyy-MM-dd}-a-{fim:yyyy-MM-dd}.xlsx");
+});
 
 app.MapHealthChecks("/health").AllowAnonymous();
 
