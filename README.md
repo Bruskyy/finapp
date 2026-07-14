@@ -1310,6 +1310,31 @@ Testes de integração (Testcontainers/Postgres) cobrem as quatro regras de
 elegibilidade: conta nova demais, primeiro envio aos 30 dias, dentro do
 cooldown, e cooldown vencido.
 
+### Exportação de relatórios em PDF/Excel (fecha o item 11 da Onda 3)
+
+`GET /relatorios/exportar/pdf` e `GET /relatorios/exportar/excel`
+(`?inicio=&fim=`) reaproveitam os mesmos repositórios dos endpoints
+`/relatorios/*` já existentes — a novidade é só a serialização. Duas portas
+novas na Application (`IExportadorRelatorioPdf`/`IExportadorRelatorioExcel`,
+mesmo padrão ports & adapters do `IArmazenamentoExtrato`/`IFilaImportacoes`)
+com adapters na Infrastructure: **QuestPDF** (licença Community — gratuita
+pra uso individual/treino, independente de faturamento, confirmada antes de
+adotar) e **ClosedXML** (MIT).
+
+`RelatorioExportacaoService` monta um DTO único (`RelatorioExportacao`)
+combinando saldo do período, gastos por categoria e a lista completa de
+lançamentos com nome de categoria/conta já resolvidos. Ponto deliberado:
+`ILancamentoRepository` ganhou um método novo,
+`ListarParaExportacaoAsync`, sem paginação — reusar `ListarAsync` bateria
+no cap de `FiltroLancamentos.TakeMaximo = 100`, truncando silenciosamente
+qualquer exportação de período longo.
+
+Testes: `RelatorioExportacaoServiceTests` (fakes em memória das 4
+dependências, sem banco — cobre resolução de nome de categoria/conta e o
+fallback "-" quando a categoria/conta não existe mais) e
+`ExportadoresRelatorioTests` (smoke test dos dois adapters de verdade,
+verificando a assinatura de arquivo: `%PDF` e `PK` do zip do `.xlsx`).
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.

@@ -164,7 +164,7 @@ futuros vinculados a uma compra-mãe.
 **Esforço:** G — é modelagem nova real (fatura como entidade, ciclo de
 fechamento, parcelamento). **Custo:** R$0.
 
-### 11. Exportação de relatórios (PDF/Excel)
+### 11. Exportação de relatórios (PDF/Excel) — ✅ feito, ver README ("Exportação de relatórios em PDF/Excel")
 **Proposta:** `GET /relatorios/*` já tem os dados agregados — falta só
 serializar em PDF (ex: `QuestPDF`, gratuito pra uso não-comercial/pequeno
 porte — **confirmar licença antes de usar**, senão SVG→imagem é

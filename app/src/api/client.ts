@@ -427,6 +427,18 @@ export function obterMarcosFinanceiros(): Promise<MarcosFinanceiros> {
   return requisitar("/api/relatorios/marcos");
 }
 
+// Exportação de PDF/Excel não passa por requisitar() (que só sabe fazer
+// JSON) - devolve a URL completa + o header de auth pra quem for baixar o
+// arquivo (expo-file-system no nativo, fetch+Blob no web - ver
+// utils/exportarRelatorio.ts).
+export function urlExportacaoRelatorio(formato: "pdf" | "excel", inicio: string, fim: string): string {
+  return `${GATEWAY_URL}/api/relatorios/exportar/${formato}?inicio=${inicio}&fim=${fim}`;
+}
+
+export function cabecalhoAutenticacao(): Record<string, string> {
+  return tokenAtual ? { Authorization: `Bearer ${tokenAtual}` } : {};
+}
+
 // ----- Gamificação -----
 
 export function obterSaldoMoedas(): Promise<{ saldo: number }> {

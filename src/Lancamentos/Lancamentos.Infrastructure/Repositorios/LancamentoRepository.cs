@@ -132,4 +132,10 @@ public class LancamentoRepository : ILancamentoRepository
             .Select(x => x.UsuarioId!.Value)
             .Distinct()
             .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Lancamento>> ListarParaExportacaoAsync(DateTime inicio, DateTime fim, Guid usuarioId, CancellationToken ct)
+        => await _db.Lancamentos.AsNoTracking()
+            .Where(x => x.Data >= inicio && x.Data <= fim && x.UsuarioId == usuarioId)
+            .OrderBy(x => x.Data)
+            .ToListAsync(ct);
 }
