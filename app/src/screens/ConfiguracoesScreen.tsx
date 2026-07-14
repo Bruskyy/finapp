@@ -18,11 +18,9 @@ const REGEX_PIN = /^\d{4,6}$/;
 
 const URL_REPOSITORIO = "https://github.com/Bruskyy/finapp";
 const URL_POLITICA_PRIVACIDADE = "https://finapp-tawny-nine.vercel.app/politica-privacidade.html";
-// TODO(Vitor): link real de doação (Livepix/Apoia.se/PayPal.me ou chave Pix)
-// - Sprint 7 do Roadmap 1.0 (BACKLOG-PRODUTO.md). Vazio de propósito: o botão
-// abaixo fica desabilitado até isto ser preenchido, pra não abrir uma URL
-// inválida em produção.
-const URL_APOIO_COFRIN = "";
+// Sprint 7 do Roadmap 1.0 (BACKLOG-PRODUTO.md) - preenchido em 14/07/2026,
+// habilita o botão "Apoiar o Cofrin" em Configurações.
+const URL_APOIO_COFRIN = "https://apoia.se/cofrin";
 
 const OPCOES_TEMA: { id: TemaPreferido; label: string }[] = [
   { id: "sistema", label: "Sistema" },

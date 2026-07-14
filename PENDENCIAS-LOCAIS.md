@@ -112,16 +112,16 @@
   (ignora merge commits criados pelo próprio GitHub — falso positivo que
   reaparece a cada merge de PR via API; o ambiente remoto não tinha
   permissão pra editar o arquivo).
-- [ ] **Link de doação**: criar a página (Livepix/Apoia.se/PayPal.me) e
-  preencher `URL_APOIO_COFRIN` em
-  `app/src/screens/ConfiguracoesScreen.tsx` (o botão "Apoie o Cofrin" fica
-  desabilitado até isso).
+- [x] **Link de doação**: `URL_APOIO_COFRIN` preenchido em 14/07/2026 com
+  https://apoia.se/cofrin — botão "Apoiar o Cofrin" já habilitado em
+  Configurações.
 
 ## 5. Conferências pós-merge (rápidas, qualquer navegador)
 
-- [ ] Política de privacidade publicada com a seção nova de notificações:
-  https://finapp-tawny-nine.vercel.app/politica-privacidade.html
-  (o ambiente remoto não conseguia acessar domínios vercel.app pra conferir).
+- [x] Política de privacidade publicada com a seção nova de notificações —
+  conferido em 14/07/2026: https://finapp-tawny-nine.vercel.app/politica-privacidade.html
+  já tem a seção completa (o que é lido, processamento só no aparelho,
+  direito de revogar).
 
 ## 5.1 Produção (Render) — passo real, não só teste local
 
