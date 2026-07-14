@@ -17,7 +17,7 @@ import {
   capturaSuportada,
   iniciarCaptura,
 } from "../utils/capturaNotificacoes";
-import { listarComprasDetectadas, removerCompraDetectada } from "../utils/comprasDetectadas";
+import { adicionarCompraDetectada, listarComprasDetectadas, removerCompraDetectada } from "../utils/comprasDetectadas";
 import { CompraDetectada } from "../utils/parserNotificacaoBancaria";
 
 /**
@@ -46,7 +46,11 @@ export default function ComprasDetectadasScreen() {
     setErro(null);
     try {
       setPermitida(capturaPermitida());
-      iniciarCaptura();
+      // Precisa terminar ANTES de ler a fila: iniciarCaptura() drena a fila
+      // nativa persistente (compras acumuladas com o app fechado) pro
+      // AsyncStorage - sem aguardar aqui, a leitura abaixo podia rodar antes
+      // da escrita terminar, e a compra só apareceria no próximo focus.
+      await iniciarCaptura();
       const [fila, listaCategorias, listaContas] = await Promise.all([
         listarComprasDetectadas(),
         listarCategorias(),
@@ -73,6 +77,13 @@ export default function ComprasDetectadasScreen() {
     if (!categoriaId || !contaId) return;
     setConfirmando(true);
     setErro(null);
+    // Remove da fila ANTES de criar o lançamento (otimista) - se a ordem
+    // fosse invertida e a remoção falhasse depois do POST ter sucesso (app
+    // fechado, rede caindo no meio), a compra continuaria na fila e uma
+    // nova confirmação criaria um lançamento duplicado. Nesta ordem, o pior
+    // caso é a compra sumir da fila sem ter virado lançamento - por isso o
+    // rollback (readicionar) se o POST falhar.
+    await removerCompraDetectada(compra.chaveNotificacao);
     try {
       await criarLancamento({
         descricao: compra.estabelecimento,
@@ -82,13 +93,13 @@ export default function ComprasDetectadasScreen() {
         contaId,
         data: paraLocalIso(new Date(compra.detectadaEm)),
       });
-      await removerCompraDetectada(compra.chaveNotificacao);
       setChaveEmRevisao(null);
       setCategoriaId(null);
-      setCompras(await listarComprasDetectadas());
     } catch (e) {
+      await adicionarCompraDetectada(compra);
       setErro(e instanceof Error ? e.message : "Erro ao confirmar a compra.");
     } finally {
+      setCompras(await listarComprasDetectadas());
       setConfirmando(false);
     }
   }

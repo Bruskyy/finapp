@@ -6,6 +6,29 @@
 > sem EAS logado, sem celular). Riscar conforme for concluindo; quando tudo
 > de uma seção estiver feito, remover a seção (e apagar o arquivo quando
 > esvaziar).
+>
+> **Atualizado em 14/07/2026**, após varredura completa do código (leitura
+> de tudo + 3 revisões paralelas de qualidade nas áreas maiores) na sessão
+> local: build limpo, migrations sem drift, 323 testes verdes. A revisão
+> achou 2 críticos + 6 moderados, todos os que dependiam só de código já
+> corrigidos e commitados (branch `fix/revisao-sessao-remota`) — falta
+> mesmo assim gerar um APK/AAB novo (item 2 abaixo) pra esses fixes
+> chegarem no aparelho.
+
+## 0. Antes de tudo — validar se a captura de notificações liga de verdade
+
+- [ ] **Risco real encontrado na revisão**: `AndroidManifest.xml` do módulo
+  `captura-notificacoes` declara `android:exported="false"` no
+  `NotificationListenerService`. Há relatos consistentes de que isso
+  impede o Android de bindar esse tipo de serviço mesmo com a permissão
+  concedida pelo usuário — o toggle apareceria "ligado" nas configurações,
+  mas `onNotificationPosted` nunca dispararia, **silenciosamente** (sem
+  erro visível em lugar nenhum). A proteção correta já é o
+  `android:permission="...BIND_NOTIFICATION_LISTENER_SERVICE"`
+  (signature-level, só o sistema tem); `exported` deveria ser `"true"`.
+  **Teste isto primeiro**, antes de calibrar regexes ou testar qualquer
+  outra coisa da captura (item 3 abaixo) — se o serviço não ligar, o resto
+  fica bloqueado até trocar pra `"true"` e gerar um build novo.
 
 ## 1. Segurança — fazer primeiro
 
@@ -23,6 +46,12 @@
 - [ ] O **AAB de produção** do Sprint 6 também ficou obsoleto (regenerado em
   10/07, mas os PRs #71–#77 vieram depois) — regenerar com
   `eas build -p android --profile production` antes de subir na Play Store.
+- [ ] **Atualização 14/07**: os fixes da revisão de código desta sessão
+  (branch `fix/revisao-sessao-remota` — throttling de PIN, PIN escopado
+  por usuário, filtro de recusa/estorno no parser, corrida na drenagem da
+  fila nativa, duplicidade em compra confirmada, cultura pt-BR no PDF,
+  validação de parcela de R$0,00) só chegam no build depois que essa
+  branch for mergeada — gerar o build novo DEPOIS do merge, não antes.
 
 ## 3. Validações no celular físico (com o APK novo)
 
@@ -31,7 +60,8 @@
   voltar pro app autenticado. A URI ponte
   (`https://finapp-tawny-nine.vercel.app/auth-redirect.html`) já está
   cadastrada no Google Console; a página já está publicada.
-- [ ] **Captura de notificações**: tela "Compras detectadas" → "Permitir
+- [ ] **Captura de notificações** (ver item 0 primeiro — se o serviço não
+  bindar, nada disto vai aparecer): tela "Compras detectadas" → "Permitir
   acesso" → fazer compras reais → conferir que caem na fila. **Calibrar os
   regexes** (`app/src/utils/parserNotificacaoBancaria.ts`): em dev o parser
   loga no console notificações de banco que não reconheceu; conferir também

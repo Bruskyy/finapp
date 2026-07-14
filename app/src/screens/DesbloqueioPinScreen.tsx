@@ -14,6 +14,13 @@ interface Props {
   aoDesbloquear: () => void;
 }
 
+// Throttling: um PIN de 4 dígitos são só 10.000 combinações - sem limite de
+// tentativas, é força bruta trivial pra quem tem o aparelho em mãos. Bloqueio
+// temporário (não permanente - não existe recuperação de PIN local) depois
+// de tentativas erradas seguidas.
+const MAX_TENTATIVAS = 5;
+const BLOQUEIO_MS = 30_000;
+
 /**
  * Camada extra opcional de acesso (REFATORACAO-UI.md, Fase 5): gate local
  * de PIN entre a sessão já autenticada (JWT válido no SecureStore) e o
@@ -28,6 +35,20 @@ export default function DesbloqueioPinScreen({ pinCorreto, aoDesbloquear }: Prop
   const [pin, setPin] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [biometriaAtiva, setBiometriaAtiva] = useState(false);
+  const [tentativas, setTentativas] = useState(0);
+  const [bloqueadoAte, setBloqueadoAte] = useState<number | null>(null);
+  const [agora, setAgora] = useState(Date.now());
+
+  // Só liga o ticker de 1s enquanto há bloqueio ativo - evita re-render por
+  // segundo o tempo todo que a tela está aberta sem necessidade.
+  useEffect(() => {
+    if (bloqueadoAte === null) return;
+    const id = setInterval(() => setAgora(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [bloqueadoAte]);
+
+  const bloqueado = bloqueadoAte !== null && agora < bloqueadoAte;
+  const segundosRestantes = bloqueado ? Math.ceil((bloqueadoAte! - agora) / 1000) : 0;
 
   // Atalho biométrico (opt-in em Configurações, só com PIN ativo): tenta
   // direto ao abrir o gate; falha/cancelamento cai no PIN sem mensagem de
@@ -48,12 +69,21 @@ export default function DesbloqueioPinScreen({ pinCorreto, aoDesbloquear }: Prop
   }, []);
 
   function confirmar() {
+    if (bloqueado) return;
     if (pin === pinCorreto) {
+      setTentativas(0);
       aoDesbloquear();
       return;
     }
-    setErro("PIN incorreto.");
     setPin("");
+    const proximasTentativas = tentativas + 1;
+    setTentativas(proximasTentativas);
+    if (proximasTentativas >= MAX_TENTATIVAS) {
+      setBloqueadoAte(Date.now() + BLOQUEIO_MS);
+      setErro(`Muitas tentativas erradas. Espere ${BLOQUEIO_MS / 1000}s pra tentar de novo.`);
+    } else {
+      setErro("PIN incorreto.");
+    }
   }
 
   // Esqueceu o PIN: não há como recuperar um PIN local (não fica no
@@ -70,7 +100,11 @@ export default function DesbloqueioPinScreen({ pinCorreto, aoDesbloquear }: Prop
       <Text style={estilos.titulo}>Digite seu PIN</Text>
       <Text style={estilos.subtitulo}>Camada extra de segurança pra proteger seus dados neste aparelho.</Text>
 
-      {erro && <Text style={estilos.erro}>{erro}</Text>}
+      {erro && (
+        <Text style={estilos.erro}>
+          {bloqueado ? `Muitas tentativas erradas. Espere ${segundosRestantes}s pra tentar de novo.` : erro}
+        </Text>
+      )}
 
       <Input
         placeholder="PIN"
@@ -80,9 +114,10 @@ export default function DesbloqueioPinScreen({ pinCorreto, aoDesbloquear }: Prop
         secureTextEntry
         maxLength={6}
         autoFocus
+        editable={!bloqueado}
       />
 
-      <Botao texto="Desbloquear" onPress={confirmar} disabled={pin.length < 4} />
+      <Botao texto="Desbloquear" onPress={confirmar} disabled={pin.length < 4 || bloqueado} />
 
       {biometriaAtiva && (
         <Botao

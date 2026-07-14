@@ -25,7 +25,7 @@ let escritaPendente: Promise<void> = Promise.resolve();
 
 /** Adiciona com dedup pela chave da notificação (repostagens do Android). */
 export function adicionarCompraDetectada(compra: CompraDetectada): Promise<void> {
-  escritaPendente = escritaPendente.then(async () => {
+  const escrita = escritaPendente.then(async () => {
     const lista = await listarComprasDetectadas();
     if (lista.some((c) => c.chaveNotificacao === compra.chaveNotificacao)) return;
     // Mais recente primeiro; LIMITE evita crescimento sem fim se o usuário
@@ -33,7 +33,14 @@ export function adicionarCompraDetectada(compra: CompraDetectada): Promise<void>
     const nova = [compra, ...lista].slice(0, LIMITE);
     await AsyncStorage.setItem(CHAVE, JSON.stringify(nova));
   });
-  return escritaPendente;
+  // A corrente (escritaPendente) nunca pode ficar presa numa rejeição - um
+  // .then() encadeado numa promise já rejeitada nunca roda o callback, então
+  // uma única falha transitória (ex: storage cheio) desligaria a fila pro
+  // resto da sessão do app, silenciosamente. O .catch() aqui garante que a
+  // PRÓXIMA escrita sempre roda; quem chamou esta, porém, ainda recebe a
+  // rejeição de volta (via `escrita`, não `escritaPendente`).
+  escritaPendente = escrita.catch(() => {});
+  return escrita;
 }
 
 export async function removerCompraDetectada(chaveNotificacao: string): Promise<void> {

@@ -26,11 +26,12 @@ const MESES = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 const MESES_PARA_SELECAO = 24; // 24 meses pra trás + 3 pra frente, a partir de hoje
-// Teto alto o bastante pra cobrir um mês realista mesmo com importação de
-// extrato pesada (o total de receitas/despesas exibido no cabeçalho é somado
-// a partir desta lista - um teto baixo demais faz o total (e a própria lista
-// visível) ficarem incompletos silenciosamente sem paginação real na tela).
-const TAKE_TRANSACOES = 1000;
+// FiltroLancamentos.TakeMaximo (backend) recorta qualquer "take" pra no
+// máximo 100 (Math.Clamp), silenciosamente - pedir mais que isso aqui não
+// tem efeito nenhum, só engana quem lê o código achando que cobre mais.
+// Usa o mesmo teto real, e a UI abaixo avisa quando o mês tem mais
+// lançamentos que isso (totais do cabeçalho também refletem só os 100).
+const TAKE_TRANSACOES = 100;
 
 interface Secao {
   titulo: string;
@@ -70,6 +71,7 @@ export default function TransacoesScreen() {
   const navigation = useNavigation();
   const [mesReferencia, setMesReferencia] = useState(new Date());
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
+  const [totalNoMes, setTotalNoMes] = useState(0);
   const [nomesCategorias, setNomesCategorias] = useState<Record<string, string>>({});
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
@@ -84,6 +86,7 @@ export default function TransacoesScreen() {
         listarCategorias(),
       ]);
       setLancamentos(resLancamentos.itens);
+      setTotalNoMes(resLancamentos.total);
       setNomesCategorias(Object.fromEntries(resCategorias.map((c) => [c.id, c.nome])));
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao carregar transações.");
@@ -197,6 +200,12 @@ export default function TransacoesScreen() {
       </View>
 
       {erro && <Text style={estilos.erro}>{erro}</Text>}
+      {totalNoMes > lancamentos.length && (
+        <Text style={estilos.avisoTruncado}>
+          Mostrando os {lancamentos.length} lançamentos mais recentes de {totalNoMes} neste mês — os totais acima
+          também refletem só esses.
+        </Text>
+      )}
 
       <SectionList
         sections={secoes}
@@ -276,6 +285,7 @@ function criarEstilos(cor: Cor) {
     resumoValor: { fontSize: 15, fontWeight: "600" },
 
     erro: { color: cor.vermelho, marginBottom: espaco.sm },
+    avisoTruncado: { fontSize: 12, color: cor.cinza500, marginBottom: espaco.sm },
 
     tituloSecao: {
       ...fonte.legenda,

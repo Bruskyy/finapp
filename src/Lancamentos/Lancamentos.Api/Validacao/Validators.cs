@@ -59,6 +59,19 @@ public class CriarCompraParceladaRequestValidator : AbstractValidator<CriarCompr
         RuleFor(x => x.NumeroParcelas).InclusiveBetween(2, 48);
         RuleFor(x => x.CategoriaId).NotEmpty();
         RuleFor(x => x.ContaId).NotEmpty();
+        RuleFor(x => x.Data).NotEmpty();
+
+        // Valor por parcela derivado (ValorTotal/NumeroParcelas, arredondado
+        // pra baixo em CompraParcelada.cs) precisa ser >= 1 centavo - sem
+        // isso, um valor pequeno dividido em muitas parcelas gera parcela de
+        // R$0,00, que Lancamento.Validar rejeita com ArgumentException. Não
+        // há middleware de exceção global no projeto, então isso virava 500
+        // cru em vez de 400 amigável.
+        RuleFor(x => x)
+            .Must(x => x.ValorTotal / x.NumeroParcelas >= 0.01m)
+            .WithName("ValorTotal")
+            .WithMessage("O valor de cada parcela ficaria abaixo de R$ 0,01 - reduza o número de parcelas ou aumente o valor.")
+            .When(x => x.NumeroParcelas > 0);
     }
 }
 
