@@ -146,8 +146,14 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<LancamentosDbContext>();
+// Sem AddDbContextCheck de propósito: o keep-alive.yml pinga /health a cada
+// 10 min pra manter o serviço do Render quente, e um health check que toca
+// o banco reseta o auto-pause do Azure SQL/Neon a cada ping - estourou a
+// cota gratuita mensal do Azure SQL de Lancamentos em ~15 dias sem nenhum
+// tráfego de usuário real (ver README, "Arquitetura AWS/Azure"). /health
+// vira liveness pura (processo de pé); nada hoje depende de uma checagem
+// de prontidão separada que inclua o banco.
+builder.Services.AddHealthChecks();
 
 builder.Services.AddOpenApi();
 

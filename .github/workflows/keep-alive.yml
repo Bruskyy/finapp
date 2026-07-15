@@ -5,6 +5,13 @@ name: keep-alive
 # "Arquitetura AWS/Azure"). Esse workflow pinga o /health dos 5 serviços a
 # cada 10 minutos - gratuito (minutos de Actions já usados pelo CI) e some
 # com a demora de cold start sem sair do custo R$0.
+#
+# IMPORTANTE: /health dos 4 serviços com banco é liveness pura, sem tocar
+# no banco (AddDbContextCheck removido de propósito) - um health check com
+# banco pingado a cada 10 min nunca deixa o Azure SQL/Neon entrar em
+# auto-pause, e isso já estourou a cota gratuita mensal do Azure SQL de
+# Lancamentos em ~15 dias sem tráfego real nenhum. Não reintroduzir esse
+# check em /health sem repensar esse trade-off.
 on:
   schedule:
     - cron: "*/10 * * * *"
