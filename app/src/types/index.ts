@@ -119,6 +119,18 @@ export interface GastoPorCategoria {
   quantidade: number;
 }
 
+/** Resposta de GET /relatorios/resumo-periodo - mesmos campos que
+ * ResumoSemanalCalculado no backend, sem os de objetivo (o Dashboard já
+ * calcula o destaque localmente). */
+export interface ResumoPeriodo {
+  economiaVsSemanaAnterior: number;
+  categoriaMaiorGasto: string | null;
+  valorCategoriaMaiorGasto: number;
+  diasComLancamento: number;
+  nomeObjetivoDestaque: string | null;
+  percentualObjetivoDestaque: number | null;
+}
+
 export interface EvolucaoMensalPonto {
   ano: number;
   mes: number;

@@ -4,12 +4,12 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  listarNotificacoes,
   listarObjetivos,
   listarOrcamentos,
   listarSaldosPorConta,
   obterEvolucaoMensal,
   obterGastosPorCategoria,
+  obterResumoPeriodo,
   obterSaldoFinanceiro,
   obterSaldoMoedas,
   obterSequencia,
@@ -22,25 +22,39 @@ import GraficoGastosPorCategoria from "../componentes/GraficoGastosPorCategoria"
 import GraficoEvolucaoMensal from "../componentes/GraficoEvolucaoMensal";
 import MetaDestaque from "../componentes/MetaDestaque";
 import ResumoOrcamentos from "../componentes/ResumoOrcamentos";
-import { fimDoMes, inicioDoMes } from "../constants";
+import { fimDoMes, inicioDoMes, paraLocalIso } from "../constants";
 import { Cor, espaco, fonte, formatarMoeda, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
-import {
-  EvolucaoMensalPonto,
-  GastoPorCategoria,
-  Notificacao,
-  Objetivo,
-  OrcamentoStatus,
-  SaldoPorConta,
-  Sequencia,
-  TipoNotificacao,
-} from "../types";
+import { EvolucaoMensalPonto, GastoPorCategoria, Objetivo, OrcamentoStatus, ResumoPeriodo, SaldoPorConta, Sequencia } from "../types";
 import { obterPreferencias, Preferencias } from "../utils/preferencias";
 
-// Um resumo semanal só ainda faz sentido mostrar por um tempo limitado -
-// depois disso, é informação velha (o worker roda a cada 6h, mas o cooldown
-// por usuário é de 7 dias; ~10 dias dá folga sem deixar o card "grudado").
-const DIAS_VALIDADE_RESUMO = 10;
+type PeriodoResumo = "semana" | "mes";
+
+/** Janelas atual/anterior pro toggle Semana/Mês do card "Seu resumo"
+ * (ITEM-WIDGETS-INTERATIVOS-E-RESUMO.md, Ajuste C) - semana usa o mesmo
+ * cálculo de janela móvel de 7 dias do ResumoSemanalWorker.cs; mês usa o
+ * mês corrente inteiro vs o mês anterior inteiro. */
+function janelasResumo(periodo: PeriodoResumo, referencia: Date = new Date()) {
+  if (periodo === "mes") {
+    const mesAnterior = new Date(referencia.getFullYear(), referencia.getMonth() - 1, 1);
+    return {
+      inicio: inicioDoMes(referencia),
+      fim: fimDoMes(referencia),
+      inicioAnterior: inicioDoMes(mesAnterior),
+      fimAnterior: fimDoMes(mesAnterior),
+    };
+  }
+  const seteDiasAtras = new Date(referencia);
+  seteDiasAtras.setDate(referencia.getDate() - 7);
+  const catorzeDiasAtras = new Date(referencia);
+  catorzeDiasAtras.setDate(referencia.getDate() - 14);
+  return {
+    inicio: paraLocalIso(seteDiasAtras),
+    fim: paraLocalIso(referencia),
+    inicioAnterior: paraLocalIso(catorzeDiasAtras),
+    fimAnterior: paraLocalIso(seteDiasAtras),
+  };
+}
 
 function saudacaoDoHorario(): string {
   const hora = new Date().getHours();
@@ -67,7 +81,8 @@ export default function DashboardScreen() {
   const [evolucao, setEvolucao] = useState<EvolucaoMensalPonto[]>([]);
   const [orcamentos, setOrcamentos] = useState<OrcamentoStatus[]>([]);
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
-  const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
+  const [periodoResumo, setPeriodoResumo] = useState<PeriodoResumo>("semana");
+  const [resumoPeriodo, setResumoPeriodo] = useState<ResumoPeriodo | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [atualizando, setAtualizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -78,6 +93,7 @@ export default function DashboardScreen() {
     try {
       const inicio = inicioDoMes();
       const fim = fimDoMes();
+      const janelaResumo = janelasResumo(periodoResumo);
       // allSettled (não all): um cold start isolado (ex: Render free tier
       // hibernando um dos 5 serviços) não deve derrubar o Dashboard inteiro
       // - cada cartão renderiza com o que conseguiu carregar, e os widgets
@@ -91,7 +107,7 @@ export default function DashboardScreen() {
         resEvolucao,
         resOrcamentos,
         resObjetivos,
-        resNotificacoes,
+        resResumoPeriodo,
         resPreferencias,
       ] = await Promise.allSettled([
         obterSaldoFinanceiro(inicio, fim),
@@ -102,7 +118,7 @@ export default function DashboardScreen() {
         obterEvolucaoMensal(6),
         listarOrcamentos(),
         listarObjetivos(),
-        listarNotificacoes(),
+        obterResumoPeriodo(janelaResumo.inicio, janelaResumo.fim, janelaResumo.inicioAnterior, janelaResumo.fimAnterior),
         obterPreferencias(),
       ]);
 
@@ -115,7 +131,7 @@ export default function DashboardScreen() {
       setEvolucao(extrair(resEvolucao) ?? []);
       setOrcamentos(extrair(resOrcamentos) ?? []);
       setObjetivos(extrair(resObjetivos) ?? []);
-      setNotificacoes(extrair(resNotificacoes) ?? []);
+      setResumoPeriodo(extrair(resResumoPeriodo));
       setPreferencias(extrair(resPreferencias));
 
       const algumaFalha = [
@@ -127,7 +143,7 @@ export default function DashboardScreen() {
         resEvolucao,
         resOrcamentos,
         resObjetivos,
-        resNotificacoes,
+        resResumoPeriodo,
         resPreferencias,
       ].some((r) => r.status === "rejected");
       if (algumaFalha) {
@@ -138,7 +154,7 @@ export default function DashboardScreen() {
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [periodoResumo]);
 
   useFocusEffect(
     useCallback(() => {
@@ -182,13 +198,6 @@ export default function DashboardScreen() {
     .filter((o) => !o.concluido)
     .sort((a, b) => b.percentualConcluido - a.percentualConcluido)[0] ?? null;
 
-  // Resumo semanal mais recente, se ainda estiver dentro da validade -
-  // notificações vêm ordenadas por criadoEm desc (ver Notificacoes.Api).
-  const limiteResumo = Date.now() - DIAS_VALIDADE_RESUMO * 86_400_000;
-  const resumoSemanal = notificacoes.find(
-    (n) => n.tipo === TipoNotificacao.ResumoSemanal && new Date(n.criadoEm).getTime() >= limiteResumo
-  ) ?? null;
-
   // Só o primeiro nome: o cabeçalho é um cumprimento, não um formulário.
   const primeiroNome = usuario?.nome.split(" ")[0];
 
@@ -225,6 +234,52 @@ export default function DashboardScreen() {
             </View>
           </View>
         </View>
+      )}
+
+      {/* "Seu resumo" (ITEM-WIDGETS-INTERATIVOS-E-RESUMO.md, Ajuste C):
+          posição fixa logo abaixo do saldo, antes da lista personalizável
+          de widgets - continua controlável em "Personalizar início", mas
+          quando ligado não depende da ordem dos outros. */}
+      {widgets?.resumoSemanal && resumoPeriodo && (
+        <Card estiloExtra={estilos.cartaoSecao}>
+          <View style={estilos.cabecalhoResumo}>
+            <View>
+              <Text style={estilos.tituloSecao}>Seu resumo</Text>
+              <Text style={estilos.subtituloResumo}>
+                {periodoResumo === "semana" ? "Últimos 7 dias" : "Este mês"}
+              </Text>
+            </View>
+            <View style={estilos.seletorPeriodo}>
+              {(["semana", "mes"] as const).map((p) => (
+                <Pressable
+                  key={p}
+                  onPress={() => setPeriodoResumo(p)}
+                  style={[estilos.segmentoResumo, periodoResumo === p && estilos.segmentoResumoAtivo]}
+                  accessibilityRole="button"
+                  accessibilityLabel={p === "semana" ? "Ver resumo da semana" : "Ver resumo do mês"}
+                >
+                  <Text
+                    style={[
+                      estilos.textoSegmentoResumo,
+                      periodoResumo === p && estilos.textoSegmentoResumoAtivo,
+                    ]}
+                  >
+                    {p === "semana" ? "Semana" : "Mês"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <CardResumoSemanal
+            resumo={{
+              economiaVsPeriodoAnterior: resumoPeriodo.economiaVsSemanaAnterior,
+              categoriaMaiorGasto: resumoPeriodo.categoriaMaiorGasto,
+              valorCategoriaMaiorGasto: resumoPeriodo.valorCategoriaMaiorGasto,
+              diasComLancamento: resumoPeriodo.diasComLancamento,
+              rotuloPeriodoAnterior: periodoResumo === "semana" ? "semana passada" : "mês passado",
+            }}
+          />
+        </Card>
       )}
 
       {/* Espaço permanente de gamificação: moedas + sequência de dias
@@ -362,12 +417,6 @@ export default function DashboardScreen() {
           </Card>
         )}
 
-        {widgets?.resumoSemanal && resumoSemanal && (
-          <Card estiloExtra={estilos.cartaoSecao}>
-            <Text style={estilos.tituloSecao}>Sua semana</Text>
-            <CardResumoSemanal resumo={resumoSemanal} />
-          </Card>
-        )}
       </ScrollView>
     </View>
   );
@@ -427,6 +476,24 @@ function criarEstilos(cor: Cor) {
 
   cartaoSecao: { marginBottom: espaco.lg },
   tituloSecao: { ...fonte.tituloCard, color: cor.cinza900, marginBottom: espaco.md },
+
+  cabecalhoResumo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: espaco.md,
+  },
+  subtituloResumo: { fontSize: 12, color: cor.cinza500, marginTop: 2 },
+  seletorPeriodo: {
+    flexDirection: "row",
+    backgroundColor: cor.fundoTela,
+    borderRadius: raio.chip,
+    padding: 2,
+  },
+  segmentoResumo: { paddingHorizontal: espaco.sm, paddingVertical: espaco.xs, borderRadius: raio.chip },
+  segmentoResumoAtivo: { backgroundColor: cor.primaria },
+  textoSegmentoResumo: { fontSize: 12, fontWeight: "600", color: cor.cinza500 },
+  textoSegmentoResumoAtivo: { color: cor.branco },
 
   // paddingBottom extra pra a lista não ficar encoberta pela nav flutuante.
   listaConteudo: { paddingBottom: espaco.xxxl + espaco.xl },

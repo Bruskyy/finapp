@@ -2,17 +2,33 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, View } from "react-native";
 import { Cor, espaco, formatarMoeda } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
-import { Notificacao } from "../types";
+
+/** Formato period-neutro (Semana OU Mês) - satisfeito tanto pela notificação
+ * armazenada (ResumoSemanal, via um pequeno adaptador no Dashboard) quanto
+ * pela resposta ao vivo de GET /relatorios/resumo-periodo (ver
+ * ITEM-WIDGETS-INTERATIVOS-E-RESUMO.md, Ajuste C). */
+export interface ResumoCardProps {
+  economiaVsPeriodoAnterior: number | null;
+  categoriaMaiorGasto: string | null;
+  valorCategoriaMaiorGasto: number | null;
+  diasComLancamento: number | null;
+  nomeObjetivoDestaque?: string | null;
+  percentualObjetivoDestaque?: number | null;
+  /** Rótulo do período anterior na frase de economia - "semana passada"
+   * (padrão) ou "mês passado". */
+  rotuloPeriodoAnterior?: string;
+}
 
 /**
- * Resumo semanal determinístico (BACKLOG-PRODUTO.md, Onda 1, item 4): mostra
- * os campos estruturados da notificação ResumoSemanal mais recente, um por
- * linha, cada um com seu ícone - espelha o mockup original do Vitor.
+ * Resumo determinístico (BACKLOG-PRODUTO.md, Onda 1, item 4): mostra os
+ * campos estruturados do resumo do período mais recente, um por linha, cada
+ * um com seu ícone - espelha o mockup original do Vitor.
  */
-export default function CardResumoSemanal({ resumo }: { resumo: Notificacao }) {
+export default function CardResumoSemanal({ resumo }: { resumo: ResumoCardProps }) {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
-  const economiaPositiva = (resumo.economiaVsSemanaAnterior ?? 0) >= 0;
+  const economiaPositiva = (resumo.economiaVsPeriodoAnterior ?? 0) >= 0;
+  const rotuloPeriodo = resumo.rotuloPeriodoAnterior ?? "semana passada";
 
   return (
     <View>
@@ -24,8 +40,8 @@ export default function CardResumoSemanal({ resumo }: { resumo: Notificacao }) {
         />
         <Text style={estilos.texto}>
           {economiaPositiva ? "Você economizou " : "Você gastou "}
-          <Text style={estilos.destaque}>{formatarMoeda(Math.abs(resumo.economiaVsSemanaAnterior ?? 0))}</Text>
-          {" "}a mais que a semana passada.
+          <Text style={estilos.destaque}>{formatarMoeda(Math.abs(resumo.economiaVsPeriodoAnterior ?? 0))}</Text>
+          {" "}a mais que a {rotuloPeriodo}.
         </Text>
       </View>
 

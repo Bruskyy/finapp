@@ -19,6 +19,7 @@ import {
   PerfilOnboardingRequest,
   RegistrarRequest,
   RenovarTokenResponse,
+  ResumoPeriodo,
   Tag,
   OrcamentoStatus,
   Recorrencia,
@@ -425,6 +426,17 @@ export function obterEvolucaoMensal(meses = 6): Promise<EvolucaoMensalPonto[]> {
 
 export function obterMarcosFinanceiros(): Promise<MarcosFinanceiros> {
   return requisitar("/api/relatorios/marcos");
+}
+
+export function obterResumoPeriodo(
+  inicio: string,
+  fim: string,
+  inicioAnterior: string,
+  fimAnterior: string
+): Promise<ResumoPeriodo> {
+  return requisitar(
+    `/api/relatorios/resumo-periodo?inicio=${inicio}&fim=${fim}&inicioAnterior=${inicioAnterior}&fimAnterior=${fimAnterior}`
+  );
 }
 
 // Exportação de PDF/Excel não passa por requisitar() (que só sabe fazer

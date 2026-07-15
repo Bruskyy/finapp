@@ -12,7 +12,7 @@ const WIDGETS: { id: WidgetDashboard; label: string; icone: keyof typeof Ionicon
   { id: "resumoOrcamentos", label: "Resumo de orçamentos", icone: "speedometer-outline" },
   { id: "metasDestaque", label: "Meta em destaque", icone: "flag-outline" },
   { id: "saldoMoedas", label: "Saldo de moedas", icone: "medal-outline" },
-  { id: "resumoSemanal", label: "Resumo da semana", icone: "stats-chart-outline" },
+  { id: "resumoSemanal", label: "Seu resumo (semana/mês)", icone: "stats-chart-outline" },
 ];
 
 export default function PersonalizarInicioScreen() {
