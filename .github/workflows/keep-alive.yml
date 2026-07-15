@@ -1,0 +1,32 @@
+name: keep-alive
+
+# Render free tier hiberna cada Web Service depois de 15 min sem tráfego
+# (cold start de ~30-60s na primeira requisição depois disso - ver README,
+# "Arquitetura AWS/Azure"). Esse workflow pinga o /health dos 5 serviços a
+# cada 10 minutos - gratuito (minutos de Actions já usados pelo CI) e some
+# com a demora de cold start sem sair do custo R$0.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pingar os 5 serviços do Render
+        run: |
+          urls=(
+            "https://finapp-gateway.onrender.com/health"
+            "https://finapp-lancamentos.onrender.com/health"
+            "https://finapp-gamificacao.onrender.com/health"
+            "https://finapp-notificacoes.onrender.com/health"
+            "https://finapp-usuarios.onrender.com/health"
+          )
+          # cada serviço é pingado independente - um falhar (ex: ainda
+          # acordando de uma hibernação anterior) não deve derrubar o job
+          # nem impedir de pingar os outros 4.
+          for url in "${urls[@]}"; do
+            echo "Pingando $url"
+            curl -sS -o /dev/null -w "  -> HTTP %{http_code} (%{time_total}s)\n" --max-time 90 "$url" || echo "  -> falhou (ok, será tentado de novo em 10 min)"
+          done
