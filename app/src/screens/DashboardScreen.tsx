@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import { useFocusEffect } from "@react-navigation/native";
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -17,6 +17,7 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import Card from "../componentes/Card";
 import CardResumoSemanal from "../componentes/CardResumoSemanal";
+import EstadoVazio from "../componentes/EstadoVazio";
 import GraficoGastosPorCategoria from "../componentes/GraficoGastosPorCategoria";
 import GraficoEvolucaoMensal from "../componentes/GraficoEvolucaoMensal";
 import MetaDestaque from "../componentes/MetaDestaque";
@@ -56,6 +57,7 @@ export default function DashboardScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const { usuario } = useAuth();
   const [saldo, setSaldo] = useState<number | null>(null);
   const [moedas, setMoedas] = useState<number | null>(null);
@@ -229,12 +231,17 @@ export default function DashboardScreen() {
           (Roadmap 1.0, Sprint 2 — antes só o slot de moedas existia aqui). */}
       <View style={estilos.linhaGamificacao}>
         {widgets?.saldoMoedas && (
-          <View style={estilos.faixaMoedas}>
+          <Pressable
+            style={estilos.faixaMoedas}
+            onPress={() => navigation.navigate("Moedas" as never)}
+            accessibilityRole="button"
+            accessibilityLabel="Ver moedas"
+          >
             <Ionicons name="medal" size={18} color={cor.moeda} />
             <Text style={estilos.textoMoedas}>
               {moedas !== null ? moedas : "--"} moedas
             </Text>
-          </View>
+          </Pressable>
         )}
         {sequencia !== null && sequencia.diasConsecutivos > 0 && (
           <View style={estilos.faixaSequencia}>
@@ -269,31 +276,89 @@ export default function DashboardScreen() {
           </Card>
         )}
 
-        {widgets?.graficoCategorias && gastosCategoria.length > 0 && (
-          <Card estiloExtra={estilos.cartaoSecao}>
+        {widgets?.graficoCategorias && (
+          <Card
+            estiloExtra={estilos.cartaoSecao}
+            onPress={
+              gastosCategoria.length > 0
+                ? () => (navigation as any).navigate("Análise", { segmento: "mes" })
+                : undefined
+            }
+            accessibilityLabel="Ver análise de gastos por categoria"
+          >
             <Text style={estilos.tituloSecao}>Gastos por categoria (mês)</Text>
-            <GraficoGastosPorCategoria dados={gastosCategoria} />
+            {gastosCategoria.length > 0 ? (
+              <GraficoGastosPorCategoria dados={gastosCategoria} />
+            ) : (
+              <EstadoVazio
+                icone="pie-chart-outline"
+                mensagem="Registre sua primeira despesa ou receita pra ver seus gastos por categoria aqui."
+                textoAcao="Novo lançamento"
+                onAcao={() => navigation.navigate("Novo" as never)}
+                compacto
+              />
+            )}
           </Card>
         )}
 
         {evolucao.length > 1 && (
-          <Card estiloExtra={estilos.cartaoSecao}>
+          <Card
+            estiloExtra={estilos.cartaoSecao}
+            onPress={() => (navigation as any).navigate("Análise", { segmento: "ano" })}
+            accessibilityLabel="Ver análise anual"
+          >
             <Text style={estilos.tituloSecao}>Últimos meses</Text>
             <GraficoEvolucaoMensal dados={evolucao} />
           </Card>
         )}
 
-        {widgets?.resumoOrcamentos && orcamentos.length > 0 && (
-          <Card estiloExtra={estilos.cartaoSecao}>
+        {widgets?.resumoOrcamentos && (
+          <Card
+            estiloExtra={estilos.cartaoSecao}
+            onPress={
+              orcamentos.length > 0
+                ? () => (navigation as any).navigate("Planejamento", { aba: "orcamentos" })
+                : undefined
+            }
+            accessibilityLabel="Ver orçamentos do mês"
+          >
             <Text style={estilos.tituloSecao}>Orçamentos do mês</Text>
-            <ResumoOrcamentos orcamentos={orcamentos} />
+            {orcamentos.length > 0 ? (
+              <ResumoOrcamentos orcamentos={orcamentos} />
+            ) : (
+              <EstadoVazio
+                icone="pie-chart-outline"
+                mensagem="Você ainda não tem orçamentos definidos este mês."
+                textoAcao="Definir teto de gastos"
+                onAcao={() => (navigation as any).navigate("Planejamento", { aba: "orcamentos" })}
+                compacto
+              />
+            )}
           </Card>
         )}
 
-        {widgets?.metasDestaque && objetivoDestaque && (
-          <Card estiloExtra={estilos.cartaoSecao}>
-            <Text style={estilos.tituloSecao}>{objetivoDestaque.nome}</Text>
-            <MetaDestaque destaque={objetivoDestaque} />
+        {widgets?.metasDestaque && (
+          <Card
+            estiloExtra={estilos.cartaoSecao}
+            onPress={
+              objetivoDestaque
+                ? () => (navigation as any).navigate("Planejamento", { aba: "metas" })
+                : undefined
+            }
+            accessibilityLabel="Ver metas"
+          >
+            <Text style={estilos.tituloSecao}>{objetivoDestaque?.nome ?? "Metas"}</Text>
+            {objetivoDestaque ? (
+              <MetaDestaque destaque={objetivoDestaque} />
+            ) : (
+              <EstadoVazio
+                icone="flag-outline"
+                mensagem="Toda grande conquista começa com uma meta."
+                textoAcao="Criar minha primeira meta"
+                onAcao={() => (navigation as any).navigate("Planejamento", { aba: "metas" })}
+                compacto
+              />
+            )}
           </Card>
         )}
 
