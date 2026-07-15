@@ -618,6 +618,25 @@ app.MapGet("/relatorios/evolucao-mensal", async (int? meses, ClaimsPrincipal pri
     return Results.Ok(await repo.EvolucaoMensalAsync(quantidade, IdDoUsuario(principal), ct));
 });
 
+// Cálculo ao vivo do mesmo resumo que o ResumoSemanalWorker gera de 6 em 6h
+// pra janela fixa de 7 dias (ITEM-WIDGETS-INTERATIVOS-E-RESUMO.md, Ajuste C)
+// - aqui o cliente escolhe a janela (semana ou mês), sob demanda. Objetivos
+// vem vazio de propósito: o Dashboard já busca os objetivos do usuário pra
+// outro widget e calcula o destaque localmente, não vale duplicar a consulta
+// só pra preencher um campo que o chamador já tem.
+app.MapGet("/relatorios/resumo-periodo", async (
+    DateTime inicio, DateTime fim, DateTime inicioAnterior, DateTime fimAnterior,
+    ClaimsPrincipal principal, IRelatorioRepository repo, CancellationToken ct) =>
+{
+    var usuarioId = IdDoUsuario(principal);
+    var saldoAtual = await repo.SaldoPeriodoAsync(inicio, fim, usuarioId, ct);
+    var saldoAnterior = await repo.SaldoPeriodoAsync(inicioAnterior, fimAnterior, usuarioId, ct);
+    var gastos = await repo.GastosPorCategoriaAsync(inicio, fim, usuarioId, ct);
+    var dias = await repo.DiasComLancamentoAsync(inicio, fim, usuarioId, ct);
+    var resumo = ResumoSemanalCalculo.Montar(saldoAtual, saldoAnterior, gastos, dias, objetivos: []);
+    return Results.Ok(resumo);
+});
+
 app.MapGet("/relatorios/marcos", async (ClaimsPrincipal principal, IRelatorioRepository repo, CancellationToken ct) =>
     Results.Ok(await repo.MarcosAsync(IdDoUsuario(principal), ct)));
 

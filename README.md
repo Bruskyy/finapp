@@ -1335,6 +1335,48 @@ fallback "-" quando a categoria/conta não existe mais) e
 `ExportadoresRelatorioTests` (smoke test dos dois adapters de verdade,
 verificando a assinatura de arquivo: `%PDF` e `PK` do zip do `.xlsx`).
 
+### Widgets do Dashboard clicáveis, estados vazios e "Seu resumo" com toggle Semana/Mês (ITEM-WIDGETS-INTERATIVOS-E-RESUMO.md)
+
+Três ajustes de UX nascidos do uso real do Vitor comparando o Cofrin com o
+Mobills. **Ajuste A** — cada widget do Dashboard (Gastos por categoria,
+Orçamentos, Meta em destaque, Últimos meses, chip de moedas) agora navega
+pra sua tela detalhada ao toque, já no segmento certo: `AnaliseScreen` e
+`PlanejamentoScreen` passaram a ler `route.params` (`segmento`/`aba`) no
+mount pra pré-selecionar, sem mudar a lógica interna dos toggles. **Ajuste
+B** — Orçamentos/Meta/Gastos por categoria, quando vazios, mostram um
+convite com botão de ação (reaproveitando `EstadoVazio`, que ganhou uma
+variante `compacto`) em vez de simplesmente sumir da tela.
+
+**Ajuste C**, o de maior decisão de arquitetura: o card "Sua semana" virou
+"Seu resumo" com toggle Semana/Mês. A lógica de cálculo
+(`ResumoSemanalCalculo.Montar`) já recebia janela atual/anterior como
+parâmetros genéricos — nunca teve nada de "semana" hardcoded, só nunca
+tinha sido exposta sob demanda (só o `ResumoSemanalWorker` a chamava, de 6
+em 6h, com janela fixa de 7 dias, gravando uma notificação no Postgres de
+`Notificacoes.Api`). Endpoint novo, `GET /relatorios/resumo-periodo`
+(`Lancamentos.Api`), reaproveita 100% dessa lógica e dos métodos já
+existentes de `IRelatorioRepository` — nenhuma linha nova de cálculo.
+
+**Decisão deliberada:** os dois modos do toggle (Semana e Mês) passaram a
+calcular ao vivo, a cada carga do Dashboard, em vez de só "Mês" ser novo e
+"Semana" continuar presa à notificação armazenada. O Dashboard parou de
+depender de `listarNotificacoes()` pra esse widget. Ganho: o card nunca
+mais fica desatualizado (antes só atualizava a cada 7 dias e sumia depois
+de 10 dias sem gerar um novo) e não duplica nenhuma lógica. Trade-off
+aceito conscientemente: a notificação push do resumo semanal (que o
+`ResumoSemanalWorker` continua gerando, sem nenhuma mudança) pode mostrar
+um número levemente diferente do card ao vivo no mesmo dia — um é
+congelado no momento da geração, o outro é sempre fresco. Aceitável porque
+o card ao vivo é estritamente mais correto, e a central de notificações
+não muda em nada.
+
+`CardResumoSemanal` foi generalizado pra aceitar um formato period-neutro
+(`ResumoCardProps`) em vez de exigir uma `Notificacao` inteira — o
+Dashboard passa a resposta do endpoint novo diretamente. Posição do card
+também virou fixa, logo abaixo do saldo, antes da lista personalizável de
+widgets (continua controlável em "Personalizar início" pela mesma chave
+`resumoSemanal`, só o rótulo mudou).
+
 ## Arquitetura AWS/Azure
 
 Requisito de vaga: mapear as escolhas deste projeto (todas gratuitas, fora da nuvem "oficial" AWS/Azure) pros serviços gerenciados equivalentes que se usaria numa empresa de verdade.
