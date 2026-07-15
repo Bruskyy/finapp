@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/auth/AuthContext";
 import DrawerContent from "./src/navegacao/DrawerContent";
 import AnaliseScreen from "./src/screens/AnaliseScreen";
@@ -125,10 +125,19 @@ function BotaoAbaPadrao({
 function TabsPrincipais() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
+  // Estas 4 telas não têm header (de propósito - o gatilho do menu já é o
+  // item "Mais" da tab bar, ver DrawerPrincipal) - sem header, o React
+  // Navigation não empurra o conteúdo pra baixo da status bar sozinho, e
+  // o paddingTop fixo (espaco.lg = 16) que cada tela já usa como respiro
+  // visual não é suficiente em nenhum Android real. sceneContainerStyle
+  // soma a inset de verdade do aparelho por cima disso, uma vez só, sem
+  // mexer no padding interno de cada tela.
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        sceneStyle: { paddingTop: insets.top },
         tabBarActiveTintColor: cor.primaria,
         tabBarInactiveTintColor: cor.navInativo,
         tabBarStyle: estilos.tabBar,
