@@ -40,7 +40,19 @@ export default function LoginScreen({ aoIrParaRegistro }: Props) {
       // promptAsync pode rejeitar direto (ex: popup bloqueado pelo
       // navegador) em vez de resolver com { type: "error" } - sem o
       // catch aqui, isso vira uma exceção não tratada.
-      await entrarComGoogle();
+      const resultado = await entrarComGoogle();
+      // "success" é tratado pelo useEffect dentro de useGoogleAuth (troca o
+      // id_token pelo login de verdade) - aqui só cobrimos os outros
+      // desfechos, que antes eram descartados em silêncio (o usuário via
+      // "nada acontecer" e ficava na tela de login sem nenhuma pista).
+      if (resultado.type === "cancel") return; // usuário fechou de propósito
+      if (resultado.type === "error") {
+        setErro(
+          `Não foi possível entrar com o Google (${resultado.error?.message ?? resultado.params?.error ?? "erro desconhecido"}).`
+        );
+      } else if (resultado.type !== "success") {
+        setErro("O login com o Google foi interrompido antes de terminar. Tente novamente.");
+      }
     } catch {
       setErro("Não foi possível abrir o login do Google. Verifique se o navegador não bloqueou o popup.");
     }

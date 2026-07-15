@@ -135,17 +135,20 @@
 
 ## 5.2 Bugs encontrados no teste de produção de 15/07/2026
 
-- [ ] **Login com Google falhando (web e app nativo, os dois)**: como falha
-  nas duas plataformas ao mesmo tempo, o suspeito principal é a validação
-  do `id_token` no backend, não o redirect/deep-link (que é mecanismo
-  diferente em cada plataforma). `Usuarios.Api` valida o token conferindo
-  o `aud` contra `Google:ClientId`, configurado só via variável de
-  ambiente no Render (não está em nenhum `appsettings` do repo). **Conferir
-  se essa env var no Render está exatamente igual a**
-  `123292857800-c8v8tjkkbu57opnb5qgdnpgap6r8hqk2.apps.googleusercontent.com`
-  (o Client ID hardcoded em `app/src/auth/useGoogleAuth.ts`). Se estiver
-  diferente ou vazia, é essa a causa - corrigir a env var no Render resolve
-  sem precisar de código novo.
+- [ ] **Login com Google falhando (web e app nativo, os dois)**: teoria do
+  `aud`/`Google:ClientId` **descartada** - o Vitor conferiu em 15/07 e a
+  env var no Render já bate com o Client ID hardcoded no app. Causa raiz
+  ainda não confirmada. Achei um bug real ao revisar `LoginScreen.tsx`: o
+  retorno de `promptAsync()` (`AuthSessionResult`, tipos `success | cancel
+  | dismiss | error | opened | locked`) era descartado por completo -
+  qualquer desfecho que não fosse `"success"` ficava **completamente
+  silencioso** (nenhuma mensagem, nenhum log), então "voltar pra tela de
+  login sem nada acontecer" podia ser `dismiss`/`error`/`opened` e não
+  daria pra saber qual. Corrigido: agora mostra uma mensagem de erro
+  específica quando o tipo não é `success`/`cancel` (`cancel` = usuário
+  fechou de propósito, fica em silêncio mesmo). **Testar de novo com o
+  build novo** e, se falhar de novo, a mensagem de erro na tela agora vai
+  dizer o tipo/motivo real - copiar esse texto pra continuar o diagnóstico.
 - [x] **Status bar sobrepondo botões** (Novo Lançamento, Orçamentos/Metas,
   Dashboard, Transações) e **`Erro 404 em /api/cartoes`**: corrigidos no
   código (`SafeAreaProvider` + `useSafeAreaInsets` nas 4 telas; rotas
