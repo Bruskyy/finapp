@@ -133,6 +133,34 @@
   ficam tentando reconectar - não derruba o serviço, mas o convite de
   apoio nunca sai do outbox).
 
+## 5.2 Bugs encontrados no teste de produção de 15/07/2026
+
+- [ ] **Login com Google falhando (web e app nativo, os dois)**: como falha
+  nas duas plataformas ao mesmo tempo, o suspeito principal é a validação
+  do `id_token` no backend, não o redirect/deep-link (que é mecanismo
+  diferente em cada plataforma). `Usuarios.Api` valida o token conferindo
+  o `aud` contra `Google:ClientId`, configurado só via variável de
+  ambiente no Render (não está em nenhum `appsettings` do repo). **Conferir
+  se essa env var no Render está exatamente igual a**
+  `123292857800-c8v8tjkkbu57opnb5qgdnpgap6r8hqk2.apps.googleusercontent.com`
+  (o Client ID hardcoded em `app/src/auth/useGoogleAuth.ts`). Se estiver
+  diferente ou vazia, é essa a causa - corrigir a env var no Render resolve
+  sem precisar de código novo.
+- [x] **Status bar sobrepondo botões** (Novo Lançamento, Orçamentos/Metas,
+  Dashboard, Transações) e **`Erro 404 em /api/cartoes`**: corrigidos no
+  código (`SafeAreaProvider` + `useSafeAreaInsets` nas 4 telas; rotas
+  `/api/cartoes` e `/api/compras-parceladas` faltando no Gateway YARP desde
+  o PR do cartão de crédito). **Precisa de build novo + reteste no device**
+  pra confirmar - sem build novo, o celular continua rodando o binário
+  antigo com os dois bugs.
+- [x] **Demora "absurda" pra aparecer dado (web e app)**: é o cold start
+  do Render free tier (15 min sem tráfego = hibernação, ~30-60s pra
+  acordar - trade-off já documentado no README, não é bug novo). Mitigado
+  com `.github/workflows/keep-alive.yml` (ping a cada 10 min nos 5
+  serviços) - não elimina 100% (ex: se o repo ficar 60+ dias sem nenhuma
+  atividade, o GitHub desativa schedules automaticamente), mas deve
+  eliminar a maior parte das ocorrências no uso normal.
+
 ## 6. Play Store (Sprint 6 — inalterado, consolidado aqui)
 
 - [ ] Pagar os US$25 da conta dev do Google Play (exceção documentada).
