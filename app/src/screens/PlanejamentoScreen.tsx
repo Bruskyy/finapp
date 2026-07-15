@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Cor, espaco, raio } from "../tema";
 import { useEstilos, useTema } from "../tema/ThemeContext";
@@ -16,13 +17,14 @@ type Aba = "orcamentos" | "metas";
 export default function PlanejamentoScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
+  const insets = useSafeAreaInsets();
   const [aba, setAba] = useState<Aba>("orcamentos");
   const ehOrcamentos = aba === "orcamentos";
   const ehMetas = aba === "metas";
 
   return (
     <View style={estilos.container}>
-      <View style={estilos.seletor}>
+      <View style={[estilos.seletor, { paddingTop: insets.top + espaco.md }]}>
         <Pressable
           style={[estilos.segmento, ehOrcamentos && estilos.segmentoAtivo]}
           onPress={() => setAba("orcamentos")}

@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { criarCompraParcelada, criarLancamento, criarRecorrencia, listarCategorias, listarContas, obterSequencia } from "../api/client";
 import Botao from "../componentes/Botao";
 import Card from "../componentes/Card";
@@ -15,6 +16,7 @@ import { Categoria, Conta, TipoConta, TipoLancamento } from "../types";
 export default function NovoLancamentoScreen() {
   const { cor, tema } = useTema();
   const estilos = useEstilos(criarEstilos);
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
@@ -148,7 +150,10 @@ export default function NovoLancamentoScreen() {
   const ehReceita = tipo === TipoLancamento.Receita;
 
   return (
-    <ScrollView style={estilos.container} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={[estilos.container, { paddingTop: insets.top + espaco.lg }]}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={estilos.titulo}>Novo lançamento</Text>
 
       <Card estiloExtra={estilos.cartaoForm}>
