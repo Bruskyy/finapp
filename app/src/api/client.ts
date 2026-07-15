@@ -147,11 +147,30 @@ async function renovarTokens(): Promise<boolean> {
   return renovacaoEmAndamento;
 }
 
+// Render free tier hiberna cada serviço depois de 15 min sem tráfego -
+// cold start documentado de ~30-60s (README, "Arquitetura AWS/Azure"). Sem
+// timeout aqui, uma requisição contra um serviço hibernando deixava o
+// spinner de carregamento girando indefinidamente em vez de mostrar erro -
+// 70s dá folga sobre o pior caso documentado sem deixar uma falha real
+// (backend fora do ar) travar a tela por muito tempo.
+const TIMEOUT_MS = 70_000;
+
 async function requisitar<T>(caminho: string, init?: RequestInit): Promise<T> {
-  const executar = () => {
+  const executar = async () => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (tokenAtual) headers.Authorization = `Bearer ${tokenAtual}`;
-    return fetch(`${GATEWAY_URL}${caminho}`, { headers, ...init });
+    const controlador = new AbortController();
+    const temporizador = setTimeout(() => controlador.abort(), TIMEOUT_MS);
+    try {
+      return await fetch(`${GATEWAY_URL}${caminho}`, { headers, ...init, signal: controlador.signal });
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        throw new Error("O servidor demorou demais pra responder. Tente novamente em alguns segundos.");
+      }
+      throw e;
+    } finally {
+      clearTimeout(temporizador);
+    }
   };
 
   let resposta = await executar();
