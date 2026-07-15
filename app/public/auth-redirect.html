@@ -18,20 +18,44 @@
       padding: 24px;
       box-sizing: border-box;
     }
-    a { color: #7cffb2; }
+    p { opacity: 0.85; margin-bottom: 24px; }
+    /* Botão grande de propósito: o Chrome no Android bloqueia
+       redirecionamento automático (via JS) pra esquemas customizados sem
+       um gesto real do usuário - a tentativa automática abaixo pode não
+       funcionar, então o botão precisa ser a via principal, não um
+       fallback discreto. */
+    a#voltar {
+      display: block;
+      background: #00D09E;
+      color: #052224;
+      font-weight: 700;
+      font-size: 18px;
+      text-decoration: none;
+      padding: 16px 32px;
+      border-radius: 14px;
+      animation: pulsar 1.4s ease-in-out infinite;
+    }
+    @keyframes pulsar {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
   </style>
 </head>
 <body>
   <div>
-    <p>Voltando para o Cofrin…</p>
-    <p><a id="fallback" href="#">Toque aqui se não for redirecionado automaticamente</a></p>
+    <p>Toque no botão abaixo pra voltar ao Cofrin.</p>
+    <a id="voltar" href="#">Voltar para o Cofrin</a>
   </div>
   <script>
     // O Google devolve access_token/id_token/state no fragmento da URL (fluxo
     // implícito, response_type=id_token) - repassamos esse mesmo fragmento pro
     // scheme customizado do app, que o Android intercepta via intent-filter.
     var destino = "cofrin://" + window.location.hash;
-    document.getElementById("fallback").href = destino;
+    document.getElementById("voltar").href = destino;
+    // Tentativa automática, de bônus: funciona em alguns navegadores/versões,
+    // mas o Chrome no Android costuma bloquear redirect automático pra
+    // esquema customizado sem gesto do usuário - por isso o botão acima é a
+    // via principal, não um fallback escondido.
     window.location.replace(destino);
   </script>
 </body>
