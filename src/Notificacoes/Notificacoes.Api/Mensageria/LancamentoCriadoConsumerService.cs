@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using BuildingBlocks.Contracts.Lancamentos;
@@ -19,6 +20,11 @@ namespace Notificacoes.Api.Mensageria;
 /// </summary>
 public class LancamentoCriadoConsumerService : BackgroundService
 {
+    // Cultura do container Linux é invariant, não pt-BR - sem isso, {valor:C}
+    // sai como "¤1,234.56" em vez de "R$ 1.234,56" (mesma causa raiz já
+    // corrigida em ExportadorRelatorioPdfQuestPdf.cs).
+    private static readonly CultureInfo CulturaPtBr = CultureInfo.GetCultureInfo("pt-BR");
+
     private const string NomeFila = "notificacoes.lancamentos";
     // "#" casa zero ou mais segmentos ("*" casa exatamente um): pega tanto
     // lancamento.criado quanto lancamento.recorrente.criado
@@ -120,7 +126,7 @@ public class LancamentoCriadoConsumerService : BackgroundService
                 await _provider.EnviarAlertaLancamentoAsync(criado.LancamentoId, criado.Valor, ct);
                 notificacao = new Notificacao(
                     criado.EventId, TipoNotificacao.Lancamento,
-                    $"Lançamento de {criado.Valor:C} registrado.", criado.UsuarioId);
+                    $"Lançamento de {criado.Valor.ToString("C", CulturaPtBr)} registrado.", criado.UsuarioId);
                 break;
 
             case "lancamento.recorrente.criado":
@@ -128,7 +134,7 @@ public class LancamentoCriadoConsumerService : BackgroundService
                     ?? throw new InvalidOperationException("Payload de LancamentoRecorrenteCriadoEvent inválido.");
                 notificacao = new Notificacao(
                     recorrente.EventId, TipoNotificacao.LancamentoRecorrente,
-                    $"Sua conta fixa '{recorrente.Descricao}' de {recorrente.Valor:C} foi lançada (competência {recorrente.Competencia}).",
+                    $"Sua conta fixa '{recorrente.Descricao}' de {recorrente.Valor.ToString("C", CulturaPtBr)} foi lançada (competência {recorrente.Competencia}).",
                     recorrente.UsuarioId);
                 break;
 
@@ -151,8 +157,8 @@ public class LancamentoCriadoConsumerService : BackgroundService
                 var orcamento = JsonSerializer.Deserialize<OrcamentoEstouradoEvent>(json)
                     ?? throw new InvalidOperationException("Payload de OrcamentoEstouradoEvent inválido.");
                 var mensagemOrcamento = orcamento.Limiar >= 100
-                    ? $"Seu orçamento de {orcamento.Categoria} estourou: {orcamento.GastoNoMes:C} de {orcamento.ValorLimite:C}."
-                    : $"Seu orçamento de {orcamento.Categoria} já passou de {orcamento.Limiar}%: {orcamento.GastoNoMes:C} de {orcamento.ValorLimite:C}.";
+                    ? $"Seu orçamento de {orcamento.Categoria} estourou: {orcamento.GastoNoMes.ToString("C", CulturaPtBr)} de {orcamento.ValorLimite.ToString("C", CulturaPtBr)}."
+                    : $"Seu orçamento de {orcamento.Categoria} já passou de {orcamento.Limiar}%: {orcamento.GastoNoMes.ToString("C", CulturaPtBr)} de {orcamento.ValorLimite.ToString("C", CulturaPtBr)}.";
                 notificacao = new Notificacao(orcamento.EventId, TipoNotificacao.OrcamentoEstourado, mensagemOrcamento, orcamento.UsuarioId);
                 break;
 
@@ -161,7 +167,7 @@ public class LancamentoCriadoConsumerService : BackgroundService
                     ?? throw new InvalidOperationException("Payload de RecorrenciaAVencerEvent inválido.");
                 notificacao = new Notificacao(
                     aVencer.EventId, TipoNotificacao.RecorrenciaAVencer,
-                    $"Sua conta fixa '{aVencer.Descricao}' de {aVencer.Valor:C} vence em {aVencer.DiasParaVencimento} dias.",
+                    $"Sua conta fixa '{aVencer.Descricao}' de {aVencer.Valor.ToString("C", CulturaPtBr)} vence em {aVencer.DiasParaVencimento} dias.",
                     aVencer.UsuarioId);
                 break;
 
@@ -186,11 +192,11 @@ public class LancamentoCriadoConsumerService : BackgroundService
     private static string MontarMensagemResumoSemanal(ResumoSemanalGeradoEvent resumo)
     {
         var economia = resumo.EconomiaVsSemanaAnterior >= 0
-            ? $"Você economizou {resumo.EconomiaVsSemanaAnterior:C} a mais que a semana passada."
-            : $"Você gastou {Math.Abs(resumo.EconomiaVsSemanaAnterior):C} a mais que a semana passada.";
+            ? $"Você economizou {resumo.EconomiaVsSemanaAnterior.ToString("C", CulturaPtBr)} a mais que a semana passada."
+            : $"Você gastou {Math.Abs(resumo.EconomiaVsSemanaAnterior).ToString("C", CulturaPtBr)} a mais que a semana passada.";
 
         var categoria = resumo.CategoriaMaiorGasto is not null
-            ? $" Maior gasto: {resumo.CategoriaMaiorGasto} ({resumo.ValorCategoriaMaiorGasto:C})."
+            ? $" Maior gasto: {resumo.CategoriaMaiorGasto} ({resumo.ValorCategoriaMaiorGasto.ToString("C", CulturaPtBr)})."
             : "";
 
         var dias = $" Você registrou algo em {resumo.DiasComLancamento} {(resumo.DiasComLancamento == 1 ? "dia" : "dias")}.";
