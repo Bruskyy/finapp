@@ -60,8 +60,11 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<NotificacoesDbContext>("postgres");
+// Sem AddDbContextCheck de propósito - ver Lancamentos.Api/Program.cs pro
+// porquê (keep-alive.yml + health check com banco esgotou a cota gratuita
+// mensal do Azure SQL de outro serviço; mesmo padrão aqui evita repetir no
+// Postgres/Neon deste).
+builder.Services.AddHealthChecks();
 
 builder.Services.AddOpenApi();
 
