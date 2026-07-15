@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { excluirLancamento, listarCategorias, listarLancamentos } from "../api/client";
 import { confirmar } from "../confirmar";
 import EstadoVazio from "../componentes/EstadoVazio";
@@ -68,6 +69,7 @@ function agruparPorDia(lancamentos: Lancamento[]): Secao[] {
 export default function TransacoesScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [mesReferencia, setMesReferencia] = useState(new Date());
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
@@ -161,7 +163,7 @@ export default function TransacoesScreen() {
   }
 
   return (
-    <View style={estilos.container}>
+    <View style={[estilos.container, { paddingTop: insets.top + espaco.lg }]}>
       <View style={estilos.cabecalho}>
         <Pressable onPress={() => mudarMes(-1)} hitSlop={8} accessibilityLabel="Mês anterior">
           <Ionicons name="chevron-back" size={24} color={cor.cinza700} />

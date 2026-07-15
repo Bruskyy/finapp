@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import {
   listarNotificacoes,
@@ -54,6 +55,7 @@ function extrair<T>(resultado: PromiseSettledResult<T>): T | null {
 export default function DashboardScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
+  const insets = useSafeAreaInsets();
   const { usuario } = useAuth();
   const [saldo, setSaldo] = useState<number | null>(null);
   const [moedas, setMoedas] = useState<number | null>(null);
@@ -189,7 +191,7 @@ export default function DashboardScreen() {
   const primeiroNome = usuario?.nome.split(" ")[0];
 
   return (
-    <View style={estilos.container}>
+    <View style={[estilos.container, { paddingTop: insets.top + espaco.lg }]}>
       {primeiroNome && (
         <Text style={estilos.saudacao}>
           {saudacaoDoHorario()}, {primeiroNome} 👋
