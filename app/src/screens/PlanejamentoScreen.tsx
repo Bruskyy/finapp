@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Cor, espaco, raio } from "../tema";
@@ -18,7 +19,12 @@ export default function PlanejamentoScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
   const insets = useSafeAreaInsets();
-  const [aba, setAba] = useState<Aba>("orcamentos");
+  // route.params?.aba: widgets do Dashboard navegam pra cá já com a aba
+  // certa selecionada (ITEM-WIDGETS-INTERATIVOS-E-RESUMO.md, Ajuste A) - só
+  // lido no mount, não muda a aba se o usuário já estiver nesta tela.
+  const route = useRoute();
+  const params = route.params as { aba?: Aba } | undefined;
+  const [aba, setAba] = useState<Aba>(params?.aba ?? "orcamentos");
   const ehOrcamentos = aba === "orcamentos";
   const ehMetas = aba === "metas";
 

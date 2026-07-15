@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useRoute } from "@react-navigation/native";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { listarLancamentos, obterEvolucaoMensal } from "../api/client";
 import Botao from "../componentes/Botao";
@@ -146,7 +146,12 @@ function janelaDeExportacao(seg: Segmento): { inicio: string; fim: string } {
 export default function AnaliseScreen() {
   const { cor } = useTema();
   const estilos = useEstilos(criarEstilos);
-  const [segmento, setSegmento] = useState<Segmento>("mes");
+  // route.params?.segmento: widgets do Dashboard navegam pra cá já com o
+  // segmento certo (ITEM-WIDGETS-INTERATIVOS-E-RESUMO.md, Ajuste A) - só
+  // lido no mount, não muda o segmento se o usuário já estiver na tela.
+  const route = useRoute();
+  const params = route.params as { segmento?: Segmento } | undefined;
+  const [segmento, setSegmento] = useState<Segmento>(params?.segmento ?? "mes");
   const [pontos, setPontos] = useState<PontoPeriodo[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
