@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import { useGoogleAuth } from "../auth/useGoogleAuth";
 import Botao from "../componentes/Botao";
@@ -34,6 +34,15 @@ export default function LoginScreen({ aoIrParaRegistro }: Props) {
 
   const valido = email.trim().length > 0 && senha.length > 0;
 
+  function falhaGoogle(mensagem: string) {
+    // Texto vermelho no topo passa despercebido num teste rápido no
+    // celular (a tela nem sempre está rolada pro topo) - Alert.alert é
+    // impossível de ignorar, o que também serve de diagnóstico: se o
+    // problema for silencioso de novo, agora vai aparecer um alerta.
+    setErro(mensagem);
+    Alert.alert("Login com Google", mensagem);
+  }
+
   async function handleGoogle() {
     setErro(null);
     try {
@@ -41,20 +50,27 @@ export default function LoginScreen({ aoIrParaRegistro }: Props) {
       // navegador) em vez de resolver com { type: "error" } - sem o
       // catch aqui, isso vira uma exceção não tratada.
       const resultado = await entrarComGoogle();
-      // "success" é tratado pelo useEffect dentro de useGoogleAuth (troca o
-      // id_token pelo login de verdade) - aqui só cobrimos os outros
-      // desfechos, que antes eram descartados em silêncio (o usuário via
-      // "nada acontecer" e ficava na tela de login sem nenhuma pista).
       if (resultado.type === "cancel") return; // usuário fechou de propósito
       if (resultado.type === "error") {
-        setErro(
+        falhaGoogle(
           `Não foi possível entrar com o Google (${resultado.error?.message ?? resultado.params?.error ?? "erro desconhecido"}).`
         );
-      } else if (resultado.type !== "success") {
-        setErro("O login com o Google foi interrompido antes de terminar. Tente novamente.");
+      } else if (resultado.type === "success") {
+        // O useEffect dentro de useGoogleAuth troca o id_token pelo login de
+        // verdade - mas se o Google devolver "success" sem id_token no
+        // fragmento (ex: página-ponte não repassou o hash direito), esse
+        // useEffect nunca dispara e, sem este branch, o usuário só via a
+        // tela de login de volta, sem nenhuma pista do que aconteceu.
+        if (!resultado.params?.id_token) {
+          falhaGoogle("O Google não devolveu o token esperado. Tente novamente.");
+        }
+      } else {
+        // "dismiss" (navegador fechado/trocado de app antes do redirect
+        // completar) e qualquer outro desfecho que não seja sucesso.
+        falhaGoogle("O login com o Google foi interrompido antes de terminar. Tente novamente.");
       }
     } catch {
-      setErro("Não foi possível abrir o login do Google. Verifique se o navegador não bloqueou o popup.");
+      falhaGoogle("Não foi possível abrir o login do Google. Verifique se o navegador não bloqueou o popup.");
     }
   }
 
