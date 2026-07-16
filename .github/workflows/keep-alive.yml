@@ -2,16 +2,23 @@ name: keep-alive
 
 # Render free tier hiberna cada Web Service depois de 15 min sem tráfego
 # (cold start de ~30-60s na primeira requisição depois disso - ver README,
-# "Arquitetura AWS/Azure"). Esse workflow pinga o /health dos 5 serviços a
-# cada 10 minutos - gratuito (minutos de Actions já usados pelo CI) e some
-# com a demora de cold start sem sair do custo R$0.
+# "Arquitetura AWS/Azure"). Esse workflow pinga /health a cada 10 minutos -
+# gratuito (minutos de Actions já usados pelo CI) e some com a demora de
+# cold start sem sair do custo R$0.
 #
-# IMPORTANTE: /health dos 4 serviços com banco é liveness pura, sem tocar
-# no banco (AddDbContextCheck removido de propósito) - um health check com
-# banco pingado a cada 10 min nunca deixa o Azure SQL/Neon entrar em
-# auto-pause, e isso já estourou a cota gratuita mensal do Azure SQL de
-# Lancamentos em ~15 dias sem tráfego real nenhum. Não reintroduzir esse
-# check em /health sem repensar esse trade-off.
+# SÓ Gateway e Notificacoes entram na lista - de propósito, não é
+# esquecimento. Lancamentos, Gamificacao e Usuarios têm um
+# OutboxPublisherService rodando a cada 5s (padrão Outbox já documentado no
+# README) que consulta o próprio banco continuamente enquanto o processo
+# estiver de pé - manter esses 3 acordados via keep-alive mantém esse
+# polling rodando 24/7 também, o que nunca deixa o banco (Azure SQL/Neon)
+# entrar em auto-pause/auto-suspend. Isso já estourou a cota gratuita
+# mensal do Azure SQL de Lancamentos em ~15 dias sem tráfego real nenhum
+# (incidente de 15/07/2026). Gateway não tem banco; Notificacoes não
+# publica outbox (só consome) - os dois são seguros de manter acordados.
+# Trade-off aceito: Lancamentos/Gamificacao/Usuarios voltam a ter cold
+# start de ~30-60s após 15 min ocioso - mitigado pelo timeout de 70s em
+# app/src/api/client.ts (mostra erro claro em vez de travar o spinner).
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -21,18 +28,15 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Pingar os 5 serviços do Render
+      - name: Pingar Gateway e Notificacoes
         run: |
           urls=(
             "https://finapp-gateway.onrender.com/health"
-            "https://finapp-lancamentos.onrender.com/health"
-            "https://finapp-gamificacao.onrender.com/health"
             "https://finapp-notificacoes.onrender.com/health"
-            "https://finapp-usuarios.onrender.com/health"
           )
           # cada serviço é pingado independente - um falhar (ex: ainda
           # acordando de uma hibernação anterior) não deve derrubar o job
-          # nem impedir de pingar os outros 4.
+          # nem impedir de pingar o outro.
           for url in "${urls[@]}"; do
             echo "Pingando $url"
             curl -sS -o /dev/null -w "  -> HTTP %{http_code} (%{time_total}s)\n" --max-time 90 "$url" || echo "  -> falhou (ok, será tentado de novo em 10 min)"
